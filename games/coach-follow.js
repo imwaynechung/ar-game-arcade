@@ -98,6 +98,25 @@ picker.addEventListener("click", (e) => {
   picker.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
 });
 
+// ---------- View mode (Skeleton / Silhouette) ----------
+const VIEW_MODES = ["skeleton", "silhouette"];
+let viewMode = localStorage.getItem("coachFollowViewMode");
+if (!VIEW_MODES.includes(viewMode)) viewMode = "skeleton";
+function applyViewMode(mode) {
+  viewMode = mode;
+  localStorage.setItem("coachFollowViewMode", mode);
+  tilesEl.classList.remove("view-skeleton", "view-silhouette");
+  tilesEl.classList.add(`view-${mode}`);
+  const vp = document.getElementById("view-picker");
+  vp?.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.view === mode));
+}
+applyViewMode(viewMode);
+document.getElementById("view-picker")?.addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-view]");
+  if (!btn) return;
+  applyViewMode(btn.dataset.view);
+});
+
 // ---------- Coach upload + pose analysis ----------
 fileInput.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
@@ -316,6 +335,9 @@ function buildTiles(n) {
     });
   }
   tilesEl.style.display = "flex";
+  // Re-assert current view mode class (innerHTML reset above wipes nothing on tilesEl itself,
+  // but be safe in case future code toggles classes elsewhere).
+  applyViewMode(viewMode);
 }
 
 function assignCameraToTiles(stream) {

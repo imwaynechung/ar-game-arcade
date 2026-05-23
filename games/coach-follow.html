@@ -79,8 +79,12 @@
       .tile.flash-bad       { border-color: #ff5a5a; }
       .tile.flash-pause     { border-color: rgba(255,255,255,0.18); }
       .tile video, .tile canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-      .tile video { object-fit: cover; transform: scaleX(-1); }
+      .tile video { object-fit: cover; transform: scaleX(-1); transition: filter 0.2s, opacity 0.2s; }
       .tile canvas { pointer-events: none; }
+      /* View modes */
+      #tiles.view-skeleton .tile { background: radial-gradient(circle at 50% 60%, #16223a 0%, #060b18 75%); }
+      #tiles.view-skeleton .tile video { opacity: 0; }
+      #tiles.view-silhouette .tile video { filter: blur(14px) saturate(0.35) brightness(0.45); }
       .tile-name {
         position: absolute;
         top: 8px; left: 8px;
@@ -179,6 +183,21 @@
       .player-picker button .lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; opacity: 0.75; }
       .player-picker button.active { background: #ffd23f; color: #1a1a1a; border-color: #ffd23f; }
 
+      /* View-mode toggle */
+      .view-picker { display: flex; gap: 10px; justify-content: center; margin: 12px 0 6px; flex-wrap: wrap; }
+      .view-picker button {
+        background: rgba(255,255,255,0.06);
+        border: 2px solid rgba(255,255,255,0.18);
+        color: #fff;
+        font: 700 13px -apple-system, system-ui, sans-serif;
+        padding: 10px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .view-picker button .ico { font-size: 18px; }
+      .view-picker button.active { background: #5ce1ff; color: #062a36; border-color: #5ce1ff; }
+
       .end-stats {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -232,6 +251,12 @@
           <button data-n="2"><span>2</span><span class="lbl">DUO</span></button>
           <button data-n="3"><span>3</span><span class="lbl">TRIO</span></button>
           <button data-n="4" class="active"><span>4</span><span class="lbl">CREW</span></button>
+        </div>
+
+        <label style="display:block;font:600 11px -apple-system,system-ui,sans-serif;letter-spacing:0.12em;opacity:0.7;text-align:center;margin-top:10px;">PLAYER VIEW</label>
+        <div class="view-picker" id="view-picker">
+          <button data-view="skeleton" class="active"><span class="ico">🦴</span><span>Skeleton</span></button>
+          <button data-view="silhouette"><span class="ico">👤</span><span>Silhouette</span></button>
         </div>
 
         <ul class="rules">
