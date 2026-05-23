@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="dojoSky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0"   stop-color="#ff6b35"/>
+      <stop offset="0.5" stop-color="#ffb347"/>
+      <stop offset="1"   stop-color="#ffe8b8"/>
+    </linearGradient>
+    <radialGradient id="redSun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff5a5a"/>
+      <stop offset="0.7" stop-color="#e63946"/>
+      <stop offset="1" stop-color="#e63946" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#dojoSky)"/>
+  <!-- big red sun -->
+  <circle cx="640" cy="380" r="220" fill="url(#redSun)" opacity="0.7"/>
+  <circle cx="640" cy="380" r="140" fill="#e63946"/>
+  <!-- horizon rays -->
+  <g stroke="#ffd6b8" stroke-width="2" opacity="0.4">
+    <line x1="640" y1="380" x2="100"  y2="50"/>
+    <line x1="640" y1="380" x2="1180" y2="50"/>
+    <line x1="640" y1="380" x2="40"   y2="280"/>
+    <line x1="640" y1="380" x2="1240" y2="280"/>
+  </g>
+  <!-- back mountains -->
+  <path d="M 0 500 L 180 360 L 360 470 L 540 340 L 720 460 L 900 350 L 1080 470 L 1280 380 L 1280 720 L 0 720 Z" fill="#5a3a2a" opacity="0.55"/>
+  <!-- front mountains -->
+  <path d="M 0 560 L 220 460 L 440 540 L 660 440 L 880 530 L 1100 450 L 1280 530 L 1280 720 L 0 720 Z" fill="#2a1a10" opacity="0.85"/>
+  <!-- left bamboo cluster -->
+  <g stroke="#1a3a1a" stroke-linecap="round" fill="none">
+    <line x1="80"  y1="720" x2="80"  y2="180" stroke-width="10"/>
+    <line x1="140" y1="720" x2="140" y2="240" stroke-width="9"/>
+    <line x1="200" y1="720" x2="200" y2="160" stroke-width="11"/>
+    <line x1="50"  y1="720" x2="50"  y2="300" stroke-width="8"/>
+  </g>
+  <!-- bamboo joints (left) -->
+  <g stroke="#0a200a" stroke-width="2">
+    <line x1="70" y1="320" x2="90" y2="320"/>
+    <line x1="70" y1="420" x2="90" y2="420"/>
+    <line x1="70" y1="520" x2="90" y2="520"/>
+    <line x1="130" y1="360" x2="150" y2="360"/>
+    <line x1="130" y1="500" x2="150" y2="500"/>
+    <line x1="190" y1="300" x2="210" y2="300"/>
+    <line x1="190" y1="450" x2="210" y2="450"/>
+  </g>
+  <!-- bamboo leaves left -->
+  <g fill="#2e5d2e">
+    <ellipse cx="100" cy="220" rx="22" ry="6" transform="rotate(-30 100 220)"/>
+    <ellipse cx="170" cy="280" rx="22" ry="6" transform="rotate(20 170 280)"/>
+    <ellipse cx="60"  cy="340" rx="20" ry="6" transform="rotate(-15 60 340)"/>
+  </g>
+  <!-- right bamboo cluster -->
+  <g stroke="#1a3a1a" stroke-linecap="round" fill="none">
+    <line x1="1200" y1="720" x2="1200" y2="200" stroke-width="10"/>
+    <line x1="1140" y1="720" x2="1140" y2="280" stroke-width="9"/>
+    <line x1="1080" y1="720" x2="1080" y2="160" stroke-width="11"/>
+    <line x1="1240" y1="720" x2="1240" y2="320" stroke-width="8"/>
+  </g>
+  <g stroke="#0a200a" stroke-width="2">
+    <line x1="1190" y1="340" x2="1210" y2="340"/>
+    <line x1="1190" y1="460" x2="1210" y2="460"/>
+    <line x1="1130" y1="380" x2="1150" y2="380"/>
+    <line x1="1070" y1="320" x2="1090" y2="320"/>
+    <line x1="1070" y1="460" x2="1090" y2="460"/>
+  </g>
+  <g fill="#2e5d2e">
+    <ellipse cx="1180" cy="240" rx="22" ry="6" transform="rotate(25 1180 240)"/>
+    <ellipse cx="1110" cy="300" rx="22" ry="6" transform="rotate(-20 1110 300)"/>
+    <ellipse cx="1240" cy="360" rx="20" ry="6" transform="rotate(15 1240 360)"/>
+  </g>
+  <!-- floating cherry blossom petals -->
+  <g fill="#ffb6d4">
+    <ellipse cx="320" cy="220" rx="6" ry="4" transform="rotate(20 320 220)"/>
+    <ellipse cx="440" cy="320" rx="5" ry="3" transform="rotate(-30 440 320)"/>
+    <ellipse cx="780" cy="200" rx="6" ry="4" transform="rotate(40 780 200)"/>
+    <ellipse cx="920" cy="320" rx="5" ry="3" transform="rotate(10 920 320)"/>
+    <ellipse cx="600" cy="260" rx="5" ry="3" transform="rotate(-10 600 260)"/>
+  </g>
+</svg>

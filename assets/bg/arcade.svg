@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="nightSky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0"   stop-color="#0e0533"/>
+      <stop offset="0.55" stop-color="#5b1a8a"/>
+      <stop offset="1"   stop-color="#ff6ec7"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff6ec7" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ff6ec7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#nightSky)"/>
+  <!-- moon -->
+  <circle cx="200" cy="160" r="60" fill="#fff8e0"/>
+  <circle cx="220" cy="150" r="58" fill="#0e0533" opacity="0.7"/>
+  <!-- stars -->
+  <g fill="#fff">
+    <circle cx="80"   cy="80"  r="1.5"/>
+    <circle cx="300"  cy="120" r="2"/>
+    <circle cx="450"  cy="70"  r="1.5"/>
+    <circle cx="560"  cy="180" r="1.8"/>
+    <circle cx="720"  cy="60"  r="2"/>
+    <circle cx="860"  cy="140" r="1.5"/>
+    <circle cx="1020" cy="80"  r="2"/>
+    <circle cx="1180" cy="170" r="1.5"/>
+    <circle cx="1080" cy="50"  r="1.8"/>
+    <circle cx="140"  cy="240" r="1.5"/>
+    <circle cx="980"  cy="300" r="1.5"/>
+  </g>
+  <!-- glow halo behind city -->
+  <ellipse cx="640" cy="500" rx="700" ry="120" fill="url(#glow)" opacity="0.5"/>
+  <!-- back city -->
+  <path d="M 0 520 L 80 520 L 80 460 L 160 460 L 160 500 L 260 500 L 260 420 L 360 420 L 360 470 L 460 470 L 460 440 L 560 440 L 560 510 L 680 510 L 680 400 L 780 400 L 780 470 L 880 470 L 880 430 L 980 430 L 980 490 L 1080 490 L 1080 450 L 1180 450 L 1180 510 L 1280 510 L 1280 720 L 0 720 Z" fill="#1a0033" opacity="0.85"/>
+  <!-- front city -->
+  <path d="M 0 600 L 100 600 L 100 540 L 220 540 L 220 580 L 340 580 L 340 520 L 460 520 L 460 570 L 580 570 L 580 510 L 700 510 L 700 580 L 820 580 L 820 530 L 940 530 L 940 600 L 1060 600 L 1060 560 L 1180 560 L 1180 600 L 1280 600 L 1280 720 L 0 720 Z" fill="#0a001a"/>
+  <!-- neon windows -->
+  <g fill="#5ce1ff">
+    <rect x="290" y="440" width="6" height="6"/>
+    <rect x="310" y="450" width="6" height="6"/>
+    <rect x="380" y="490" width="6" height="6"/>
+    <rect x="700" y="430" width="6" height="6"/>
+    <rect x="730" y="450" width="6" height="6"/>
+    <rect x="990" y="460" width="6" height="6"/>
+  </g>
+  <g fill="#ffd23f">
+    <rect x="170" y="480" width="6" height="6"/>
+    <rect x="500" y="490" width="6" height="6"/>
+    <rect x="820" y="450" width="6" height="6"/>
+    <rect x="1110" y="470" width="6" height="6"/>
+    <rect x="600" y="540" width="6" height="6"/>
+    <rect x="900" y="560" width="6" height="6"/>
+  </g>
+  <g fill="#ff6ec7">
+    <rect x="120" y="560" width="6" height="6"/>
+    <rect x="430" y="540" width="6" height="6"/>
+    <rect x="750" y="540" width="6" height="6"/>
+    <rect x="1010" y="580" width="6" height="6"/>
+  </g>
+  <!-- floating distant balloons -->
+  <g>
+    <circle cx="400" cy="200" r="14" fill="#ff6ec7"/>
+    <circle cx="900" cy="240" r="12" fill="#5ce1ff"/>
+    <circle cx="1100" cy="220" r="10" fill="#ffd23f"/>
+  </g>
+</svg>

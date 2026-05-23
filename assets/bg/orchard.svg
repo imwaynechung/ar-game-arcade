@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#7ecbff"/>
+      <stop offset="1" stop-color="#fff4d6"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff7c2"/>
+      <stop offset="0.6" stop-color="#ffd23f"/>
+      <stop offset="1" stop-color="#ffb14a" stop-opacity="0.6"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#sky)"/>
+  <!-- sun -->
+  <circle cx="1000" cy="170" r="160" fill="url(#sun)" opacity="0.45"/>
+  <circle cx="1000" cy="170" r="80" fill="#ffd23f"/>
+  <!-- clouds -->
+  <g fill="#ffffff" opacity="0.95">
+    <ellipse cx="180" cy="160" rx="90" ry="28"/>
+    <ellipse cx="250" cy="145" rx="55" ry="24"/>
+    <ellipse cx="600" cy="110" rx="80" ry="26"/>
+    <ellipse cx="660" cy="100" rx="40" ry="18"/>
+    <ellipse cx="1140" cy="280" rx="80" ry="24"/>
+  </g>
+  <!-- back hill -->
+  <path d="M 0 540 Q 320 410 640 500 T 1280 470 L 1280 720 L 0 720 Z" fill="#8fd28d"/>
+  <!-- front hill -->
+  <path d="M 0 600 Q 280 510 640 560 T 1280 580 L 1280 720 L 0 720 Z" fill="#5cb15a"/>
+  <!-- left tree -->
+  <g transform="translate(190, 440)">
+    <rect x="-10" y="0" width="20" height="80" fill="#7a4a2b" rx="4"/>
+    <circle r="68" fill="#3a8c3a"/>
+    <circle r="56" fill="#4ca34c"/>
+    <circle cx="-30" cy="-10" r="9" fill="#ef5350"/>
+    <circle cx="22"  cy="6"   r="9" fill="#ef5350"/>
+    <circle cx="0"   cy="-35" r="9" fill="#ef5350"/>
+    <circle cx="-12" cy="22"  r="9" fill="#ef5350"/>
+    <circle cx="32"  cy="-22" r="9" fill="#ef5350"/>
+  </g>
+  <!-- right tree -->
+  <g transform="translate(1080, 470)">
+    <rect x="-11" y="0" width="22" height="86" fill="#7a4a2b" rx="4"/>
+    <circle r="72" fill="#3a8c3a"/>
+    <circle r="60" fill="#4ca34c"/>
+    <circle cx="-30" cy="0"   r="9" fill="#ffd23f"/>
+    <circle cx="28"  cy="12"  r="9" fill="#ffd23f"/>
+    <circle cx="0"   cy="-38" r="9" fill="#ffd23f"/>
+    <circle cx="-12" cy="30"  r="9" fill="#ffd23f"/>
+  </g>
+  <!-- middle small tree -->
+  <g transform="translate(720, 510)">
+    <rect x="-7" y="0" width="14" height="50" fill="#7a4a2b" rx="3"/>
+    <circle r="40" fill="#4ca34c"/>
+    <circle cx="-14" cy="-4" r="6" fill="#ff8a3d"/>
+    <circle cx="16"  cy="6"  r="6" fill="#ff8a3d"/>
+  </g>
+  <!-- ground specks -->
+  <g fill="#3a7d3a" opacity="0.6">
+    <ellipse cx="120" cy="650" rx="22" ry="4"/>
+    <ellipse cx="400" cy="680" rx="30" ry="5"/>
+    <ellipse cx="900" cy="660" rx="26" ry="4"/>
+  </g>
+</svg>

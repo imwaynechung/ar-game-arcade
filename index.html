@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AR Arcade — Game Library</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="menu-body">
+    <header class="menu-header">
+      <div class="brand">
+        <span class="logo">🥝</span>
+        <span class="title">AR Arcade</span>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-tab="play">Play</button>
+        <button class="tab" data-tab="library">Library</button>
+      </nav>
+    </header>
+
+    <main class="menu-main">
+      <section class="tab-panel active" data-panel="play">
+        <h1 class="hero">Pick a mode. Move your body. Win.</h1>
+        <p class="subtitle">Webcam-powered AR mini-games. No controllers, no apps — just your hands.</p>
+
+        <div class="mode-group">
+          <h2 class="mode-title">🧍 Single Mode</h2>
+          <div class="cards">
+            <a class="card" href="games/fruit-catch.html">
+              <div class="card-bg" style="background: linear-gradient(135deg,#ff9a6b,#ef8173);"></div>
+              <div class="card-emoji">🍌</div>
+              <div class="card-body">
+                <div class="card-tag">SINGLE · LEVEL 1</div>
+                <h3>Fruit Catch</h3>
+                <p>Catch yellow fruits with your hands. Avoid the wrong ones.</p>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="mode-group">
+          <h2 class="mode-title">⚔️ VS Mode A <span class="mode-sub">(Zone-Based · 2 Players)</span></h2>
+          <div class="cards">
+            <a class="card" href="games/balloon-pop.html">
+              <div class="card-bg" style="background: linear-gradient(135deg,#ff6ec7,#7b5cff);"></div>
+              <div class="card-emoji">🎈</div>
+              <div class="card-body">
+                <div class="card-tag">VS · SWING</div>
+                <h3>Balloon Pop</h3>
+                <p>Swing your hands to pop balloons. Most pops in 60s wins.</p>
+              </div>
+            </a>
+            <a class="card" href="games/fruit-ninja.html">
+              <div class="card-bg" style="background: linear-gradient(135deg,#ffd23f,#ff6b35);"></div>
+              <div class="card-emoji">🗡️</div>
+              <div class="card-body">
+                <div class="card-tag">VS · SLICE</div>
+                <h3>Fruit Ninja</h3>
+                <p>Slice fruits with fast hand swipes. Avoid bombs!</p>
+              </div>
+            </a>
+            <a class="card" href="games/balloon-inflate.html">
+              <div class="card-bg" style="background: linear-gradient(135deg,#5ce1ff,#7b5cff);"></div>
+              <div class="card-emoji">🎈</div>
+              <div class="card-body">
+                <div class="card-tag">VS · WAVE</div>
+                <h3>Balloon Pump</h3>
+                <p>Wave your arms to pump up your balloon. First to 100 pops wins!</p>
+              </div>
+            </a>
+            <a class="card" href="games/number-rush.html">
+              <div class="card-bg" style="background: linear-gradient(135deg,#5ce1ff,#ffd23f);"></div>
+              <div class="card-emoji">🔢</div>
+              <div class="card-body">
+                <div class="card-tag">VS · REACTION</div>
+                <h3>Number Rush</h3>
+                <p>Touch numbers 1 → 9 in order. First to finish in 60s wins!</p>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="mode-group">
+          <h2 class="mode-title">🏃 Full Body Motion <span class="mode-sub">(Pose Tracking · up to 4 Players)</span></h2>
+          <div class="cards">
+            <a class="card" href="games/horse-race.html">
+              <div class="card-bg" style="background: linear-gradient(135deg,#3aa64a,#c98b4a);"></div>
+              <div class="card-emoji">🐎</div>
+              <div class="card-body">
+                <div class="card-tag">VS · RUN IN PLACE</div>
+                <h3>Horse Race</h3>
+                <p>Run in place to gallop your horse. First across the finish line wins!</p>
+              </div>
+            </a>
+            <a class="card" href="games/coach-follow.html">
+              <div class="card-bg" style="background: linear-gradient(135deg,#ff6b35,#ffd23f);"></div>
+              <div class="card-emoji">🕺</div>
+              <div class="card-body">
+                <div class="card-tag">VS · MIRROR THE COACH</div>
+                <h3>Coach Follow</h3>
+                <p>Upload a coach video. Up to 4 players follow the moves for PERFECT / EXCELLENT / GOOD points.</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" data-panel="library">
+        <h1 class="hero">Game Library</h1>
+        <p class="subtitle">All games available in this build.</p>
+
+        <table class="library">
+          <thead>
+            <tr><th>Game</th><th>Mode</th><th>Players</th><th>Mechanic</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="ico">🍌</span> Fruit Catch</td>
+              <td>Single</td>
+              <td>1</td>
+              <td>Hand catch</td>
+              <td><span class="badge ready">Ready</span></td>
+              <td><a class="play-link" href="games/fruit-catch.html">Play →</a></td>
+            </tr>
+            <tr>
+              <td><span class="ico">🎈</span> Balloon Pop</td>
+              <td>VS · Zone</td>
+              <td>2</td>
+              <td>Swing speed</td>
+              <td><span class="badge ready">Ready</span></td>
+              <td><a class="play-link" href="games/balloon-pop.html">Play →</a></td>
+            </tr>
+            <tr>
+              <td><span class="ico">🗡️</span> Fruit Ninja</td>
+              <td>VS · Zone</td>
+              <td>2</td>
+              <td>Slice trail</td>
+              <td><span class="badge ready">Ready</span></td>
+              <td><a class="play-link" href="games/fruit-ninja.html">Play →</a></td>
+            </tr>
+            <tr>
+              <td><span class="ico">🎈</span> Balloon Pump</td>
+              <td>VS · Zone</td>
+              <td>2</td>
+              <td>Arm wave count</td>
+              <td><span class="badge ready">Ready</span></td>
+              <td><a class="play-link" href="games/balloon-inflate.html">Play →</a></td>
+            </tr>
+            <tr>
+              <td><span class="ico">🔢</span> Number Rush</td>
+              <td>VS · Zone</td>
+              <td>2</td>
+              <td>Sequence tap</td>
+              <td><span class="badge ready">Ready</span></td>
+              <td><a class="play-link" href="games/number-rush.html">Play →</a></td>
+            </tr>
+            <tr>
+              <td><span class="ico">🐎</span> Horse Race</td>
+              <td>VS · Full Body</td>
+              <td>2</td>
+              <td>Run in place</td>
+              <td><span class="badge ready">Ready</span></td>
+              <td><a class="play-link" href="games/horse-race.html">Play →</a></td>
+            </tr>
+            <tr>
+              <td><span class="ico">🕺</span> Coach Follow</td>
+              <td>VS · Mirror</td>
+              <td>1–4</td>
+              <td>Pose similarity</td>
+              <td><span class="badge ready">Ready</span></td>
+              <td><a class="play-link" href="games/coach-follow.html">Play →</a></td>
+            </tr>
+            <tr class="dim">
+              <td><span class="ico">🏹</span> Bow Hunt</td>
+              <td>Single</td>
+              <td>1</td>
+              <td>Pinch &amp; release</td>
+              <td><span class="badge soon">Soon</span></td>
+              <td>—</td>
+            </tr>
+            <tr class="dim">
+              <td><span class="ico">🥋</span> Shadow Boxing</td>
+              <td>VS · Zone</td>
+              <td>2–4</td>
+              <td>Punch combo</td>
+              <td><span class="badge soon">Soon</span></td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <footer class="menu-footer">
+      <span>Camera + MediaPipe HandLandmarker · Twemoji art (CC-BY 4.0) · Sounds synthesized at runtime</span>
+    </footer>
+
+    <script type="module">
+      const tabs = document.querySelectorAll(".tab");
+      const panels = document.querySelectorAll(".tab-panel");
+      tabs.forEach((t) =>
+        t.addEventListener("click", () => {
+          tabs.forEach((x) => x.classList.remove("active"));
+          panels.forEach((x) => x.classList.remove("active"));
+          t.classList.add("active");
+          document
+            .querySelector(`.tab-panel[data-panel="${t.dataset.tab}"]`)
+            .classList.add("active");
+        }),
+      );
+    </script>
+  </body>
+</html>

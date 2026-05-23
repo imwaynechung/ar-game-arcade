@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Fruit Catch · AR Arcade</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body class="game-body">
+    <div id="app">
+      <video id="cam" autoplay playsinline muted></video>
+      <canvas id="bg-canvas"></canvas>
+      <canvas id="game"></canvas>
+
+      <a class="back-btn" href="../index.html">← Menu</a>
+
+      <div id="hud" class="hidden">
+        <div class="hud-row top">
+          <div id="lives" class="lives"></div>
+          <div id="progress" class="progress">0/30</div>
+        </div>
+        <div class="hud-row bottom">
+          <div class="target-banner">🧺 Bring <span class="hl">both hands together</span> to form a basket!</div>
+        </div>
+      </div>
+
+      <div id="start" class="overlay">
+        <h1>🍊 Fruit Catch</h1>
+        <p class="tag">Make a basket with <span class="hl">both hands</span> and catch the falling fruits.</p>
+        <ul class="rules">
+          <li>🧺 Hold <span class="hl">both hands together</span> to form a basket</li>
+          <li>🍎 Catch any fruit → +1 point</li>
+          <li>💣 Avoid bombs — they cost a life!</li>
+          <li>🎯 Reach 30 points to win</li>
+        </ul>
+        <button id="start-btn">Start Game</button>
+        <p class="hint">Allow camera access. Stand back so both hands are visible.</p>
+      </div>
+
+      <div id="end" class="overlay hidden">
+        <h1 id="end-title">Level Complete!</h1>
+        <p id="end-score" class="tag"></p>
+        <button id="restart-btn">Play Again</button>
+        <a class="hint" href="../index.html" style="color:#9ad;">← Back to menu</a>
+      </div>
+    </div>
+
+    <script type="module" src="fruit-catch.js"></script>
+  </body>
+</html>

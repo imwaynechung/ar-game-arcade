@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Balloon Pump · VS · AR Arcade</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body class="game-body">
+    <div id="app">
+      <video id="cam" autoplay playsinline muted></video>
+      <canvas id="bg-canvas"></canvas>
+      <div class="zone-divider"></div>
+      <div class="zone-label p1">P1</div>
+      <div class="zone-label p2">P2</div>
+      <canvas id="game"></canvas>
+
+      <a class="back-btn" href="../index.html">← Menu</a>
+
+      <div class="vs-hud" id="hud" style="display:none">
+        <div class="vs-score p1"><span class="lbl">PLAYER 1</span><span id="s1">0</span></div>
+        <div class="vs-timer" id="timer">/100</div>
+        <div class="vs-score p2"><span class="lbl">PLAYER 2</span><span id="s2">0</span></div>
+      </div>
+
+      <div id="start" class="overlay">
+        <h1>🎈 Balloon Pump · VS</h1>
+        <p class="tag">Wave your arms <span class="hl">up &amp; down</span> to pump up your balloon!</p>
+        <ul class="rules">
+          <li>👈 <span class="hl">Player 1</span> = left half · 👉 <span class="hl">Player 2</span> = right half</li>
+          <li>💪 Each arm-wave counts as <span class="hl">+1 pump</span></li>
+          <li>🎈 Your balloon grows with every pump</li>
+          <li>💥 First to <span class="hl">100 pumps</span> pops their balloon — and wins!</li>
+        </ul>
+        <button id="start-btn">Start Match</button>
+        <p class="hint">Allow camera access. Both players must be visible at the same time.</p>
+      </div>
+
+      <div id="end" class="overlay hidden">
+        <div id="winner" class="winner">P1 Wins!</div>
+        <p id="end-score" class="tag"></p>
+        <button id="restart-btn">Rematch</button>
+        <a class="hint" href="../index.html" style="color:#9ad;">← Back to menu</a>
+      </div>
+    </div>
+
+    <script type="module" src="balloon-inflate.js"></script>
+  </body>
+</html>

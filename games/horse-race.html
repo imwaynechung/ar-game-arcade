@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Horse Race · Full Body · AR Arcade</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      /* Picture-in-picture camera (small, top-right). Race course lives on the game canvas. */
+      #app { background: linear-gradient(180deg, #0a1530 0%, #1a2c5a 55%, #1a3a2a 100%); }
+      #cam {
+        position: fixed;
+        top: 14px;
+        right: 14px;
+        width: 220px;
+        height: 160px;
+        object-fit: cover;
+        border-radius: 16px;
+        border: 3px solid #ffd23f;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        z-index: 5;
+        transform: scaleX(-1); /* selfie mirror */
+        background: #000;
+      }
+      #bg-canvas { display: none; }
+      #pip-pose {
+        position: fixed;
+        top: 14px;
+        right: 14px;
+        width: 220px;
+        height: 160px;
+        border-radius: 16px;
+        pointer-events: none;
+        z-index: 6;
+      }
+      .zone-divider, .zone-label { display: none !important; }
+      .pip-tag {
+        position: fixed;
+        top: 168px;
+        right: 14px;
+        z-index: 6;
+        width: 220px;
+        text-align: center;
+        font: 600 11px -apple-system, system-ui, sans-serif;
+        color: #ffd23f;
+        letter-spacing: 0.12em;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+      }
+      .player-picker {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin: 12px 0 6px;
+        flex-wrap: wrap;
+      }
+      .player-picker button {
+        background: rgba(255,255,255,0.08);
+        border: 2px solid rgba(255,255,255,0.18);
+        color: #fff;
+        font: 700 22px -apple-system, system-ui, sans-serif;
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        cursor: pointer;
+        transition: transform 0.15s, border-color 0.15s, background 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        line-height: 1;
+        gap: 4px;
+      }
+      .player-picker button .num { font-size: 28px; }
+      .player-picker button .lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; opacity: 0.75; }
+      .player-picker button:hover { transform: translateY(-2px); border-color: #ffd23f; }
+      .player-picker button.active { background: #ffd23f; color: #1a1a1a; border-color: #ffd23f; }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+        margin: 14px 0 6px;
+        max-width: 520px;
+      }
+      .stat-card {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 12px;
+        padding: 10px 12px;
+        text-align: left;
+      }
+      .stat-card .lbl { font: 600 10px -apple-system, system-ui, sans-serif; opacity: 0.7; letter-spacing: 0.12em; text-transform: uppercase; }
+      .stat-card .val { font: 800 22px -apple-system, system-ui, sans-serif; margin-top: 2px; }
+    </style>
+  </head>
+  <body class="game-body">
+    <div id="app">
+      <canvas id="bg-canvas"></canvas>
+      <canvas id="game"></canvas>
+      <video id="cam" autoplay playsinline muted></video>
+      <canvas id="pip-pose"></canvas>
+      <div class="pip-tag">📷 LIVE · ALL PLAYERS</div>
+
+      <a class="back-btn" href="../index.html">← Menu</a>
+
+      <div id="hud-host"></div>
+
+      <div id="start" class="overlay">
+        <h1>🐎 Horse Race</h1>
+        <p class="tag">Run in place — <span class="hl">more motion = faster horse</span></p>
+        <div class="player-picker" id="picker">
+          <button data-n="1"><span class="num">1</span><span class="lbl">SOLO</span></button>
+          <button data-n="2" class="active"><span class="num">2</span><span class="lbl">VS</span></button>
+          <button data-n="3"><span class="num">3</span><span class="lbl">RACE</span></button>
+          <button data-n="4"><span class="num">4</span><span class="lbl">DERBY</span></button>
+        </div>
+        <ul class="rules">
+          <li>📷 Camera shows in the corner — line up <span class="hl">left → right</span></li>
+          <li>🏃 Lift knees, pump arms — full body motion drives speed</li>
+          <li>🏁 First past the finish wins · 90s timer</li>
+        </ul>
+        <button id="start-btn">Start Race</button>
+        <p class="hint">Stand back so all players are visible at once.</p>
+      </div>
+
+      <div id="end" class="overlay hidden">
+        <div id="winner" class="winner">P1 Wins!</div>
+        <div class="stats-grid" id="end-stats"></div>
+        <button id="restart-btn">Rematch</button>
+        <a class="hint" href="../index.html" style="color:#9ad;">← Back to menu</a>
+      </div>
+    </div>
+
+    <script type="module" src="horse-race.js"></script>
+  </body>
+</html>
+

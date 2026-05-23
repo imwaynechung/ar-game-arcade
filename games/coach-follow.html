@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Coach Follow · Full Body · AR Arcade</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      #app {
+        background: linear-gradient(180deg, #0a1226 0%, #1a2c5a 60%, #1a3a44 100%);
+        overflow: hidden;
+      }
+      /* Coach stage: large centered video */
+      #stage {
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(78vw, 1200px);
+        height: 58vh;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #000;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        z-index: 2;
+      }
+      #stage video, #stage canvas {
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        object-fit: contain;
+      }
+      #stage canvas { pointer-events: none; }
+      .stage-badge {
+        position: absolute;
+        top: 12px; left: 14px;
+        background: rgba(0,0,0,0.55);
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font: 700 12px -apple-system, system-ui, sans-serif;
+        letter-spacing: 0.1em;
+        backdrop-filter: blur(8px);
+        z-index: 3;
+      }
+      .stage-badge.warn { background: rgba(255,140,40,0.85); color:#1a1a1a; }
+      .stage-time {
+        position: absolute;
+        bottom: 12px; left: 14px;
+        background: rgba(0,0,0,0.55);
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font: 700 12px -apple-system, system-ui, sans-serif;
+        font-variant-numeric: tabular-nums;
+        z-index: 3;
+      }
+      /* Player tiles row */
+      #tiles {
+        position: fixed;
+        left: 12px; right: 12px;
+        bottom: 12px;
+        display: flex;
+        gap: 10px;
+        z-index: 3;
+      }
+      .tile {
+        flex: 1 1 0;
+        height: 24vh;
+        min-height: 160px;
+        border-radius: 14px;
+        background: #000;
+        position: relative;
+        overflow: hidden;
+        border: 3px solid rgba(255,255,255,0.08);
+        transition: border-color 0.2s, transform 0.15s;
+      }
+      .tile.flash-perfect   { border-color: #ffd23f; transform: scale(1.02); }
+      .tile.flash-excellent { border-color: #6cff6c; }
+      .tile.flash-good      { border-color: #5ce1ff; }
+      .tile.flash-bad       { border-color: #ff5a5a; }
+      .tile.flash-pause     { border-color: rgba(255,255,255,0.18); }
+      .tile video, .tile canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .tile video { object-fit: cover; transform: scaleX(-1); }
+      .tile canvas { pointer-events: none; }
+      .tile-name {
+        position: absolute;
+        top: 8px; left: 8px;
+        background: rgba(0,0,0,0.6);
+        padding: 4px 10px;
+        border-radius: 999px;
+        font: 700 12px -apple-system, system-ui, sans-serif;
+        color: #fff;
+      }
+      .tile-score {
+        position: absolute;
+        bottom: 8px; left: 8px;
+        font: 800 22px -apple-system, system-ui, sans-serif;
+        color: #fff;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+        font-variant-numeric: tabular-nums;
+      }
+      .tile-combo {
+        position: absolute;
+        bottom: 10px; right: 10px;
+        font: 700 11px -apple-system, system-ui, sans-serif;
+        color: #ffd23f;
+        background: rgba(0,0,0,0.55);
+        padding: 3px 8px;
+        border-radius: 999px;
+      }
+      .tile-grade {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%,-50%) scale(0.7);
+        font: 900 30px -apple-system, system-ui, sans-serif;
+        text-shadow: 0 4px 14px rgba(0,0,0,0.85);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s, transform 0.25s;
+      }
+      .tile-grade.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+
+      /* Upload + setup overlay */
+      .upload-card {
+        max-width: 520px;
+        margin: 12px auto;
+        background: rgba(255,255,255,0.05);
+        border: 1px dashed rgba(255,255,255,0.25);
+        border-radius: 14px;
+        padding: 18px;
+      }
+      .upload-card label {
+        display: block;
+        font: 600 12px -apple-system, system-ui, sans-serif;
+        letter-spacing: 0.1em;
+        opacity: 0.7;
+        margin-bottom: 8px;
+      }
+      .upload-card input[type=file] {
+        width: 100%;
+        padding: 10px;
+        border-radius: 10px;
+        background: rgba(0,0,0,0.3);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+      .upload-card .row {
+        display: flex; gap: 10px; align-items: center; margin-top: 12px;
+      }
+      .upload-card .meta {
+        font: 600 12px -apple-system, system-ui, sans-serif;
+        opacity: 0.7;
+      }
+      .progress-bar {
+        width: 100%;
+        height: 10px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+      .progress-fill {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #ffd23f, #ff6b35);
+        transition: width 0.1s linear;
+      }
+      .player-picker { display: flex; gap: 10px; justify-content: center; margin: 12px 0 6px; flex-wrap: wrap; }
+      .player-picker button {
+        background: rgba(255,255,255,0.08);
+        border: 2px solid rgba(255,255,255,0.18);
+        color: #fff;
+        font: 700 22px -apple-system, system-ui, sans-serif;
+        width: 64px; height: 64px;
+        border-radius: 16px;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        flex-direction: column;
+      }
+      .player-picker button .lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; opacity: 0.75; }
+      .player-picker button.active { background: #ffd23f; color: #1a1a1a; border-color: #ffd23f; }
+
+      .end-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin: 14px auto;
+        max-width: 720px;
+      }
+      .stat-card {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 12px;
+        padding: 10px 12px;
+        text-align: left;
+      }
+      .stat-card .lbl { font: 600 10px -apple-system, system-ui, sans-serif; opacity: 0.7; letter-spacing: 0.12em; text-transform: uppercase; }
+      .stat-card .val { font: 800 22px -apple-system, system-ui, sans-serif; margin-top: 2px; }
+    </style>
+  </head>
+  <body class="game-body">
+    <div id="app">
+      <!-- Hidden camera feeds — actual tiles use these via canvas/video -->
+      <video id="cam" autoplay playsinline muted style="display:none"></video>
+      <video id="coach" playsinline crossorigin="anonymous" style="display:none"></video>
+
+      <a class="back-btn" href="../index.html">← Menu</a>
+
+      <!-- LIVE STAGE (hidden until start) -->
+      <div id="stage" style="display:none">
+        <video id="coach-stage" playsinline></video>
+        <canvas id="coach-overlay"></canvas>
+        <div class="stage-badge" id="coach-badge">👨‍🏫 COACH</div>
+        <div class="stage-time" id="coach-time">0:00 / 0:00</div>
+      </div>
+      <div id="tiles" style="display:none"></div>
+
+      <!-- START / SETUP OVERLAY -->
+      <div id="start" class="overlay">
+        <h1>🕺 Coach Follow</h1>
+        <p class="tag">Upload a coach video — up to <span class="hl">4 players</span> mirror the moves for points</p>
+
+        <div class="upload-card">
+          <label>1. Coach video (MP4 / WebM / MOV)</label>
+          <input type="file" id="coach-file" accept="video/*" />
+          <div class="row"><span class="meta" id="coach-meta">No file selected</span></div>
+          <div class="progress-bar" id="analyze-bar" style="display:none"><div class="progress-fill" id="analyze-fill"></div></div>
+          <div class="row"><span class="meta" id="analyze-meta"></span></div>
+        </div>
+
+        <div class="player-picker" id="picker">
+          <button data-n="1"><span>1</span><span class="lbl">SOLO</span></button>
+          <button data-n="2"><span>2</span><span class="lbl">DUO</span></button>
+          <button data-n="3"><span>3</span><span class="lbl">TRIO</span></button>
+          <button data-n="4" class="active"><span>4</span><span class="lbl">CREW</span></button>
+        </div>
+
+        <ul class="rules">
+          <li>📺 Coach video plays on the big screen · your camera lives in your tile</li>
+          <li>🎯 Match the coach's pose → <span class="hl">PERFECT</span>, <span class="hl">EXCELLENT</span>, <span class="hl">GOOD</span> or <span class="hl">BAD</span></li>
+          <li>🛑 When the coach stops moving (talking, posing still), scoring <span class="hl">pauses</span> — no misleading points</li>
+          <li>🏆 Highest score wins. Combos boost your multiplier!</li>
+        </ul>
+
+        <button id="start-btn" disabled>Pick a video first</button>
+        <p class="hint">Tip: stand back so all players are visible. Players are auto-assigned to tiles left→right.</p>
+      </div>
+
+      <!-- END OVERLAY -->
+      <div id="end" class="overlay hidden">
+        <div id="winner" class="winner">P1 Wins!</div>
+        <div class="end-stats" id="end-stats"></div>
+        <button id="restart-btn">Play Again</button>
+        <a class="hint" href="../index.html" style="color:#9ad;">← Back to menu</a>
+      </div>
+    </div>
+
+    <script type="module" src="coach-follow.js"></script>
+  </body>
+</html>
