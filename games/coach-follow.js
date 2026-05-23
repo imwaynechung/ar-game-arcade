@@ -31,6 +31,10 @@ const coachMeta    = document.getElementById("coach-meta");
 const analyzeBar   = document.getElementById("analyze-bar");
 const analyzeFill  = document.getElementById("analyze-fill");
 const analyzeMeta  = document.getElementById("analyze-meta");
+const analyzeBanner    = document.getElementById("analyze-banner");
+const analyzeBannerFill = document.getElementById("analyze-banner-fill");
+const analyzeBannerMeta = document.getElementById("analyze-banner-meta");
+const barRow       = document.getElementById("bar-row");
 
 // ---------- Tunables ----------
 const ANALYSIS_FPS = 12;                 // sampled coach pose frames per second
@@ -98,15 +102,16 @@ picker.addEventListener("click", (e) => {
   picker.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
 });
 
-// ---------- View mode (Live / Skeleton / Silhouette) ----------
-const VIEW_MODES = ["live", "skeleton", "silhouette"];
+// ---------- View mode (Live / Skeleton / Silhouette / Bar) ----------
+const VIEW_MODES = ["live", "skeleton", "silhouette", "bar"];
 let viewMode = localStorage.getItem("coachFollowViewMode");
 if (!VIEW_MODES.includes(viewMode)) viewMode = "skeleton";
 function applyViewMode(mode) {
   viewMode = mode;
   localStorage.setItem("coachFollowViewMode", mode);
-  tilesEl.classList.remove("view-live", "view-skeleton", "view-silhouette");
+  tilesEl.classList.remove("view-live", "view-skeleton", "view-silhouette", "view-bar");
   tilesEl.classList.add(`view-${mode}`);
+  barRow?.classList.toggle("show", mode === "bar");
   const vp = document.getElementById("view-picker");
   vp?.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.view === mode));
 }
@@ -153,11 +158,37 @@ function drawSilhouetteMask(destCtx, mask, color, destW, destH) {
 const dlPosesBtn = document.getElementById("dl-poses-btn");
 let lastLoadedSourceName = null; // for download filename
 let lastLoadedDurationS = 0;
+let activeLibCard = null; // currently-loading library card (for inline progress)
+
+function setAnalyzeProgress(pct, text) {
+  const w = `${Math.max(0, Math.min(100, pct)).toFixed(1)}%`;
+  if (analyzeFill) analyzeFill.style.width = w;
+  if (analyzeMeta && text != null) analyzeMeta.textContent = text;
+  if (analyzeBannerFill) analyzeBannerFill.style.width = w;
+  if (analyzeBannerMeta && text != null) analyzeBannerMeta.textContent = text;
+  if (activeLibCard) {
+    const f = activeLibCard.querySelector(".lib-progress-fill");
+    const t = activeLibCard.querySelector(".lib-progress-text");
+    const badge = activeLibCard.querySelector(".lib-badge");
+    if (f) f.style.width = w;
+    if (t && text != null) t.textContent = text;
+    if (badge) { badge.textContent = `${Math.round(pct)}%`; badge.classList.remove("live"); badge.classList.add("working"); }
+  }
+}
+function showAnalyzeUi(on) {
+  if (analyzeBar) analyzeBar.style.display = on ? "block" : "none";
+  analyzeBanner?.classList.toggle("show", on);
+  if (activeLibCard) {
+    activeLibCard.querySelector(".lib-progress")?.classList.toggle("show", on);
+    activeLibCard.classList.toggle("busy", on);
+  }
+}
 
 fileInput.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
   document.querySelectorAll(".lib-card").forEach((c) => c.classList.remove("active"));
+  activeLibCard = null;
   const url = URL.createObjectURL(file);
   await loadCoachSource({ url, label: `${file.name} · ${(file.size/1024/1024).toFixed(1)} MB`, sourceName: file.name.replace(/\.[^.]+$/, ""), posesUrl: null });
 });
@@ -178,20 +209,24 @@ async function loadCoachSource({ url, label, sourceName, posesUrl }) {
   // Try cache (library JSON) first
   if (posesUrl) {
     try {
-      analyzeMeta.textContent = "Loading cached poses…";
-      analyzeBar.style.display = "block";
-      analyzeFill.style.width = "30%";
+      showAnalyzeUi(true);
+      setAnalyzeProgress(30, "Loading cached poses…");
       const r = await fetch(posesUrl);
       if (r.ok) {
         const json = await r.json();
         if (json?.frames?.length) {
           coachFrames = json.frames;
           computeCoachEnergy();
-          analyzeFill.style.width = "100%";
-          analyzeMeta.textContent = `⚡ Loaded ${coachFrames.length} cached pose samples (${lastLoadedDurationS.toFixed(1)}s)`;
+          setAnalyzeProgress(100, `⚡ Loaded ${coachFrames.length} cached pose samples (${lastLoadedDurationS.toFixed(1)}s)`);
           coachAnalyzed = true;
           startBtn.disabled = false;
           startBtn.textContent = "Start Session";
+          if (activeLibCard) {
+            const badge = activeLibCard.querySelector(".lib-badge");
+            if (badge) { badge.textContent = "⚡ CACHED"; badge.classList.remove("working", "live"); }
+          }
+          // Hide banner shortly after success
+          setTimeout(() => { analyzeBanner?.classList.remove("show"); activeLibCard?.querySelector(".lib-progress")?.classList.remove("show"); activeLibCard?.classList.remove("busy"); }, 800);
           return;
         }
       }
@@ -200,12 +235,18 @@ async function loadCoachSource({ url, label, sourceName, posesUrl }) {
 
   // Fallback: live analysis
   startBtn.textContent = "Analyzing coach…";
+  showAnalyzeUi(true);
   await analyzeCoachVideo();
   coachAnalyzed = true;
   startBtn.disabled = false;
   startBtn.textContent = "Start Session";
   // Offer to download for caching
   dlPosesBtn?.classList.add("show");
+  if (activeLibCard) {
+    const badge = activeLibCard.querySelector(".lib-badge");
+    if (badge) { badge.textContent = "✓ READY"; badge.classList.remove("working", "live"); }
+  }
+  setTimeout(() => { analyzeBanner?.classList.remove("show"); activeLibCard?.querySelector(".lib-progress")?.classList.remove("show"); activeLibCard?.classList.remove("busy"); }, 800);
 }
 
 dlPosesBtn?.addEventListener("click", () => {
@@ -248,10 +289,14 @@ async function loadLibrary() {
         <div class="lib-badge ${cached ? "" : "live"}">${cached ? "⚡ CACHED" : "ANALYZE"}</div>
         <div class="lib-title">${item.title}</div>
         ${item.subtitle ? `<div class="lib-sub">${item.subtitle}</div>` : ""}
+        <div class="lib-progress"><div class="lib-progress-fill"></div></div>
+        <div class="lib-progress-text"></div>
       `;
       card.addEventListener("click", async () => {
+        if (card.classList.contains("busy")) return;
         document.querySelectorAll(".lib-card").forEach((c) => c.classList.remove("active"));
         card.classList.add("active");
+        activeLibCard = card;
         fileInput.value = "";
         const videoRel = item.video.replace(/^games\//, "");
         await loadCoachSource({
@@ -288,9 +333,8 @@ async function ensureCoachPosed() {
 }
 
 async function analyzeCoachVideo() {
-  analyzeBar.style.display = "block";
-  analyzeFill.style.width = "0%";
-  analyzeMeta.textContent = "Loading pose model…";
+  showAnalyzeUi(true);
+  setAnalyzeProgress(0, "Loading pose model…");
   const posed = await ensureCoachPosed();
   const duration = coachVideo.duration;
   const step = 1 / ANALYSIS_FPS;
@@ -313,8 +357,7 @@ async function analyzeCoachVideo() {
     stepIdx++;
     if (stepIdx % 4 === 0) {
       const pct = Math.min(100, (stepIdx / totalSteps) * 100);
-      analyzeFill.style.width = pct.toFixed(1) + "%";
-      analyzeMeta.textContent = `Analyzing pose ${stepIdx}/${totalSteps} (${pct.toFixed(0)}%)`;
+      setAnalyzeProgress(pct, `Analyzing pose ${stepIdx}/${totalSteps} (${pct.toFixed(0)}%)`);
       // Yield so UI repaints
       await new Promise((r) => setTimeout(r, 0));
     }
@@ -324,8 +367,7 @@ async function analyzeCoachVideo() {
   // Compute per-frame coach motion energy (normalized px/torso/sec across key joints).
   computeCoachEnergy();
 
-  analyzeFill.style.width = "100%";
-  analyzeMeta.textContent = `Done · ${coachFrames.length} pose samples (${duration.toFixed(1)}s)`;
+  setAnalyzeProgress(100, `Done · ${coachFrames.length} pose samples (${duration.toFixed(1)}s)`);
 }
 
 function seekTo(video, t) {
@@ -469,9 +511,58 @@ function buildTiles(n) {
     });
   }
   tilesEl.style.display = "flex";
+  buildBarRow(n);
   // Re-assert current view mode class (innerHTML reset above wipes nothing on tilesEl itself,
   // but be safe in case future code toggles classes elsewhere).
   applyViewMode(viewMode);
+}
+
+// ---------- Just-Dance Bar scoreboard ----------
+function buildBarRow(n) {
+  if (!barRow) return;
+  barRow.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const t = TILES[i];
+    const slot = document.createElement("div");
+    slot.className = "bar-slot";
+    slot.dataset.lane = String(i);
+    slot.style.borderLeftColor = t.color;
+    slot.innerHTML = `
+      <div class="bar-grade grade-none">—</div>
+      <div class="bar-body">
+        <div class="bar-name" style="color:${t.color}">${t.label}</div>
+        <div class="bar-stars"><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span></div>
+        <div class="bar-meta"><span class="score">0 pts</span><span class="combo">×1</span><span class="fire">🔥 ON FIRE</span></div>
+      </div>
+    `;
+    barRow.appendChild(slot);
+  }
+}
+function starsForCombo(combo) {
+  if (combo >= 21) return 4;
+  if (combo >= 11) return 3;
+  if (combo >= 6)  return 2;
+  if (combo >= 3)  return 1;
+  return 0;
+}
+function updateBarSlot(lane, grade) {
+  const slot = barRow?.children?.[lane];
+  if (!slot) return;
+  const badge = slot.querySelector(".bar-grade");
+  const stars = slot.querySelectorAll(".bar-stars .s");
+  const scoreEl = slot.querySelector(".bar-meta .score");
+  const comboEl = slot.querySelector(".bar-meta .combo");
+  if (badge && grade) {
+    badge.textContent = grade.toUpperCase();
+    badge.className = `bar-grade grade-${grade}`;
+  }
+  const combo = STATE.combo[lane] || 0;
+  const filled = starsForCombo(combo);
+  stars.forEach((s, idx) => s.classList.toggle("on", idx < filled));
+  if (scoreEl) scoreEl.textContent = `${Math.round(STATE.score[lane] || 0)} pts`;
+  if (comboEl) comboEl.textContent = `×${comboMultiplier(combo).toFixed(combo >= 10 ? 1 : 0)}`;
+  const onFire = filled >= 4 && (grade === "perfect" || grade === "excellent");
+  slot.classList.toggle("on-fire", onFire);
 }
 
 function assignCameraToTiles(stream) {
@@ -503,6 +594,7 @@ function showGrade(lane, grade) {
   tile.classList.add(`flash-${grade}`);
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove("show"), 450);
+  updateBarSlot(lane, grade);
 }
 
 function showPause(lane) {

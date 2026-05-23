@@ -100,6 +100,86 @@
       #tiles.view-silhouette .tile-score {
         text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.6);
       }
+      /* BAR view — Just-Dance style scoreboard; hide regular tiles */
+      #tiles.view-bar { display: none !important; }
+
+      /* Just-Dance scoreboard row */
+      #bar-row {
+        display: none;
+        position: fixed;
+        left: 12px; right: 12px;
+        bottom: 12px;
+        gap: 10px;
+        z-index: 4;
+        justify-content: space-between;
+        pointer-events: none;
+      }
+      #bar-row.show { display: flex; }
+      .bar-slot {
+        flex: 1 1 0;
+        background: linear-gradient(180deg, rgba(20,8,40,0.92), rgba(60,8,80,0.92));
+        border: 2px solid rgba(255,255,255,0.18);
+        border-radius: 16px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 8px 26px rgba(0,0,0,0.5);
+        transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+      }
+      .bar-slot.on-fire {
+        border-color: #ff8a00;
+        box-shadow: 0 0 28px rgba(255,138,0,0.7), 0 8px 26px rgba(0,0,0,0.5);
+        animation: barFire 0.6s ease-in-out infinite alternate;
+      }
+      @keyframes barFire {
+        from { transform: translateY(0) scale(1); }
+        to   { transform: translateY(-3px) scale(1.02); }
+      }
+      .bar-grade {
+        position: relative;
+        width: 70px; height: 70px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #fff7c2 0%, #f7d000 40%, #b58800 100%);
+        display: flex; align-items: center; justify-content: center;
+        font: 900 11px -apple-system, system-ui, sans-serif;
+        color: #1a1a1a;
+        letter-spacing: 0.06em;
+        box-shadow: inset 0 -3px 6px rgba(0,0,0,0.3), 0 4px 10px rgba(0,0,0,0.4);
+        flex: 0 0 auto;
+        text-align: center;
+        line-height: 1;
+      }
+      .bar-grade.grade-perfect   { background: radial-gradient(circle at 35% 30%, #fff7c2 0%, #ffd23f 45%, #c08800 100%); color:#3a2400; }
+      .bar-grade.grade-excellent { background: radial-gradient(circle at 35% 30%, #d8ffd0 0%, #6cff6c 45%, #128a12 100%); color:#062b06; }
+      .bar-grade.grade-good      { background: radial-gradient(circle at 35% 30%, #ccf0ff 0%, #5ce1ff 45%, #0a6b8a 100%); color:#04323f; }
+      .bar-grade.grade-bad       { background: radial-gradient(circle at 35% 30%, #ffdada 0%, #ff5a5a 45%, #8b0000 100%); color:#3a0000; }
+      .bar-grade.grade-none      { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); box-shadow:none; }
+      .bar-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+      .bar-name {
+        font: 900 18px -apple-system, system-ui, sans-serif;
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        text-shadow: 0 2px 0 rgba(0,0,0,0.5);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .bar-stars { display: flex; gap: 4px; }
+      .bar-stars .s {
+        font: 900 22px -apple-system, system-ui, sans-serif;
+        color: rgba(255,255,255,0.18);
+        text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+        transition: color 0.2s, transform 0.2s, text-shadow 0.2s;
+      }
+      .bar-stars .s.on {
+        color: #ffd23f;
+        text-shadow: 0 0 10px rgba(255,210,63,0.85), 0 1px 0 rgba(0,0,0,0.5);
+        transform: scale(1.1);
+      }
+      .bar-slot.on-fire .bar-stars .s.on { color: #ff8a00; text-shadow: 0 0 14px rgba(255,138,0,0.95); }
+      .bar-meta { font: 700 11px -apple-system,system-ui,sans-serif; color: rgba(255,255,255,0.75); display:flex; gap:8px; }
+      .bar-meta .fire { color:#ff8a00; font-weight:900; display:none; }
+      .bar-slot.on-fire .bar-meta .fire { display:inline; }
       .tile-name {
         position: absolute;
         top: 8px; left: 8px;
@@ -234,6 +314,7 @@
       }
       .lib-card:hover { transform: translateY(-2px); border-color: #5ce1ff; }
       .lib-card.active { background: rgba(92,225,255,0.18); border-color: #5ce1ff; }
+      .lib-card.busy { cursor: progress; }
       .lib-card .lib-title { font: 700 13px -apple-system,system-ui,sans-serif; }
       .lib-card .lib-sub { font: 500 11px -apple-system,system-ui,sans-serif; opacity: 0.7; margin-top: 2px; }
       .lib-card .lib-badge {
@@ -244,6 +325,55 @@
         padding: 2px 6px; border-radius: 999px;
       }
       .lib-card .lib-badge.live { background: #5ce1ff; color: #062a36; }
+      .lib-card .lib-badge.working { background: #ff8a00; color: #1a1a1a; }
+      .lib-progress {
+        display: none;
+        margin-top: 8px;
+        height: 8px;
+        background: rgba(0,0,0,0.45);
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+      }
+      .lib-progress.show { display: block; }
+      .lib-progress-fill {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #ffd23f, #ff6b35);
+        transition: width 0.15s linear;
+      }
+      .lib-progress-text {
+        margin-top: 4px;
+        font: 600 10px -apple-system,system-ui,sans-serif;
+        opacity: 0.85;
+        letter-spacing: 0.04em;
+      }
+      /* Big global analyzing banner */
+      .analyze-banner {
+        display: none;
+        max-width: 720px;
+        margin: 0 auto 12px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: linear-gradient(90deg, rgba(255,210,63,0.18), rgba(255,107,53,0.18));
+        border: 1px solid rgba(255,210,63,0.55);
+        color: #fff;
+      }
+      .analyze-banner.show { display: block; }
+      .analyze-banner .ab-title {
+        font: 800 13px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.06em;
+        margin-bottom: 6px;
+      }
+      .analyze-banner .ab-bar {
+        height: 10px; background: rgba(0,0,0,0.4); border-radius: 999px; overflow: hidden;
+      }
+      .analyze-banner .ab-fill {
+        height: 100%; width: 0;
+        background: linear-gradient(90deg, #ffd23f, #ff6b35);
+        transition: width 0.15s linear;
+      }
+      .analyze-banner .ab-meta { font: 600 11px -apple-system,system-ui,sans-serif; opacity: 0.85; margin-top: 6px; }
       .lib-or {
         text-align: center;
         font: 600 10px -apple-system,system-ui,sans-serif;
@@ -298,6 +428,7 @@
         <div class="stage-time" id="coach-time">0:00 / 0:00</div>
       </div>
       <div id="tiles" style="display:none"></div>
+      <div id="bar-row"></div>
 
       <!-- START / SETUP OVERLAY -->
       <div id="start" class="overlay">
@@ -306,6 +437,11 @@
 
         <label style="display:block;font:600 11px -apple-system,system-ui,sans-serif;letter-spacing:0.12em;opacity:0.7;text-align:center;margin:6px 0 8px;">📚 LIBRARY</label>
         <div class="lib-grid" id="lib-grid"></div>
+        <div class="analyze-banner" id="analyze-banner">
+          <div class="ab-title">⏳ ANALYZING COACH VIDEO…</div>
+          <div class="ab-bar"><div class="ab-fill" id="analyze-banner-fill"></div></div>
+          <div class="ab-meta" id="analyze-banner-meta">Loading pose model…</div>
+        </div>
         <div class="lib-or">— OR UPLOAD YOUR OWN —</div>
 
         <div class="upload-card">
@@ -328,6 +464,7 @@
           <button data-view="live"><span class="ico">📹</span><span>Live</span></button>
           <button data-view="skeleton" class="active"><span class="ico">🦴</span><span>Skeleton</span></button>
           <button data-view="silhouette"><span class="ico">👤</span><span>Silhouette</span></button>
+          <button data-view="bar"><span class="ico">⭐</span><span>Bar</span></button>
         </div>
 
         <ul class="rules">
