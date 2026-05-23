@@ -193,9 +193,9 @@ fileInput.addEventListener("change", async (e) => {
   await loadCoachSource({ url, label: `${file.name} · ${(file.size/1024/1024).toFixed(1)} MB`, sourceName: file.name.replace(/\.[^.]+$/, ""), posesUrl: null });
 });
 
+// In-memory cache so a 2nd click is instant.
+const _posesMemCache = new Map(); // url -> json
 async function loadCoachSource({ url, label, sourceName, posesUrl }) {
-  coachVideo.src = url;
-  coachStage.src = url;
   coachMeta.textContent = label;
   startBtn.disabled = true;
   startBtn.textContent = "Loading…";
@@ -203,32 +203,76 @@ async function loadCoachSource({ url, label, sourceName, posesUrl }) {
   dlPosesBtn?.classList.remove("show");
   lastLoadedSourceName = sourceName;
 
-  await new Promise((res) => coachVideo.addEventListener("loadedmetadata", res, { once: true }));
-  lastLoadedDurationS = coachVideo.duration;
-
-  // Try cache (library JSON) first
+  // Kick poses fetch IN PARALLEL with video metadata load. They're independent.
+  let posesFetchPromise = null;
   if (posesUrl) {
-    try {
-      showAnalyzeUi(true);
-      setAnalyzeProgress(30, "Loading cached poses…");
-      const r = await fetch(posesUrl);
-      if (r.ok) {
-        const json = await r.json();
-        if (json?.frames?.length) {
-          coachFrames = json.frames;
-          computeCoachEnergy();
-          setAnalyzeProgress(100, `⚡ Loaded ${coachFrames.length} cached pose samples (${lastLoadedDurationS.toFixed(1)}s)`);
-          coachAnalyzed = true;
-          startBtn.disabled = false;
-          startBtn.textContent = "Start Session";
-          if (activeLibCard) {
-            const badge = activeLibCard.querySelector(".lib-badge");
-            if (badge) { badge.textContent = "⚡ CACHED"; badge.classList.remove("working", "live"); }
+    showAnalyzeUi(true);
+    setAnalyzeProgress(5, "Fetching cached poses…");
+    if (_posesMemCache.has(posesUrl)) {
+      posesFetchPromise = Promise.resolve(_posesMemCache.get(posesUrl));
+    } else {
+      posesFetchPromise = (async () => {
+        const r = await fetch(posesUrl, { cache: "force-cache" });
+        if (!r.ok) throw new Error(`poses HTTP ${r.status}`);
+        // Stream + show progress while downloading
+        const total = +r.headers.get("Content-Length") || 0;
+        if (total && r.body) {
+          const reader = r.body.getReader();
+          const chunks = []; let received = 0;
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value); received += value.byteLength;
+            const pct = 5 + (received / total) * 70; // 5%..75%
+            setAnalyzeProgress(pct, `Downloading cached poses ${(received/1024/1024).toFixed(1)}/${(total/1024/1024).toFixed(1)} MB`);
           }
-          // Hide banner shortly after success
-          setTimeout(() => { analyzeBanner?.classList.remove("show"); activeLibCard?.querySelector(".lib-progress")?.classList.remove("show"); activeLibCard?.classList.remove("busy"); }, 800);
-          return;
+          const buf = new Uint8Array(received); let off = 0;
+          for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+          setAnalyzeProgress(80, "Parsing pose data…");
+          const json = JSON.parse(new TextDecoder().decode(buf));
+          _posesMemCache.set(posesUrl, json);
+          return json;
         }
+        setAnalyzeProgress(50, "Parsing pose data…");
+        const json = await r.json();
+        _posesMemCache.set(posesUrl, json);
+        return json;
+      })();
+    }
+  }
+
+  // Wait for video metadata. Attach listener BEFORE assigning src so the event
+  // can't fire before we listen; add a hard timeout so UI never hangs.
+  const metadataReady = new Promise((res) => {
+    let done = false;
+    const finish = (why) => { if (done) return; done = true; if (why) console.warn("[loadCoachSource]", why); res(); };
+    coachVideo.addEventListener("loadedmetadata", () => finish(), { once: true });
+    coachVideo.addEventListener("error", () => finish("video error"), { once: true });
+    setTimeout(() => finish("timeout"), 12000);
+  });
+  coachVideo.src = url;
+  coachStage.src = url;
+  try { coachVideo.load(); coachStage.load(); } catch (_) {}
+  await metadataReady;
+  lastLoadedDurationS = Number.isFinite(coachVideo.duration) ? coachVideo.duration : 0;
+
+  // Now await the parallel poses fetch (likely already done).
+  if (posesFetchPromise) {
+    try {
+      const json = await posesFetchPromise;
+      if (json?.frames?.length) {
+        coachFrames = json.frames;
+        computeCoachEnergy();
+        setAnalyzeProgress(100, `⚡ Loaded ${coachFrames.length} cached pose samples (${lastLoadedDurationS.toFixed(1)}s)`);
+        coachAnalyzed = true;
+        startBtn.disabled = false;
+        startBtn.textContent = "Start Session";
+        if (activeLibCard) {
+          const badge = activeLibCard.querySelector(".lib-badge");
+          if (badge) { badge.textContent = "⚡ CACHED"; badge.classList.remove("working", "live"); }
+        }
+        setTimeout(() => { analyzeBanner?.classList.remove("show"); activeLibCard?.querySelector(".lib-progress")?.classList.remove("show"); activeLibCard?.classList.remove("busy"); }, 800);
+        return;
       }
     } catch (err) { console.warn("[library] cache fetch failed, will analyze live:", err); }
   }
@@ -284,6 +328,16 @@ async function loadLibrary() {
       let cached = false;
       if (posesRel) {
         try { const h = await fetch(posesRel, { method: "HEAD" }); cached = h.ok; } catch (_) {}
+      }
+      // Warm the browser HTTP cache (and our in-memory cache) in the background
+      // so the click-to-start is instant even on first visit.
+      if (cached && posesRel && !_posesMemCache.has(posesRel)) {
+        (async () => {
+          try {
+            const r = await fetch(posesRel, { cache: "force-cache" });
+            if (r.ok) _posesMemCache.set(posesRel, await r.json());
+          } catch (_) {}
+        })();
       }
       card.innerHTML = `
         <div class="lib-badge ${cached ? "" : "live"}">${cached ? "⚡ CACHED" : "ANALYZE"}</div>
