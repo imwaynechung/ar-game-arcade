@@ -84,7 +84,21 @@
       /* View modes */
       #tiles.view-skeleton .tile { background: radial-gradient(circle at 50% 60%, #16223a 0%, #060b18 75%); }
       #tiles.view-skeleton .tile video { opacity: 0; }
-      #tiles.view-silhouette .tile video { filter: blur(14px) saturate(0.35) brightness(0.45); }
+      #tiles.view-silhouette { align-items: flex-end; }
+      #tiles.view-silhouette .tile {
+        background: transparent;
+        border-color: transparent;
+        box-shadow: none;
+        height: 32vh;
+      }
+      #tiles.view-silhouette .tile video { display: none; }
+      #tiles.view-silhouette .tile-name {
+        background: rgba(0,0,0,0.35);
+        backdrop-filter: blur(6px);
+      }
+      #tiles.view-silhouette .tile-score {
+        text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.6);
+      }
       .tile-name {
         position: absolute;
         top: 8px; left: 8px;

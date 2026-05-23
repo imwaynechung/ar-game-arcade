@@ -309,7 +309,7 @@ function strokeChain(ctx, lm, ids) {
  * wrist/elbow/knee/ankle velocities scaled by torso size — great for "running
  * in place" detection.
  */
-export async function createPoseTracker({ numPoses = 2 } = {}) {
+export async function createPoseTracker({ numPoses = 2, enableSegmentation = false } = {}) {
   const fileset = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
   );
@@ -321,6 +321,7 @@ export async function createPoseTracker({ numPoses = 2 } = {}) {
     },
     runningMode: "VIDEO",
     numPoses,
+    outputSegmentationMasks: !!enableSegmentation,
   });
 
   // Indices on the body that contribute to "running" energy
@@ -343,7 +344,9 @@ export async function createPoseTracker({ numPoses = 2 } = {}) {
     const poses = [];
 
     if (result?.landmarks?.length) {
-      for (const landmarks of result.landmarks) {
+      for (let i = 0; i < result.landmarks.length; i++) {
+        const landmarks = result.landmarks[i];
+        const mask = result.segmentationMasks?.[i] ?? null;
         const lm = landmarks.map((p) => ({ x: (1 - p.x) * W, y: p.y * H, v: p.visibility ?? 1 }));
         const ls = lm[11], rs = lm[12], lh = lm[23], rh = lm[24];
         const hipCx = (lh.x + rh.x) / 2;
@@ -351,7 +354,7 @@ export async function createPoseTracker({ numPoses = 2 } = {}) {
         const shoulderCx = (ls.x + rs.x) / 2;
         const shoulderCy = (ls.y + rs.y) / 2;
         const torso = Math.max(40, Math.hypot(shoulderCx - hipCx, shoulderCy - hipCy));
-        poses.push({ landmarks: lm, hipCenter: { x: hipCx, y: hipCy }, torso, energy: 0 });
+        poses.push({ landmarks: lm, hipCenter: { x: hipCx, y: hipCy }, torso, energy: 0, mask });
       }
       // Assign to lanes by hip x (smallest x = lane 0 / leftmost)
       poses.sort((a, b) => a.hipCenter.x - b.hipCenter.x);

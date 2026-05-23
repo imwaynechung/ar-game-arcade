@@ -117,6 +117,38 @@ document.getElementById("view-picker")?.addEventListener("click", (e) => {
   applyViewMode(btn.dataset.view);
 });
 
+// ---------- Silhouette mask rendering ----------
+// MediaPipe gives one MPMask per detected person when outputSegmentationMasks is on.
+// We composite it as a flat-colored fill (alpha = mask) into the tile canvas, mirrored
+// to match the selfie-mirrored camera.
+const _maskCanvas = document.createElement("canvas");
+const _maskCtx = _maskCanvas.getContext("2d", { willReadFrequently: true });
+function hexToRgb(hex) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [255, 255, 255];
+}
+function drawSilhouetteMask(destCtx, mask, color, destW, destH) {
+  let u8 = null;
+  try { u8 = mask.getAsUint8Array(); } catch (e) { return; }
+  const mw = mask.width, mh = mask.height;
+  if (!u8 || !mw || !mh) return;
+  if (_maskCanvas.width !== mw) _maskCanvas.width = mw;
+  if (_maskCanvas.height !== mh) _maskCanvas.height = mh;
+  const img = _maskCtx.createImageData(mw, mh);
+  const [r, g, b] = hexToRgb(color);
+  const data = img.data;
+  for (let p = 0, q = 0; p < u8.length; p++, q += 4) {
+    data[q] = r; data[q + 1] = g; data[q + 2] = b; data[q + 3] = u8[p];
+  }
+  _maskCtx.putImageData(img, 0, 0);
+  destCtx.save();
+  destCtx.translate(destW, 0);
+  destCtx.scale(-1, 1);
+  destCtx.imageSmoothingEnabled = true;
+  destCtx.drawImage(_maskCanvas, 0, 0, destW, destH);
+  destCtx.restore();
+}
+
 // ---------- Coach upload + pose analysis ----------
 fileInput.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
@@ -454,12 +486,15 @@ function loop(t) {
       // landmarks against the capture canvas; we need to map them into tile pixel space.
       const sx = tile.poseCanvas.width  / det._W;
       const sy = tile.poseCanvas.height / det._H;
+      if (viewMode === "silhouette" && user.mask) {
+        drawSilhouetteMask(tile.poseCtx, user.mask, TILES[lane].color, tile.poseCanvas.width, tile.poseCanvas.height);
+      }
       tile.poseCtx.save();
       tile.poseCtx.scale(sx, sy);
       drawPoseStick(tile.poseCtx, user, {
-        color: TILES[lane].color,
-        outline: TILES[lane].outline,
-        lineW: 6 / Math.max(sx, sy),
+        color: viewMode === "silhouette" ? TILES[lane].outline : TILES[lane].color,
+        outline: viewMode === "silhouette" ? "rgba(0,0,0,0.55)" : TILES[lane].outline,
+        lineW: (viewMode === "silhouette" ? 3 : 6) / Math.max(sx, sy),
       });
       tile.poseCtx.restore();
     }
@@ -657,10 +692,12 @@ async function boot() {
   startBtn.textContent = "Loading camera…";
   try {
     await startCamera(camVideo);
-    if (!tracker || tracker._n !== numPlayers) {
-      const t = await createPoseTracker({ numPoses: numPlayers });
+    const needSeg = viewMode === "silhouette";
+    if (!tracker || tracker._n !== numPlayers || tracker._seg !== needSeg) {
+      const t = await createPoseTracker({ numPoses: numPlayers, enableSegmentation: needSeg });
       tracker = wrapTracker(t);
       tracker._n = numPlayers;
+      tracker._seg = needSeg;
     }
   } catch (err) {
     console.error(err);
@@ -677,10 +714,12 @@ async function boot() {
 window.addEventListener("resize", resizeTileCanvases);
 startBtn.addEventListener("click", boot);
 restartBtn.addEventListener("click", async () => {
-  if (!tracker || tracker._n !== numPlayers) {
-    const t = await createPoseTracker({ numPoses: numPlayers });
+  const needSeg = viewMode === "silhouette";
+  if (!tracker || tracker._n !== numPlayers || tracker._seg !== needSeg) {
+    const t = await createPoseTracker({ numPoses: numPlayers, enableSegmentation: needSeg });
     tracker = wrapTracker(t);
     tracker._n = numPlayers;
+    tracker._seg = needSeg;
   }
   startSession();
 });
