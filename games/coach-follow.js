@@ -98,14 +98,14 @@ picker.addEventListener("click", (e) => {
   picker.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
 });
 
-// ---------- View mode (Skeleton / Silhouette) ----------
-const VIEW_MODES = ["skeleton", "silhouette"];
+// ---------- View mode (Live / Skeleton / Silhouette) ----------
+const VIEW_MODES = ["live", "skeleton", "silhouette"];
 let viewMode = localStorage.getItem("coachFollowViewMode");
 if (!VIEW_MODES.includes(viewMode)) viewMode = "skeleton";
 function applyViewMode(mode) {
   viewMode = mode;
   localStorage.setItem("coachFollowViewMode", mode);
-  tilesEl.classList.remove("view-skeleton", "view-silhouette");
+  tilesEl.classList.remove("view-live", "view-skeleton", "view-silhouette");
   tilesEl.classList.add(`view-${mode}`);
   const vp = document.getElementById("view-picker");
   vp?.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.view === mode));
@@ -150,23 +150,125 @@ function drawSilhouetteMask(destCtx, mask, color, destW, destH) {
 }
 
 // ---------- Coach upload + pose analysis ----------
+const dlPosesBtn = document.getElementById("dl-poses-btn");
+let lastLoadedSourceName = null; // for download filename
+let lastLoadedDurationS = 0;
+
 fileInput.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
+  document.querySelectorAll(".lib-card").forEach((c) => c.classList.remove("active"));
   const url = URL.createObjectURL(file);
+  await loadCoachSource({ url, label: `${file.name} · ${(file.size/1024/1024).toFixed(1)} MB`, sourceName: file.name.replace(/\.[^.]+$/, ""), posesUrl: null });
+});
+
+async function loadCoachSource({ url, label, sourceName, posesUrl }) {
   coachVideo.src = url;
   coachStage.src = url;
-  coachMeta.textContent = `${file.name} · ${(file.size/1024/1024).toFixed(1)} MB`;
+  coachMeta.textContent = label;
   startBtn.disabled = true;
-  startBtn.textContent = "Analyzing coach…";
+  startBtn.textContent = "Loading…";
   coachAnalyzed = false;
+  dlPosesBtn?.classList.remove("show");
+  lastLoadedSourceName = sourceName;
 
   await new Promise((res) => coachVideo.addEventListener("loadedmetadata", res, { once: true }));
+  lastLoadedDurationS = coachVideo.duration;
+
+  // Try cache (library JSON) first
+  if (posesUrl) {
+    try {
+      analyzeMeta.textContent = "Loading cached poses…";
+      analyzeBar.style.display = "block";
+      analyzeFill.style.width = "30%";
+      const r = await fetch(posesUrl);
+      if (r.ok) {
+        const json = await r.json();
+        if (json?.frames?.length) {
+          coachFrames = json.frames;
+          computeCoachEnergy();
+          analyzeFill.style.width = "100%";
+          analyzeMeta.textContent = `⚡ Loaded ${coachFrames.length} cached pose samples (${lastLoadedDurationS.toFixed(1)}s)`;
+          coachAnalyzed = true;
+          startBtn.disabled = false;
+          startBtn.textContent = "Start Session";
+          return;
+        }
+      }
+    } catch (err) { console.warn("[library] cache fetch failed, will analyze live:", err); }
+  }
+
+  // Fallback: live analysis
+  startBtn.textContent = "Analyzing coach…";
   await analyzeCoachVideo();
   coachAnalyzed = true;
   startBtn.disabled = false;
   startBtn.textContent = "Start Session";
+  // Offer to download for caching
+  dlPosesBtn?.classList.add("show");
+}
+
+dlPosesBtn?.addEventListener("click", () => {
+  if (!coachFrames?.length) return;
+  const payload = {
+    fps: ANALYSIS_FPS,
+    durationS: lastLoadedDurationS,
+    generatedAt: new Date().toISOString(),
+    frames: coachFrames,
+  };
+  const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${lastLoadedSourceName || "coach"}.poses.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 });
+
+// ---------- Library ----------
+async function loadLibrary() {
+  const grid = document.getElementById("lib-grid");
+  if (!grid) return;
+  try {
+    const r = await fetch("library/library.json", { cache: "no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const lib = await r.json();
+    if (!lib?.videos?.length) { grid.innerHTML = '<div style="opacity:0.6;font-size:12px;text-align:center;grid-column:1/-1;">No library videos yet</div>'; return; }
+    grid.innerHTML = "";
+    for (const item of lib.videos) {
+      const card = document.createElement("div");
+      card.className = "lib-card";
+      card.dataset.id = item.id;
+      // Probe poses cache existence
+      const posesRel = item.poses?.replace(/^games\//, "") || null;
+      let cached = false;
+      if (posesRel) {
+        try { const h = await fetch(posesRel, { method: "HEAD" }); cached = h.ok; } catch (_) {}
+      }
+      card.innerHTML = `
+        <div class="lib-badge ${cached ? "" : "live"}">${cached ? "⚡ CACHED" : "ANALYZE"}</div>
+        <div class="lib-title">${item.title}</div>
+        ${item.subtitle ? `<div class="lib-sub">${item.subtitle}</div>` : ""}
+      `;
+      card.addEventListener("click", async () => {
+        document.querySelectorAll(".lib-card").forEach((c) => c.classList.remove("active"));
+        card.classList.add("active");
+        fileInput.value = "";
+        const videoRel = item.video.replace(/^games\//, "");
+        await loadCoachSource({
+          url: videoRel,
+          label: `📚 ${item.title}`,
+          sourceName: item.id,
+          posesUrl: cached ? posesRel : null,
+        });
+      });
+      grid.appendChild(card);
+    }
+  } catch (err) {
+    console.warn("[library] failed to load:", err);
+    grid.innerHTML = `<div style="opacity:0.6;font-size:12px;text-align:center;grid-column:1/-1;">Library unavailable (${err.message})</div>`;
+  }
+}
+loadLibrary();
 
 async function ensureCoachPosed() {
   if (coachOnePosed) return coachOnePosed;

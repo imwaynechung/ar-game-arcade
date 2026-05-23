@@ -82,6 +82,7 @@
       .tile video { object-fit: cover; transform: scaleX(-1); transition: filter 0.2s, opacity 0.2s; }
       .tile canvas { pointer-events: none; }
       /* View modes */
+      #tiles.view-live .tile { /* default — show camera + skeleton */ }
       #tiles.view-skeleton .tile { background: radial-gradient(circle at 50% 60%, #16223a 0%, #060b18 75%); }
       #tiles.view-skeleton .tile video { opacity: 0; }
       #tiles.view-silhouette { align-items: flex-end; }
@@ -212,6 +213,57 @@
       .view-picker button .ico { font-size: 18px; }
       .view-picker button.active { background: #5ce1ff; color: #062a36; border-color: #5ce1ff; }
 
+      /* Library picker */
+      .lib-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 10px;
+        max-width: 720px;
+        margin: 0 auto 12px;
+      }
+      .lib-card {
+        position: relative;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+        border: 2px solid rgba(255,255,255,0.18);
+        padding: 12px;
+        cursor: pointer;
+        transition: transform 0.15s, border-color 0.15s, background 0.15s;
+        text-align: left;
+        color: #fff;
+      }
+      .lib-card:hover { transform: translateY(-2px); border-color: #5ce1ff; }
+      .lib-card.active { background: rgba(92,225,255,0.18); border-color: #5ce1ff; }
+      .lib-card .lib-title { font: 700 13px -apple-system,system-ui,sans-serif; }
+      .lib-card .lib-sub { font: 500 11px -apple-system,system-ui,sans-serif; opacity: 0.7; margin-top: 2px; }
+      .lib-card .lib-badge {
+        position: absolute; top: 8px; right: 8px;
+        background: #ffd23f; color: #1a1a1a;
+        font: 700 9px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.1em;
+        padding: 2px 6px; border-radius: 999px;
+      }
+      .lib-card .lib-badge.live { background: #5ce1ff; color: #062a36; }
+      .lib-or {
+        text-align: center;
+        font: 600 10px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.2em;
+        opacity: 0.5;
+        margin: 6px 0 10px;
+      }
+      .dl-poses-btn {
+        margin-top: 8px;
+        background: rgba(92,225,255,0.18);
+        border: 1px solid #5ce1ff;
+        color: #5ce1ff;
+        font: 600 11px -apple-system,system-ui,sans-serif;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: none;
+      }
+      .dl-poses-btn.show { display: inline-block; }
+
       .end-stats {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -252,12 +304,16 @@
         <h1>🕺 Coach Follow</h1>
         <p class="tag">Upload a coach video — up to <span class="hl">4 players</span> mirror the moves for points</p>
 
+        <label style="display:block;font:600 11px -apple-system,system-ui,sans-serif;letter-spacing:0.12em;opacity:0.7;text-align:center;margin:6px 0 8px;">📚 LIBRARY</label>
+        <div class="lib-grid" id="lib-grid"></div>
+        <div class="lib-or">— OR UPLOAD YOUR OWN —</div>
+
         <div class="upload-card">
           <label>1. Coach video (MP4 / WebM / MOV)</label>
           <input type="file" id="coach-file" accept="video/*" />
           <div class="row"><span class="meta" id="coach-meta">No file selected</span></div>
           <div class="progress-bar" id="analyze-bar" style="display:none"><div class="progress-fill" id="analyze-fill"></div></div>
-          <div class="row"><span class="meta" id="analyze-meta"></span></div>
+          <div class="row"><span class="meta" id="analyze-meta"></span><button class="dl-poses-btn" id="dl-poses-btn" type="button">⬇ Download poses cache</button></div>
         </div>
 
         <div class="player-picker" id="picker">
@@ -269,6 +325,7 @@
 
         <label style="display:block;font:600 11px -apple-system,system-ui,sans-serif;letter-spacing:0.12em;opacity:0.7;text-align:center;margin-top:10px;">PLAYER VIEW</label>
         <div class="view-picker" id="view-picker">
+          <button data-view="live"><span class="ico">📹</span><span>Live</span></button>
           <button data-view="skeleton" class="active"><span class="ico">🦴</span><span>Skeleton</span></button>
           <button data-view="silhouette"><span class="ico">👤</span><span>Silhouette</span></button>
         </div>

@@ -1,0 +1,12 @@
+{
+  "videos": [
+    {
+      "id": "baduanjin-12min",
+      "title": "Ba Duan Jin · 12-min Demo",
+      "subtitle": "八段錦 · 12 分鐘完整教學",
+      "video": "games/library/baduanjin-12min.mp4",
+      "poses": "games/library/baduanjin-12min.poses.json",
+      "thumbnail": null
+    }
+  ]
+}
