@@ -410,6 +410,252 @@
       }
       .stat-card .lbl { font: 600 10px -apple-system, system-ui, sans-serif; opacity: 0.7; letter-spacing: 0.12em; text-transform: uppercase; }
       .stat-card .val { font: 800 22px -apple-system, system-ui, sans-serif; margin-top: 2px; }
+
+      /* ===== Settings (gear) button + modal ===== */
+      .cfg-btn {
+        margin: 10px auto 4px;
+        display: block;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.25);
+        color: #fff;
+        font: 700 12px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.06em;
+        padding: 8px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .cfg-btn:hover { background: rgba(255,255,255,0.14); }
+      .modal-back {
+        position: fixed; inset: 0;
+        background: rgba(2,6,18,0.72);
+        backdrop-filter: blur(6px);
+        display: none;
+        align-items: center; justify-content: center;
+        z-index: 50;
+      }
+      .modal-back.show { display: flex; }
+      .modal-card {
+        width: min(440px, 92vw);
+        background: linear-gradient(180deg, #101a36, #0a1228);
+        border: 1px solid rgba(120,170,255,0.35);
+        border-radius: 18px;
+        padding: 22px 22px 18px;
+        color: #fff;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+      }
+      .modal-card h2 { margin: 0 0 4px; font: 900 18px -apple-system,system-ui,sans-serif; letter-spacing: 0.06em; }
+      .modal-card .modal-sub { font: 500 12px -apple-system,system-ui,sans-serif; opacity: 0.65; margin-bottom: 16px; }
+      .cfg-row { margin: 14px 0 18px; }
+      .cfg-row label { display: flex; justify-content: space-between; align-items: baseline; font: 700 12px -apple-system,system-ui,sans-serif; letter-spacing: 0.08em; margin-bottom: 6px; }
+      .cfg-row label .val { font-variant-numeric: tabular-nums; color: #5ce1ff; font-weight: 900; font-size: 15px; }
+      .cfg-row input[type=range] { width: 100%; accent-color: #5ce1ff; }
+      .cfg-row .hint { font: 500 11px -apple-system,system-ui,sans-serif; opacity: 0.55; margin-top: 4px; }
+      .modal-actions { display: flex; gap: 10px; margin-top: 14px; }
+      .modal-actions button {
+        flex: 1; padding: 10px; border-radius: 10px;
+        font: 800 13px -apple-system,system-ui,sans-serif; letter-spacing: 0.06em;
+        cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.08); color: #fff;
+      }
+      .modal-actions .primary { background: linear-gradient(180deg, #5ce1ff, #1a8bb5); border-color: #5ce1ff; color: #042230; }
+
+      /* ===== Design 1: FIT ARENA ===== */
+      body.mode-design1 #app { background: radial-gradient(circle at 50% 50%, #102448 0%, #050a1a 80%); }
+      body.mode-design1 #tiles,
+      body.mode-design1 #bar-row { display: none !important; }
+      body.mode-design1 #stage {
+        top: 96px;
+        width: min(46vw, 740px);
+        height: 64vh;
+        border: 3px solid #5ce1ff;
+        border-radius: 22px;
+        box-shadow: 0 0 0 6px rgba(92,225,255,0.12), 0 0 40px rgba(92,225,255,0.35);
+      }
+      body.mode-design1 #stage::before,
+      body.mode-design1 #stage::after {
+        content: ""; position: absolute; width: 28px; height: 28px;
+        border: 3px solid #5ce1ff; pointer-events: none; z-index: 4;
+      }
+      body.mode-design1 #stage::before { top: -10px; left: -10px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
+      body.mode-design1 #stage::after  { bottom: -10px; right: -10px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
+      body.mode-design1 #stage video,
+      body.mode-design1 #stage canvas { object-fit: cover; }
+      body.mode-design1 #stage .stage-badge,
+      body.mode-design1 #stage .stage-time { display: none; }
+
+      #arena {
+        position: fixed; inset: 0;
+        display: none;
+        pointer-events: none;
+        z-index: 4;
+        font-family: -apple-system, system-ui, sans-serif;
+      }
+      #arena.show { display: block; }
+      #arena .arena-header {
+        position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+        display: flex; gap: 32px; align-items: center;
+      }
+      .arena-h-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+      .arena-h-cell .ico { font-size: 18px; }
+      .arena-h-cell .v { font: 900 22px -apple-system,system-ui,sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
+      .arena-h-cell .l { font: 700 9px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em; color: rgba(255,255,255,0.55); }
+      .arena-title { text-align: center; padding: 0 20px; }
+      .arena-title h1 {
+        margin: 0;
+        font: 900 30px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.16em;
+        background: linear-gradient(90deg, #fff 0%, #fff 45%, #5ce1ff 55%, #5ce1ff 100%);
+        -webkit-background-clip: text; background-clip: text;
+        color: transparent;
+      }
+      .arena-title p { margin: -2px 0 0; font: 700 10px -apple-system,system-ui,sans-serif; letter-spacing: 0.4em; color: rgba(255,255,255,0.55); }
+
+      .arena-slot {
+        position: absolute;
+        width: 18vw; max-width: 280px; min-width: 200px;
+        height: 38vh; min-height: 280px;
+        display: flex; flex-direction: column;
+        pointer-events: auto;
+      }
+      .arena-slot[data-lane="0"] { left: 24px; top: 88px; }
+      .arena-slot[data-lane="2"] { left: 24px; bottom: 200px; }
+      .arena-slot[data-lane="1"] { right: 24px; top: 88px; }
+      .arena-slot[data-lane="3"] { right: 24px; bottom: 200px; }
+      .arena-slot .arena-hdr { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 6px; }
+      .arena-slot .arena-pill {
+        font: 900 11px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.12em;
+        padding: 4px 14px;
+        border-radius: 6px 6px 0 0;
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      }
+      .arena-slot .arena-icon { font-size: 26px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
+      .arena-slot .arena-host {
+        flex: 1; position: relative;
+        border-radius: 12px;
+        border: 2px solid;
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 30%),
+          radial-gradient(ellipse at 50% 110%, var(--accentDim) 0%, transparent 60%),
+          #050b1c;
+        box-shadow: inset 0 0 30px var(--accentDim), 0 0 24px var(--accentDim);
+      }
+      .arena-slot .arena-host .stats { position: absolute; top: 10px; left: 10px; pointer-events: none; }
+      .arena-slot .arena-host .stats .score {
+        font: 900 30px -apple-system,system-ui,sans-serif;
+        color: #fff;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.02em;
+      }
+      .arena-slot .arena-host .stats .acc {
+        font: 900 18px -apple-system,system-ui,sans-serif;
+        color: var(--accent);
+        margin-top: -2px;
+      }
+      .arena-slot .arena-host .stats .acclbl {
+        font: 700 9px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.18em;
+        color: rgba(255,255,255,0.55);
+      }
+      .arena-slot[data-lane="0"] { --accent: #ff3a4d; --accentDim: rgba(255,58,77,0.25); }
+      .arena-slot[data-lane="1"] { --accent: #3aa8ff; --accentDim: rgba(58,168,255,0.25); }
+      .arena-slot[data-lane="2"] { --accent: #3aff7c; --accentDim: rgba(58,255,124,0.25); }
+      .arena-slot[data-lane="3"] { --accent: #ff8a1c; --accentDim: rgba(255,138,28,0.25); }
+      .arena-slot .arena-pill { background: var(--accent); }
+      .arena-slot .arena-host { border-color: var(--accent); }
+      .arena-slot .tile {
+        position: absolute; inset: 0;
+        border: none; border-radius: 12px;
+        background: transparent;
+      }
+      .arena-slot .tile video { opacity: 0.10; }
+      .arena-slot .tile .tile-name,
+      .arena-slot .tile .tile-combo { display: none; }
+      .arena-slot .tile .tile-score { display: none; }
+      .arena-slot .tile.flash-perfect   { box-shadow: inset 0 0 40px rgba(255,210,63,0.7); }
+      .arena-slot .tile.flash-excellent { box-shadow: inset 0 0 40px rgba(108,255,108,0.7); }
+      .arena-slot .tile.flash-good      { box-shadow: inset 0 0 40px rgba(92,225,255,0.7); }
+      .arena-slot .tile.flash-bad       { box-shadow: inset 0 0 40px rgba(255,90,90,0.7); }
+
+      .arena-move {
+        position: absolute; left: 50%; transform: translateX(-50%);
+        bottom: 168px;
+        display: flex; align-items: center; gap: 14px;
+        background: rgba(8,12,28,0.65);
+        padding: 8px 22px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.08);
+        pointer-events: none;
+      }
+      .arena-move .chev { color: #b76dff; letter-spacing: -2px; font-weight: 900; }
+      .arena-move .lbl { font: 700 10px -apple-system,system-ui,sans-serif; letter-spacing: 0.22em; color: #b76dff; }
+      .arena-move .name { font: 900 14px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em; color: #fff; }
+
+      .arena-combo-row {
+        position: absolute; left: 110px; right: 110px;
+        bottom: 14px;
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        pointer-events: none;
+      }
+      .arena-combo-card {
+        background: linear-gradient(180deg, rgba(10,16,36,0.92), rgba(2,6,18,0.92));
+        border: 2px solid var(--accent);
+        border-radius: 14px;
+        padding: 8px 12px 10px;
+        display: flex; flex-direction: column; gap: 4px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 18px var(--accentDim);
+        position: relative;
+      }
+      .arena-combo-card[data-lane="0"] { --accent: #ff3a4d; --accentDim: rgba(255,58,77,0.4); }
+      .arena-combo-card[data-lane="1"] { --accent: #3aa8ff; --accentDim: rgba(58,168,255,0.4); }
+      .arena-combo-card[data-lane="2"] { --accent: #3aff7c; --accentDim: rgba(58,255,124,0.4); }
+      .arena-combo-card[data-lane="3"] { --accent: #ff8a1c; --accentDim: rgba(255,138,28,0.4); }
+      .arena-combo-card .ctop { display: flex; justify-content: space-between; align-items: center; }
+      .arena-combo-card .ctop .name { font: 900 10px -apple-system,system-ui,sans-serif; letter-spacing: 0.16em; color: var(--accent); }
+      .arena-combo-card .ctop .crown { font-size: 14px; opacity: 0; transition: opacity 0.2s; }
+      .arena-combo-card.leader .ctop .crown { opacity: 1; }
+      .arena-combo-card .crow { display: flex; align-items: baseline; gap: 8px; }
+      .arena-combo-card .clbl { font: 700 9px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em; color: rgba(255,255,255,0.55); }
+      .arena-combo-card .cmul { font: 900 14px -apple-system,system-ui,sans-serif; color: var(--accent); }
+      .arena-combo-card .cscore { font: 900 22px -apple-system,system-ui,sans-serif; color: #fff; font-variant-numeric: tabular-nums; margin-left: auto; }
+      .arena-combo-card .cstars { display: flex; gap: 3px; }
+      .arena-combo-card .cstars .s { font-size: 13px; color: rgba(255,255,255,0.18); }
+      .arena-combo-card .cstars .s.on { color: #ffd23f; text-shadow: 0 0 8px rgba(255,210,63,0.8); }
+      .arena-combo-card .cbar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+      .arena-combo-card .cbar > div { height: 100%; width: 0; background: linear-gradient(90deg, transparent, var(--accent)); transition: width 0.2s ease-out; }
+
+      .arena-corner {
+        position: absolute; bottom: 18px;
+        width: 80px; height: 80px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #2a3870, #0a1228);
+        border: 2px solid #5ce1ff;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: #fff;
+        font: 900 10px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.1em;
+        text-align: center; line-height: 1.1;
+        box-shadow: 0 0 16px rgba(92,225,255,0.4);
+        pointer-events: none;
+      }
+      .arena-corner .ico { font-size: 24px; margin-bottom: 2px; }
+      .arena-corner-l { left: 14px; }
+      .arena-corner-r { right: 14px; }
+      .arena-slot .arena-host .winbar {
+        position: absolute; left: 0; right: 0; bottom: 0;
+        height: 4px;
+        background: rgba(255,255,255,0.08);
+        pointer-events: none;
+      }
+      .arena-slot .arena-host .winbar > div {
+        height: 100%; width: 0;
+        background: var(--accent);
+        transition: width 0.08s linear;
+      }
     </style>
   </head>
   <body class="game-body">
@@ -465,7 +711,9 @@
           <button data-view="skeleton" class="active"><span class="ico">🦴</span><span>Skeleton</span></button>
           <button data-view="silhouette"><span class="ico">👤</span><span>Silhouette</span></button>
           <button data-view="bar"><span class="ico">⭐</span><span>Bar</span></button>
+          <button data-view="design1"><span class="ico">🏟️</span><span>Design 1</span></button>
         </div>
+        <button id="open-cfg-btn" type="button" class="cfg-btn">⚙️ Game Settings (sensitivity · scoring window)</button>
 
         <ul class="rules">
           <li>📺 Coach video plays on the big screen · your camera lives in your tile</li>
@@ -484,6 +732,98 @@
         <div class="end-stats" id="end-stats"></div>
         <button id="restart-btn">Play Again</button>
         <a class="hint" href="../index.html" style="color:#9ad;">← Back to menu</a>
+      </div>
+
+      <!-- SETTINGS MODAL -->
+      <div id="cfg-modal" class="modal-back" role="dialog" aria-modal="true">
+        <div class="modal-card">
+          <h2>🎛️ Game Settings</h2>
+          <p class="modal-sub">Tune scoring before the game starts.</p>
+          <div class="cfg-row">
+            <label><span>SENSITIVITY</span><span class="val" id="cfg-sens-val">50</span></label>
+            <input type="range" id="cfg-sens" min="0" max="100" step="1" value="50" />
+            <div class="hint">Lower = easier to score PERFECT/EXCELLENT. Higher = stricter pose matching.</div>
+          </div>
+          <div class="cfg-row">
+            <label><span>SCORING WINDOW</span><span class="val" id="cfg-win-val">600 ms</span></label>
+            <input type="range" id="cfg-win" min="250" max="3000" step="50" value="600" />
+            <div class="hint">How long similarity is averaged before emitting one grade. Bigger = steadier scores, fewer grade flashes.</div>
+          </div>
+          <div class="modal-actions">
+            <button id="cfg-cancel">Cancel</button>
+            <button id="cfg-save" class="primary">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FIT ARENA OVERLAY (Design 1) -->
+      <div id="arena">
+        <div class="arena-header">
+          <div class="arena-h-cell"><div class="ico">⏱</div><div class="v" id="arena-timer">0:00</div><div class="l">REMAINING</div></div>
+          <div class="arena-title"><h1>FIT ARENA</h1><p>AI MOTION TRACKING</p></div>
+          <div class="arena-h-cell"><div class="ico">🔥</div><div class="v" id="arena-cal">0</div><div class="l">CAL BURN</div></div>
+        </div>
+        <div class="arena-slot" data-lane="0">
+          <div class="arena-hdr"><div class="arena-pill">PLAYER 1</div><div class="arena-icon" id="arena-ico-0">★</div></div>
+          <div class="arena-host">
+            <div class="stats"><div class="score" id="arena-score-0">0</div><div class="acc" id="arena-acc-0">0%</div><div class="acclbl">ACCURACY</div></div>
+            <div class="winbar"><div id="arena-win-0"></div></div>
+          </div>
+        </div>
+        <div class="arena-slot" data-lane="1">
+          <div class="arena-hdr"><div class="arena-pill">PLAYER 2</div><div class="arena-icon" id="arena-ico-1">★</div></div>
+          <div class="arena-host">
+            <div class="stats"><div class="score" id="arena-score-1">0</div><div class="acc" id="arena-acc-1">0%</div><div class="acclbl">ACCURACY</div></div>
+            <div class="winbar"><div id="arena-win-1"></div></div>
+          </div>
+        </div>
+        <div class="arena-slot" data-lane="2">
+          <div class="arena-hdr"><div class="arena-pill">PLAYER 3</div><div class="arena-icon" id="arena-ico-2">★</div></div>
+          <div class="arena-host">
+            <div class="stats"><div class="score" id="arena-score-2">0</div><div class="acc" id="arena-acc-2">0%</div><div class="acclbl">ACCURACY</div></div>
+            <div class="winbar"><div id="arena-win-2"></div></div>
+          </div>
+        </div>
+        <div class="arena-slot" data-lane="3">
+          <div class="arena-hdr"><div class="arena-pill">PLAYER 4</div><div class="arena-icon" id="arena-ico-3">★</div></div>
+          <div class="arena-host">
+            <div class="stats"><div class="score" id="arena-score-3">0</div><div class="acc" id="arena-acc-3">0%</div><div class="acclbl">ACCURACY</div></div>
+            <div class="winbar"><div id="arena-win-3"></div></div>
+          </div>
+        </div>
+        <div class="arena-move">
+          <span class="chev">«««</span><span class="lbl">MOVE:</span>
+          <span class="name" id="arena-move">FOLLOW COACH</span>
+          <span class="chev">»»»</span>
+        </div>
+        <div class="arena-combo-row">
+          <div class="arena-combo-card" data-lane="0">
+            <div class="ctop"><div class="name">PLAYER 1</div><div class="crown">👑</div></div>
+            <div class="crow"><span class="clbl">COMBO</span><span class="cmul" id="arena-mul-0">×1</span><span class="cscore" id="arena-csc-0">0</span></div>
+            <div class="cstars" id="arena-stars-0"><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span></div>
+            <div class="cbar"><div id="arena-cbar-0"></div></div>
+          </div>
+          <div class="arena-combo-card" data-lane="1">
+            <div class="ctop"><div class="name">PLAYER 2</div><div class="crown">👑</div></div>
+            <div class="crow"><span class="clbl">COMBO</span><span class="cmul" id="arena-mul-1">×1</span><span class="cscore" id="arena-csc-1">0</span></div>
+            <div class="cstars" id="arena-stars-1"><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span></div>
+            <div class="cbar"><div id="arena-cbar-1"></div></div>
+          </div>
+          <div class="arena-combo-card" data-lane="2">
+            <div class="ctop"><div class="name">PLAYER 3</div><div class="crown">👑</div></div>
+            <div class="crow"><span class="clbl">COMBO</span><span class="cmul" id="arena-mul-2">×1</span><span class="cscore" id="arena-csc-2">0</span></div>
+            <div class="cstars" id="arena-stars-2"><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span></div>
+            <div class="cbar"><div id="arena-cbar-2"></div></div>
+          </div>
+          <div class="arena-combo-card" data-lane="3">
+            <div class="ctop"><div class="name">PLAYER 4</div><div class="crown">👑</div></div>
+            <div class="crow"><span class="clbl">COMBO</span><span class="cmul" id="arena-mul-3">×1</span><span class="cscore" id="arena-csc-3">0</span></div>
+            <div class="cstars" id="arena-stars-3"><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span><span class="s">★</span></div>
+            <div class="cbar"><div id="arena-cbar-3"></div></div>
+          </div>
+        </div>
+        <div class="arena-corner arena-corner-l"><div class="ico">🕺</div>FOLLOW<br>COACH</div>
+        <div class="arena-corner arena-corner-r"><div class="ico">📊</div>VIEW<br>STATS</div>
       </div>
     </div>
 

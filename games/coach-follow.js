@@ -38,14 +38,34 @@ const barRow       = document.getElementById("bar-row");
 
 // ---------- Tunables ----------
 const ANALYSIS_FPS = 12;                 // sampled coach pose frames per second
-const SCORE_INTERVAL_MS = 250;            // grade flash cadence
+const SCORE_INTERVAL_MS = 250;            // grade flash cadence (legacy default; overridden by CFG.windowMs)
 const TIME_TOLERANCE_S = 0.18;            // ±window for coach-frame lookup
 const SIMILARITY_EMA = 0.45;              // smoothing
-const GRADE_THRESHOLDS = {                // ↑ = stricter
+const GRADE_THRESHOLDS = {                // ↑ = stricter (legacy default; overridden by gradeThresholds())
   perfect:   0.95,
   excellent: 0.87,
   good:      0.75,
 };
+
+// ---------- User-configurable settings (sliders in the gear modal) ----------
+const CFG_DEFAULTS = { sensitivity: 50, windowMs: 600 };
+let CFG = { ...CFG_DEFAULTS };
+try {
+  const raw = localStorage.getItem("coachFollowCfg");
+  if (raw) CFG = { ...CFG_DEFAULTS, ...JSON.parse(raw) };
+} catch (_) {}
+function saveCfg() { try { localStorage.setItem("coachFollowCfg", JSON.stringify(CFG)); } catch (_) {} }
+// sens 0 → very forgiving, 50 → defaults-ish, 100 → very strict
+function gradeThresholds() {
+  const s = Math.max(0, Math.min(100, CFG.sensitivity)) / 100;
+  const easy   = { perfect: 0.80, excellent: 0.65, good: 0.50 };
+  const strict = { perfect: 0.99, excellent: 0.95, good: 0.88 };
+  return {
+    perfect:   easy.perfect   + (strict.perfect   - easy.perfect)   * s,
+    excellent: easy.excellent + (strict.excellent - easy.excellent) * s,
+    good:      easy.good      + (strict.good      - easy.good)      * s,
+  };
+}
 const GRADE_POINTS = { perfect: 100, excellent: 60, good: 25, bad: 0 };
 // Coach-motion gating: if coach's recent body motion is below this, scoring pauses.
 // Uses MAX joint speed (normalized / torso / sec) over a ±0.25s window — so a single
@@ -102,16 +122,19 @@ picker.addEventListener("click", (e) => {
   picker.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
 });
 
-// ---------- View mode (Live / Skeleton / Silhouette / Bar) ----------
-const VIEW_MODES = ["live", "skeleton", "silhouette", "bar"];
+// ---------- View mode (Live / Skeleton / Silhouette / Bar / Design1) ----------
+const VIEW_MODES = ["live", "skeleton", "silhouette", "bar", "design1"];
 let viewMode = localStorage.getItem("coachFollowViewMode");
 if (!VIEW_MODES.includes(viewMode)) viewMode = "skeleton";
+const arenaEl = document.getElementById("arena");
 function applyViewMode(mode) {
   viewMode = mode;
   localStorage.setItem("coachFollowViewMode", mode);
-  tilesEl.classList.remove("view-live", "view-skeleton", "view-silhouette", "view-bar");
+  tilesEl.classList.remove("view-live", "view-skeleton", "view-silhouette", "view-bar", "view-design1");
   tilesEl.classList.add(`view-${mode}`);
   barRow?.classList.toggle("show", mode === "bar");
+  document.body.classList.toggle("mode-design1", mode === "design1");
+  arenaEl?.classList.toggle("show", mode === "design1");
   const vp = document.getElementById("view-picker");
   vp?.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.view === mode));
 }
@@ -512,9 +535,10 @@ function poseSimilarity(userLm, coachLm) {
 }
 
 function gradeFor(score) {
-  if (score >= GRADE_THRESHOLDS.perfect)   return "perfect";
-  if (score >= GRADE_THRESHOLDS.excellent) return "excellent";
-  if (score >= GRADE_THRESHOLDS.good)      return "good";
+  const t = gradeThresholds();
+  if (score >= t.perfect)   return "perfect";
+  if (score >= t.excellent) return "excellent";
+  if (score >= t.good)      return "good";
   return "bad";
 }
 const GRADE_LABEL = {
@@ -536,6 +560,14 @@ function comboMultiplier(combo) {
 function buildTiles(n) {
   tilesEl.innerHTML = "";
   STATE.pipPoseEls = [];
+  const useArena = viewMode === "design1";
+  // Clear any previous arena slot hosts before re-parenting
+  if (useArena) {
+    for (let i = 0; i < 4; i++) {
+      const host = document.querySelector(`#arena .arena-slot[data-lane="${i}"] .arena-host`);
+      host?.querySelectorAll(".tile").forEach((t) => t.remove());
+    }
+  }
   for (let i = 0; i < n; i++) {
     const t = TILES[i];
     const tile = document.createElement("div");
@@ -550,7 +582,12 @@ function buildTiles(n) {
       <div class="tile-combo" style="color:${t.color};display:none;">×1</div>
       <div class="tile-grade"></div>
     `;
-    tilesEl.appendChild(tile);
+    if (useArena) {
+      const slot = document.querySelector(`#arena .arena-slot[data-lane="${i}"] .arena-host`);
+      (slot || tilesEl).appendChild(tile);
+    } else {
+      tilesEl.appendChild(tile);
+    }
     const tileVideo = tile.querySelector("video");
     const poseCanvas = tile.querySelector("canvas.pose");
     // All tiles share the single user-cam stream — assign srcObject after camera starts.
@@ -564,8 +601,21 @@ function buildTiles(n) {
       gradeEl: tile.querySelector(".tile-grade"),
     });
   }
-  tilesEl.style.display = "flex";
+  tilesEl.style.display = useArena ? "none" : "flex";
   buildBarRow(n);
+  // Reset arena live numbers
+  if (useArena) {
+    for (let i = 0; i < 4; i++) {
+      const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      setT(`arena-score-${i}`, "0"); setT(`arena-acc-${i}`, "0%");
+      setT(`arena-csc-${i}`, "0");   setT(`arena-mul-${i}`, "×1");
+      const cbar = document.getElementById(`arena-cbar-${i}`); if (cbar) cbar.style.width = "0%";
+      const wb   = document.getElementById(`arena-win-${i}`);  if (wb)   wb.style.width   = "0%";
+      document.querySelectorAll(`#arena-stars-${i} .s`).forEach((s) => s.classList.remove("on"));
+      const ico = document.getElementById(`arena-ico-${i}`); if (ico) ico.textContent = "★";
+      document.querySelector(`.arena-combo-card[data-lane="${i}"]`)?.classList.remove("leader");
+    }
+  }
   // Re-assert current view mode class (innerHTML reset above wipes nothing on tilesEl itself,
   // but be safe in case future code toggles classes elsewhere).
   applyViewMode(viewMode);
@@ -649,6 +699,35 @@ function showGrade(lane, grade) {
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove("show"), 450);
   updateBarSlot(lane, grade);
+  if (viewMode === "design1") updateArenaSlot(lane, grade);
+}
+
+function updateArenaSlot(lane, grade) {
+  const score = STATE.score[lane] || 0;
+  const correct = STATE.gradeCounts[lane].perfect + STATE.gradeCounts[lane].excellent + STATE.gradeCounts[lane].good;
+  const acc = STATE.graded[lane] ? Math.round((correct / STATE.graded[lane]) * 100) : 0;
+  const combo = STATE.combo[lane] || 0;
+  const mul = comboMultiplier(combo);
+  const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setT(`arena-score-${lane}`, score.toLocaleString());
+  setT(`arena-acc-${lane}`, acc + "%");
+  setT(`arena-csc-${lane}`, score.toLocaleString());
+  setT(`arena-mul-${lane}`, `\u00d7${mul.toFixed(combo >= 10 ? 1 : 0)}`);
+  const cbar = document.getElementById(`arena-cbar-${lane}`);
+  if (cbar) cbar.style.width = Math.min(100, (combo / 50) * 100) + "%";
+  const stars = document.querySelectorAll(`#arena-stars-${lane} .s`);
+  const filled = combo >= 40 ? 5 : combo >= 25 ? 4 : combo >= 12 ? 3 : combo >= 6 ? 2 : combo >= 2 ? 1 : 0;
+  stars.forEach((s, idx) => s.classList.toggle("on", idx < filled));
+  // Reset winbar after a grade fires (visual cue that one window finished)
+  const wb = document.getElementById(`arena-win-${lane}`); if (wb) wb.style.width = "0%";
+  // Crown rotates to current leader
+  let leader = 0, max = -1;
+  for (let i = 0; i < STATE.N; i++) if ((STATE.score[i] || 0) > max) { max = STATE.score[i] || 0; leader = i; }
+  for (let i = 0; i < 4; i++) {
+    const ico = document.getElementById(`arena-ico-${i}`);
+    if (ico) ico.textContent = i === leader ? "\u{1F451}" : "\u2605";
+    document.querySelector(`.arena-combo-card[data-lane="${i}"]`)?.classList.toggle("leader", i === leader);
+  }
 }
 
 function showPause(lane) {
@@ -698,6 +777,20 @@ function loop(t) {
   coachTime.textContent = `${fmtTime(ct)} / ${fmtTime(cdur)}`;
   const cf = bestCoachFrame(ct);
   const coachMoving = cf && cf.energy >= COACH_MOTION_FLOOR;
+
+  // --- Design 1 header (timer + calorie estimate) ---
+  if (viewMode === "design1") {
+    const remain = Math.max(0, cdur - ct);
+    const tEl = document.getElementById("arena-timer");
+    if (tEl) tEl.textContent = fmtTime(remain);
+    if (coachMoving && STATE.calLastTick) {
+      const ds = (t - STATE.calLastTick) / 1000;
+      STATE.calBurn = (STATE.calBurn || 0) + ds * (6 / 60) * STATE.N;
+    }
+    STATE.calLastTick = t;
+    const cEl = document.getElementById("arena-cal");
+    if (cEl) cEl.textContent = String(Math.round(STATE.calBurn || 0));
+  }
 
   // Draw coach pose dots on coach overlay
   drawCoachOverlay(cf);
@@ -765,7 +858,13 @@ function loop(t) {
     STATE.similarity[lane] = STATE.similarity[lane] * (1 - SIMILARITY_EMA) + score * SIMILARITY_EMA;
 
     const now = performance.now();
-    if (now - STATE.lastGradeAt[lane] >= SCORE_INTERVAL_MS) {
+    // Design 1: animate the per-tile scoring-window fill bar 0..100%
+    if (viewMode === "design1") {
+      const fill = Math.min(100, ((now - STATE.lastGradeAt[lane]) / Math.max(50, CFG.windowMs)) * 100);
+      const w = document.getElementById(`arena-win-${lane}`);
+      if (w) w.style.width = fill.toFixed(1) + "%";
+    }
+    if (now - STATE.lastGradeAt[lane] >= CFG.windowMs) {
       STATE.lastGradeAt[lane] = now;
       const g = gradeFor(STATE.similarity[lane]);
       STATE.gradeCounts[lane][g]++;
@@ -919,6 +1018,8 @@ async function startSession() {
   STATE.gradeCounts = Array.from({length: numPlayers}, () => ({perfect:0,excellent:0,good:0,bad:0}));
   STATE.similarity = new Array(numPlayers).fill(0);
   STATE.lastGradeAt = new Array(numPlayers).fill(0);
+  STATE.calBurn = 0;
+  STATE.calLastTick = 0;
 
   // Wire user cam stream into each tile's <video>
   if (camVideo.srcObject) assignCameraToTiles(camVideo.srcObject);
@@ -971,3 +1072,33 @@ restartBtn.addEventListener("click", async () => {
   }
   startSession();
 });
+
+// ---------- Settings modal ----------
+const cfgBtn   = document.getElementById("open-cfg-btn");
+const cfgModal = document.getElementById("cfg-modal");
+const cfgSens  = document.getElementById("cfg-sens");
+const cfgWin   = document.getElementById("cfg-win");
+const cfgSensV = document.getElementById("cfg-sens-val");
+const cfgWinV  = document.getElementById("cfg-win-val");
+function openCfg() {
+  if (!cfgModal) return;
+  cfgSens.value = CFG.sensitivity;
+  cfgWin.value  = CFG.windowMs;
+  cfgSensV.textContent = String(CFG.sensitivity);
+  cfgWinV.textContent  = `${CFG.windowMs} ms`;
+  cfgModal.classList.add("show");
+}
+function closeCfg(save) {
+  if (save) {
+    CFG.sensitivity = parseInt(cfgSens.value, 10);
+    CFG.windowMs    = parseInt(cfgWin.value, 10);
+    saveCfg();
+  }
+  cfgModal?.classList.remove("show");
+}
+cfgBtn ?.addEventListener("click", openCfg);
+cfgSens?.addEventListener("input", () => cfgSensV.textContent = cfgSens.value);
+cfgWin ?.addEventListener("input", () => cfgWinV .textContent = cfgWin.value + " ms");
+document.getElementById("cfg-cancel")?.addEventListener("click", () => closeCfg(false));
+document.getElementById("cfg-save")  ?.addEventListener("click", () => closeCfg(true));
+cfgModal?.addEventListener("click", (e) => { if (e.target === cfgModal) closeCfg(false); });
