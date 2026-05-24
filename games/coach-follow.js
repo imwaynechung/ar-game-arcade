@@ -154,11 +154,29 @@ const TILE_MODES = ["skeleton", "silhouette", "blur"];
 let tileMode = localStorage.getItem("coachFollowTileMode");
 if (!TILE_MODES.includes(tileMode)) tileMode = "skeleton";
 function applyTileMode(m) {
+  const prev = tileMode;
   tileMode = m;
   localStorage.setItem("coachFollowTileMode", m);
   document.body.classList.remove("tile-mode-skeleton", "tile-mode-silhouette", "tile-mode-blur");
   document.body.classList.add(`tile-mode-${m}`);
   document.querySelectorAll("#tile-mode-btn button").forEach((b) => b.classList.toggle("active", b.dataset.tm === m));
+  // If segmentation requirement changed mid-session, rebuild the tracker asynchronously.
+  if (prev !== m && tracker) {
+    const needSeg = tileWantsSilhouette();
+    if (tracker._seg !== needSeg) rebuildTrackerForSeg(needSeg);
+  }
+}
+async function rebuildTrackerForSeg(needSeg) {
+  if (tracker && tracker._rebuilding) return;
+  try {
+    if (tracker) tracker._rebuilding = true;
+    const t = await createPoseTracker({ numPoses: numPlayers, enableSegmentation: needSeg });
+    tracker = wrapTracker(t);
+    tracker._n = numPlayers;
+    tracker._seg = needSeg;
+  } catch (err) {
+    console.warn("[tileMode] tracker rebuild failed:", err);
+  }
 }
 applyTileMode(tileMode);
 document.getElementById("tile-mode-btn")?.addEventListener("click", (e) => {
