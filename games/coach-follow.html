@@ -6,11 +6,16 @@
     <title>Coach Follow · Full Body · AR Arcade</title>
     <link rel="stylesheet" href="../styles.css" />
     <style>
+      /* Make the page scrollable (override .game-body lock from styles.css) */
+      html, body.game-body { overflow-y: auto !important; height: auto !important; min-height: 100vh; }
       #app {
         background: linear-gradient(180deg, #0a1226 0%, #1a2c5a 60%, #1a3a44 100%);
-        overflow: hidden;
+        position: relative !important;
+        inset: auto !important;
+        min-height: 100vh;
+        overflow: visible !important;
       }
-      /* Coach stage: large centered video */
+      /* Coach stage: large centered video — draggable + resizable */
       #stage {
         position: fixed;
         top: 16px;
@@ -23,6 +28,43 @@
         background: #000;
         box-shadow: 0 20px 60px rgba(0,0,0,0.6);
         z-index: 2;
+        resize: both;
+        min-width: 280px;
+        min-height: 200px;
+      }
+      /* Once user manually moves/resizes, allow growing past viewport (cropping OK) */
+      #stage.stage-manual {
+        max-width: none !important;
+        max-height: none !important;
+        transform: none !important;
+      }
+      .stage-drag-handle {
+        position: absolute;
+        top: 0; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.6); color: #fff;
+        padding: 5px 14px;
+        border-radius: 0 0 12px 12px;
+        font: 800 11px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em;
+        cursor: grab; z-index: 6; user-select: none;
+        backdrop-filter: blur(8px); pointer-events: auto;
+        display: flex; align-items: center; gap: 8px;
+        touch-action: none;
+      }
+      .stage-drag-handle:hover { background: rgba(0,0,0,0.78); }
+      .stage-drag-handle.dragging { cursor: grabbing; background: rgba(92,225,255,0.85); color: #042230; }
+      .stage-drag-handle .reset {
+        font: 700 10px -apple-system,system-ui,sans-serif; letter-spacing: 0.12em;
+        opacity: 0.7; padding-left: 8px;
+        border-left: 1px solid rgba(255,255,255,0.3); cursor: pointer;
+      }
+      .stage-drag-handle .reset:hover { opacity: 1; }
+      .stage-resize-grip {
+        position: absolute; bottom: 2px; right: 2px;
+        width: 22px; height: 22px; z-index: 5; pointer-events: none;
+        background: linear-gradient(135deg,
+          transparent 0 55%, rgba(255,255,255,0.55) 55% 62%,
+          transparent 62% 70%, rgba(255,255,255,0.55) 70% 77%,
+          transparent 77% 85%, rgba(255,255,255,0.55) 85% 92%, transparent 92%);
       }
       #stage video, #stage canvas {
         position: absolute; inset: 0; width: 100%; height: 100%;
@@ -682,10 +724,16 @@
 
       <!-- LIVE STAGE (hidden until start) -->
       <div id="stage" style="display:none">
-        <video id="coach-stage" playsinline></video>
+        <video id="coach-stage" playsinline preload="auto"></video>
         <canvas id="coach-overlay"></canvas>
         <div class="stage-badge" id="coach-badge">👨‍🏫 COACH</div>
         <div class="stage-time" id="coach-time">0:00 / 0:00</div>
+        <div class="stage-drag-handle" id="stage-drag-handle"
+             title="Drag to move · resize from bottom-right corner · double-click to reset">
+          <span>✥ DRAG</span>
+          <span class="reset" id="stage-reset-btn" title="Reset to default">RESET</span>
+        </div>
+        <div class="stage-resize-grip" aria-hidden="true"></div>
       </div>
       <div id="tiles" style="display:none"></div>
       <div id="bar-row"></div>

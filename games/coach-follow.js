@@ -1118,3 +1118,92 @@ cfgCoach?.addEventListener("input", () => {
 document.getElementById("cfg-cancel")?.addEventListener("click", () => { closeCfg(false); applyCoachScale(); });
 document.getElementById("cfg-save")  ?.addEventListener("click", () => closeCfg(true));
 cfgModal?.addEventListener("click", (e) => { if (e.target === cfgModal) closeCfg(false); });
+
+// ---------- Stage: manual drag + resize (persisted) ----------
+(function setupStageDragResize() {
+  const KEY = "coachFollowStagePos";
+  const handle = document.getElementById("stage-drag-handle");
+  const resetBtn = document.getElementById("stage-reset-btn");
+  if (!stage || !handle) return;
+
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch { return null; } };
+  const save = (p) => { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch {} };
+
+  function apply(p) {
+    if (!p) return;
+    stage.classList.add("stage-manual");
+    if (Number.isFinite(p.left))   stage.style.left   = p.left + "px";
+    if (Number.isFinite(p.top))    stage.style.top    = p.top  + "px";
+    if (Number.isFinite(p.width))  stage.style.width  = p.width  + "px";
+    if (Number.isFinite(p.height)) stage.style.height = p.height + "px";
+  }
+  function persist() {
+    save({
+      left:   parseFloat(stage.style.left),
+      top:    parseFloat(stage.style.top),
+      width:  parseFloat(stage.style.width),
+      height: parseFloat(stage.style.height),
+    });
+  }
+  function takeManualControl() {
+    if (stage.classList.contains("stage-manual")) return;
+    const r = stage.getBoundingClientRect();
+    stage.classList.add("stage-manual");
+    stage.style.left = r.left + "px";
+    stage.style.top  = r.top  + "px";
+    stage.style.width  = r.width  + "px";
+    stage.style.height = r.height + "px";
+  }
+
+  apply(load());
+
+  let dragging = false, sx = 0, sy = 0, bl = 0, bt = 0;
+  handle.addEventListener("pointerdown", (e) => {
+    if (e.target.id === "stage-reset-btn") return;
+    takeManualControl();
+    dragging = true;
+    handle.classList.add("dragging");
+    try { handle.setPointerCapture(e.pointerId); } catch {}
+    bl = parseFloat(stage.style.left);
+    bt = parseFloat(stage.style.top);
+    sx = e.clientX; sy = e.clientY;
+    e.preventDefault();
+  });
+  handle.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    stage.style.left = (bl + e.clientX - sx) + "px";
+    stage.style.top  = (bt + e.clientY - sy) + "px";
+  });
+  const endDrag = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove("dragging");
+    try { handle.releasePointerCapture(e.pointerId); } catch {}
+    persist();
+  };
+  handle.addEventListener("pointerup", endDrag);
+  handle.addEventListener("pointercancel", endDrag);
+
+  // Persist when user drags the native corner resize grip
+  let rT;
+  const ro = new ResizeObserver(() => {
+    if (!stage.classList.contains("stage-manual")) {
+      takeManualControl();
+    }
+    clearTimeout(rT);
+    rT = setTimeout(persist, 200);
+  });
+  try { ro.observe(stage); } catch {}
+
+  function reset() {
+    stage.classList.remove("stage-manual");
+    stage.style.removeProperty("left");
+    stage.style.removeProperty("top");
+    stage.style.removeProperty("width");
+    stage.style.removeProperty("height");
+    stage.style.removeProperty("transform");
+    localStorage.removeItem(KEY);
+  }
+  resetBtn?.addEventListener("click", (e) => { e.stopPropagation(); reset(); });
+  handle.addEventListener("dblclick", reset);
+})();
