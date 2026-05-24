@@ -463,21 +463,24 @@
       body.mode-design1 #app { background: radial-gradient(circle at 50% 50%, #102448 0%, #050a1a 80%); }
       body.mode-design1 #tiles,
       body.mode-design1 #bar-row { display: none !important; }
+      /* --coach-scale lets users grow/shrink the coach panel from the settings modal */
+      body.mode-design1 { --coach-scale: 1; --slot-w: clamp(220px, 22vw, 340px); }
       body.mode-design1 #stage {
-        top: 96px;
-        width: min(46vw, 740px);
-        height: 64vh;
-        border: 3px solid #5ce1ff;
+        top: calc(112px - (var(--coach-scale) - 1) * 28px);
+        width: calc(min(64vw, 1120px) * var(--coach-scale));
+        height: calc(min(74vh, calc(100vh - 280px)) * var(--coach-scale));
+        max-height: calc(100vh - 220px);
+        border: 4px solid #5ce1ff;
         border-radius: 22px;
-        box-shadow: 0 0 0 6px rgba(92,225,255,0.12), 0 0 40px rgba(92,225,255,0.35);
+        box-shadow: 0 0 0 6px rgba(92,225,255,0.12), 0 0 50px rgba(92,225,255,0.4);
       }
       body.mode-design1 #stage::before,
       body.mode-design1 #stage::after {
-        content: ""; position: absolute; width: 28px; height: 28px;
-        border: 3px solid #5ce1ff; pointer-events: none; z-index: 4;
+        content: ""; position: absolute; width: 34px; height: 34px;
+        border: 4px solid #5ce1ff; pointer-events: none; z-index: 4;
       }
-      body.mode-design1 #stage::before { top: -10px; left: -10px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
-      body.mode-design1 #stage::after  { bottom: -10px; right: -10px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
+      body.mode-design1 #stage::before { top: -12px; left: -12px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
+      body.mode-design1 #stage::after  { bottom: -12px; right: -12px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
       body.mode-design1 #stage video,
       body.mode-design1 #stage canvas { object-fit: cover; }
       body.mode-design1 #stage .stage-badge,
@@ -492,49 +495,50 @@
       }
       #arena.show { display: block; }
       #arena .arena-header {
-        position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
-        display: flex; gap: 32px; align-items: center;
+        position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+        display: flex; gap: 42px; align-items: center;
       }
       .arena-h-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-      .arena-h-cell .ico { font-size: 18px; }
-      .arena-h-cell .v { font: 900 22px -apple-system,system-ui,sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
-      .arena-h-cell .l { font: 700 9px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em; color: rgba(255,255,255,0.55); }
+      .arena-h-cell .ico { font-size: 24px; }
+      .arena-h-cell .v { font: 900 32px -apple-system,system-ui,sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
+      .arena-h-cell .l { font: 700 12px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em; color: rgba(255,255,255,0.6); }
       .arena-title { text-align: center; padding: 0 20px; }
       .arena-title h1 {
         margin: 0;
-        font: 900 30px -apple-system,system-ui,sans-serif;
+        font: 900 38px -apple-system,system-ui,sans-serif;
         letter-spacing: 0.16em;
         background: linear-gradient(90deg, #fff 0%, #fff 45%, #5ce1ff 55%, #5ce1ff 100%);
         -webkit-background-clip: text; background-clip: text;
         color: transparent;
       }
-      .arena-title p { margin: -2px 0 0; font: 700 10px -apple-system,system-ui,sans-serif; letter-spacing: 0.4em; color: rgba(255,255,255,0.55); }
+      .arena-title p { margin: -2px 0 0; font: 700 12px -apple-system,system-ui,sans-serif; letter-spacing: 0.4em; color: rgba(255,255,255,0.6); }
 
+      /* Slots stretch from 110px top to 200px bottom; each row = half that, with a 14px gap.
+         This guarantees no overlap at any screen size. */
       .arena-slot {
         position: absolute;
-        width: 18vw; max-width: 280px; min-width: 200px;
-        height: 38vh; min-height: 280px;
+        width: var(--slot-w);
         display: flex; flex-direction: column;
         pointer-events: auto;
       }
-      .arena-slot[data-lane="0"] { left: 24px; top: 88px; }
-      .arena-slot[data-lane="2"] { left: 24px; bottom: 200px; }
-      .arena-slot[data-lane="1"] { right: 24px; top: 88px; }
-      .arena-slot[data-lane="3"] { right: 24px; bottom: 200px; }
+      .arena-slot[data-lane="0"] { left: 20px; top: 110px;  height: calc((100vh - 110px - 200px) / 2 - 10px); }
+      .arena-slot[data-lane="2"] { left: 20px; bottom: 200px; height: calc((100vh - 110px - 200px) / 2 - 10px); }
+      .arena-slot[data-lane="1"] { right: 20px; top: 110px;  height: calc((100vh - 110px - 200px) / 2 - 10px); }
+      .arena-slot[data-lane="3"] { right: 20px; bottom: 200px; height: calc((100vh - 110px - 200px) / 2 - 10px); }
       .arena-slot .arena-hdr { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 6px; }
       .arena-slot .arena-pill {
-        font: 900 11px -apple-system,system-ui,sans-serif;
-        letter-spacing: 0.12em;
-        padding: 4px 14px;
-        border-radius: 6px 6px 0 0;
+        font: 900 15px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.14em;
+        padding: 6px 18px;
+        border-radius: 8px 8px 0 0;
         color: #fff;
         text-shadow: 0 1px 2px rgba(0,0,0,0.5);
       }
-      .arena-slot .arena-icon { font-size: 26px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
+      .arena-slot .arena-icon { font-size: 34px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
       .arena-slot .arena-host {
         flex: 1; position: relative;
-        border-radius: 12px;
-        border: 2px solid;
+        border-radius: 14px;
+        border: 3px solid;
         overflow: hidden;
         background:
           linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 30%),
@@ -542,23 +546,26 @@
           #050b1c;
         box-shadow: inset 0 0 30px var(--accentDim), 0 0 24px var(--accentDim);
       }
-      .arena-slot .arena-host .stats { position: absolute; top: 10px; left: 10px; pointer-events: none; }
+      .arena-slot .arena-host .stats { position: absolute; top: 12px; left: 14px; pointer-events: none; }
       .arena-slot .arena-host .stats .score {
-        font: 900 30px -apple-system,system-ui,sans-serif;
+        font: 900 46px -apple-system,system-ui,sans-serif;
         color: #fff;
-        text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+        text-shadow: 0 2px 8px rgba(0,0,0,0.85);
         font-variant-numeric: tabular-nums;
         letter-spacing: 0.02em;
+        line-height: 1;
       }
       .arena-slot .arena-host .stats .acc {
-        font: 900 18px -apple-system,system-ui,sans-serif;
+        font: 900 28px -apple-system,system-ui,sans-serif;
         color: var(--accent);
-        margin-top: -2px;
+        margin-top: 2px;
+        line-height: 1;
       }
       .arena-slot .arena-host .stats .acclbl {
-        font: 700 9px -apple-system,system-ui,sans-serif;
+        font: 700 12px -apple-system,system-ui,sans-serif;
         letter-spacing: 0.18em;
-        color: rgba(255,255,255,0.55);
+        color: rgba(255,255,255,0.65);
+        margin-top: 2px;
       }
       .arena-slot[data-lane="0"] { --accent: #ff3a4d; --accentDim: rgba(255,58,77,0.25); }
       .arena-slot[data-lane="1"] { --accent: #3aa8ff; --accentDim: rgba(58,168,255,0.25); }
@@ -582,32 +589,32 @@
 
       .arena-move {
         position: absolute; left: 50%; transform: translateX(-50%);
-        bottom: 168px;
-        display: flex; align-items: center; gap: 14px;
-        background: rgba(8,12,28,0.65);
-        padding: 8px 22px;
+        bottom: 170px;
+        display: flex; align-items: center; gap: 18px;
+        background: rgba(8,12,28,0.7);
+        padding: 10px 26px;
         border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.1);
         pointer-events: none;
       }
-      .arena-move .chev { color: #b76dff; letter-spacing: -2px; font-weight: 900; }
-      .arena-move .lbl { font: 700 10px -apple-system,system-ui,sans-serif; letter-spacing: 0.22em; color: #b76dff; }
-      .arena-move .name { font: 900 14px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em; color: #fff; }
+      .arena-move .chev { color: #b76dff; letter-spacing: -2px; font-weight: 900; font-size: 18px; }
+      .arena-move .lbl { font: 700 13px -apple-system,system-ui,sans-serif; letter-spacing: 0.22em; color: #b76dff; }
+      .arena-move .name { font: 900 18px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em; color: #fff; }
 
       .arena-combo-row {
-        position: absolute; left: 110px; right: 110px;
-        bottom: 14px;
+        position: absolute; left: 120px; right: 120px;
+        bottom: 18px;
         display: grid; grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
+        gap: 14px;
         pointer-events: none;
       }
       .arena-combo-card {
         background: linear-gradient(180deg, rgba(10,16,36,0.92), rgba(2,6,18,0.92));
         border: 2px solid var(--accent);
-        border-radius: 14px;
-        padding: 8px 12px 10px;
-        display: flex; flex-direction: column; gap: 4px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 18px var(--accentDim);
+        border-radius: 16px;
+        padding: 10px 16px 12px;
+        display: flex; flex-direction: column; gap: 6px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 20px var(--accentDim);
         position: relative;
       }
       .arena-combo-card[data-lane="0"] { --accent: #ff3a4d; --accentDim: rgba(255,58,77,0.4); }
@@ -615,39 +622,39 @@
       .arena-combo-card[data-lane="2"] { --accent: #3aff7c; --accentDim: rgba(58,255,124,0.4); }
       .arena-combo-card[data-lane="3"] { --accent: #ff8a1c; --accentDim: rgba(255,138,28,0.4); }
       .arena-combo-card .ctop { display: flex; justify-content: space-between; align-items: center; }
-      .arena-combo-card .ctop .name { font: 900 10px -apple-system,system-ui,sans-serif; letter-spacing: 0.16em; color: var(--accent); }
-      .arena-combo-card .ctop .crown { font-size: 14px; opacity: 0; transition: opacity 0.2s; }
+      .arena-combo-card .ctop .name { font: 900 14px -apple-system,system-ui,sans-serif; letter-spacing: 0.16em; color: var(--accent); }
+      .arena-combo-card .ctop .crown { font-size: 20px; opacity: 0; transition: opacity 0.2s; }
       .arena-combo-card.leader .ctop .crown { opacity: 1; }
-      .arena-combo-card .crow { display: flex; align-items: baseline; gap: 8px; }
-      .arena-combo-card .clbl { font: 700 9px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em; color: rgba(255,255,255,0.55); }
-      .arena-combo-card .cmul { font: 900 14px -apple-system,system-ui,sans-serif; color: var(--accent); }
-      .arena-combo-card .cscore { font: 900 22px -apple-system,system-ui,sans-serif; color: #fff; font-variant-numeric: tabular-nums; margin-left: auto; }
-      .arena-combo-card .cstars { display: flex; gap: 3px; }
-      .arena-combo-card .cstars .s { font-size: 13px; color: rgba(255,255,255,0.18); }
+      .arena-combo-card .crow { display: flex; align-items: baseline; gap: 10px; }
+      .arena-combo-card .clbl { font: 700 12px -apple-system,system-ui,sans-serif; letter-spacing: 0.18em; color: rgba(255,255,255,0.6); }
+      .arena-combo-card .cmul { font: 900 22px -apple-system,system-ui,sans-serif; color: var(--accent); }
+      .arena-combo-card .cscore { font: 900 30px -apple-system,system-ui,sans-serif; color: #fff; font-variant-numeric: tabular-nums; margin-left: auto; line-height: 1; }
+      .arena-combo-card .cstars { display: flex; gap: 4px; }
+      .arena-combo-card .cstars .s { font-size: 18px; color: rgba(255,255,255,0.18); }
       .arena-combo-card .cstars .s.on { color: #ffd23f; text-shadow: 0 0 8px rgba(255,210,63,0.8); }
-      .arena-combo-card .cbar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+      .arena-combo-card .cbar { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
       .arena-combo-card .cbar > div { height: 100%; width: 0; background: linear-gradient(90deg, transparent, var(--accent)); transition: width 0.2s ease-out; }
 
       .arena-corner {
-        position: absolute; bottom: 18px;
-        width: 80px; height: 80px;
+        position: absolute; bottom: 22px;
+        width: 96px; height: 96px;
         border-radius: 50%;
         background: radial-gradient(circle at 35% 30%, #2a3870, #0a1228);
-        border: 2px solid #5ce1ff;
+        border: 3px solid #5ce1ff;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         color: #fff;
-        font: 900 10px -apple-system,system-ui,sans-serif;
+        font: 900 12px -apple-system,system-ui,sans-serif;
         letter-spacing: 0.1em;
         text-align: center; line-height: 1.1;
-        box-shadow: 0 0 16px rgba(92,225,255,0.4);
+        box-shadow: 0 0 20px rgba(92,225,255,0.45);
         pointer-events: none;
       }
-      .arena-corner .ico { font-size: 24px; margin-bottom: 2px; }
+      .arena-corner .ico { font-size: 30px; margin-bottom: 3px; }
       .arena-corner-l { left: 14px; }
       .arena-corner-r { right: 14px; }
       .arena-slot .arena-host .winbar {
         position: absolute; left: 0; right: 0; bottom: 0;
-        height: 4px;
+        height: 6px;
         background: rgba(255,255,255,0.08);
         pointer-events: none;
       }
@@ -655,6 +662,13 @@
         height: 100%; width: 0;
         background: var(--accent);
         transition: width 0.08s linear;
+      }
+
+      /* Senior-friendly: scale arena slot fonts down a touch on small viewports so they never overflow */
+      @media (max-width: 1280px) {
+        .arena-slot .arena-host .stats .score { font-size: 38px; }
+        .arena-slot .arena-host .stats .acc { font-size: 22px; }
+        body.mode-design1 { --slot-w: clamp(200px, 21vw, 300px); }
       }
     </style>
   </head>
@@ -748,6 +762,11 @@
             <label><span>SCORING WINDOW</span><span class="val" id="cfg-win-val">600 ms</span></label>
             <input type="range" id="cfg-win" min="250" max="3000" step="50" value="600" />
             <div class="hint">How long similarity is averaged before emitting one grade. Bigger = steadier scores, fewer grade flashes.</div>
+          </div>
+          <div class="cfg-row">
+            <label><span>COACH SCREEN SIZE</span><span class="val" id="cfg-coach-val">100%</span></label>
+            <input type="range" id="cfg-coach" min="70" max="135" step="1" value="100" />
+            <div class="hint">Resize the coach video (Design 1 only). Bigger fills more of the center space.</div>
           </div>
           <div class="modal-actions">
             <button id="cfg-cancel">Cancel</button>

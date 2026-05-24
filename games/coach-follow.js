@@ -48,13 +48,17 @@ const GRADE_THRESHOLDS = {                // ↑ = stricter (legacy default; ove
 };
 
 // ---------- User-configurable settings (sliders in the gear modal) ----------
-const CFG_DEFAULTS = { sensitivity: 50, windowMs: 600 };
+const CFG_DEFAULTS = { sensitivity: 50, windowMs: 600, coachScale: 100 };
 let CFG = { ...CFG_DEFAULTS };
 try {
   const raw = localStorage.getItem("coachFollowCfg");
   if (raw) CFG = { ...CFG_DEFAULTS, ...JSON.parse(raw) };
 } catch (_) {}
 function saveCfg() { try { localStorage.setItem("coachFollowCfg", JSON.stringify(CFG)); } catch (_) {} }
+function applyCoachScale() {
+  const s = Math.max(50, Math.min(150, CFG.coachScale || 100)) / 100;
+  document.body.style.setProperty("--coach-scale", String(s));
+}
 // sens 0 → very forgiving, 50 → defaults-ish, 100 → very strict
 function gradeThresholds() {
   const s = Math.max(0, Math.min(100, CFG.sensitivity)) / 100;
@@ -1078,27 +1082,39 @@ const cfgBtn   = document.getElementById("open-cfg-btn");
 const cfgModal = document.getElementById("cfg-modal");
 const cfgSens  = document.getElementById("cfg-sens");
 const cfgWin   = document.getElementById("cfg-win");
+const cfgCoach = document.getElementById("cfg-coach");
 const cfgSensV = document.getElementById("cfg-sens-val");
 const cfgWinV  = document.getElementById("cfg-win-val");
+const cfgCoachV = document.getElementById("cfg-coach-val");
+applyCoachScale(); // apply saved scale on first paint
 function openCfg() {
   if (!cfgModal) return;
   cfgSens.value = CFG.sensitivity;
   cfgWin.value  = CFG.windowMs;
+  if (cfgCoach) cfgCoach.value = CFG.coachScale;
   cfgSensV.textContent = String(CFG.sensitivity);
   cfgWinV.textContent  = `${CFG.windowMs} ms`;
+  if (cfgCoachV) cfgCoachV.textContent = `${CFG.coachScale}%`;
   cfgModal.classList.add("show");
 }
 function closeCfg(save) {
   if (save) {
     CFG.sensitivity = parseInt(cfgSens.value, 10);
     CFG.windowMs    = parseInt(cfgWin.value, 10);
+    if (cfgCoach) CFG.coachScale = parseInt(cfgCoach.value, 10);
     saveCfg();
+    applyCoachScale();
   }
   cfgModal?.classList.remove("show");
 }
 cfgBtn ?.addEventListener("click", openCfg);
 cfgSens?.addEventListener("input", () => cfgSensV.textContent = cfgSens.value);
 cfgWin ?.addEventListener("input", () => cfgWinV .textContent = cfgWin.value + " ms");
-document.getElementById("cfg-cancel")?.addEventListener("click", () => closeCfg(false));
+cfgCoach?.addEventListener("input", () => {
+  cfgCoachV.textContent = cfgCoach.value + "%";
+  // Live preview while dragging — without saving until user confirms
+  document.body.style.setProperty("--coach-scale", String(cfgCoach.value / 100));
+});
+document.getElementById("cfg-cancel")?.addEventListener("click", () => { closeCfg(false); applyCoachScale(); });
 document.getElementById("cfg-save")  ?.addEventListener("click", () => closeCfg(true));
 cfgModal?.addEventListener("click", (e) => { if (e.target === cfgModal) closeCfg(false); });
