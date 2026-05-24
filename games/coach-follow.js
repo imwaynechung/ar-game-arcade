@@ -1119,11 +1119,12 @@ document.getElementById("cfg-cancel")?.addEventListener("click", () => { closeCf
 document.getElementById("cfg-save")  ?.addEventListener("click", () => closeCfg(true));
 cfgModal?.addEventListener("click", (e) => { if (e.target === cfgModal) closeCfg(false); });
 
-// ---------- Stage: manual drag + resize (persisted) ----------
+// ---------- Stage: manual drag + resize (persisted, Safari-safe) ----------
 (function setupStageDragResize() {
   const KEY = "coachFollowStagePos";
   const handle = document.getElementById("stage-drag-handle");
   const resetBtn = document.getElementById("stage-reset-btn");
+  const grip = document.getElementById("stage-resize-grip");
   if (!stage || !handle) return;
 
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch { return null; } };
@@ -1157,44 +1158,71 @@ cfgModal?.addEventListener("click", (e) => { if (e.target === cfgModal) closeCfg
 
   apply(load());
 
-  let dragging = false, sx = 0, sy = 0, bl = 0, bt = 0;
+  // --- DRAG ---
+  let dragging = false, dsx = 0, dsy = 0, dbl = 0, dbt = 0;
+  function onDragMove(e) {
+    if (!dragging) return;
+    stage.style.left = (dbl + e.clientX - dsx) + "px";
+    stage.style.top  = (dbt + e.clientY - dsy) + "px";
+    e.preventDefault();
+  }
+  function onDragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove("dragging");
+    window.removeEventListener("pointermove", onDragMove);
+    window.removeEventListener("pointerup",   onDragEnd);
+    window.removeEventListener("pointercancel", onDragEnd);
+    persist();
+  }
   handle.addEventListener("pointerdown", (e) => {
     if (e.target.id === "stage-reset-btn") return;
     takeManualControl();
     dragging = true;
     handle.classList.add("dragging");
-    try { handle.setPointerCapture(e.pointerId); } catch {}
-    bl = parseFloat(stage.style.left);
-    bt = parseFloat(stage.style.top);
-    sx = e.clientX; sy = e.clientY;
+    dbl = parseFloat(stage.style.left);
+    dbt = parseFloat(stage.style.top);
+    dsx = e.clientX; dsy = e.clientY;
+    window.addEventListener("pointermove", onDragMove);
+    window.addEventListener("pointerup",   onDragEnd);
+    window.addEventListener("pointercancel", onDragEnd);
     e.preventDefault();
   });
-  handle.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    stage.style.left = (bl + e.clientX - sx) + "px";
-    stage.style.top  = (bt + e.clientY - sy) + "px";
-  });
-  const endDrag = (e) => {
-    if (!dragging) return;
-    dragging = false;
-    handle.classList.remove("dragging");
-    try { handle.releasePointerCapture(e.pointerId); } catch {}
+
+  // --- RESIZE (custom corner handle — Safari-safe) ---
+  let resizing = false, rsx = 0, rsy = 0, rbw = 0, rbh = 0;
+  function onResizeMove(e) {
+    if (!resizing) return;
+    const nw = Math.max(280, rbw + e.clientX - rsx);
+    const nh = Math.max(200, rbh + e.clientY - rsy);
+    stage.style.width  = nw + "px";
+    stage.style.height = nh + "px";
+    e.preventDefault();
+  }
+  function onResizeEnd() {
+    if (!resizing) return;
+    resizing = false;
+    grip?.classList.remove("resizing");
+    window.removeEventListener("pointermove", onResizeMove);
+    window.removeEventListener("pointerup",   onResizeEnd);
+    window.removeEventListener("pointercancel", onResizeEnd);
     persist();
-  };
-  handle.addEventListener("pointerup", endDrag);
-  handle.addEventListener("pointercancel", endDrag);
-
-  // Persist when user drags the native corner resize grip
-  let rT;
-  const ro = new ResizeObserver(() => {
-    if (!stage.classList.contains("stage-manual")) {
-      takeManualControl();
-    }
-    clearTimeout(rT);
-    rT = setTimeout(persist, 200);
+  }
+  grip?.addEventListener("pointerdown", (e) => {
+    takeManualControl();
+    resizing = true;
+    grip.classList.add("resizing");
+    rbw = parseFloat(stage.style.width);
+    rbh = parseFloat(stage.style.height);
+    rsx = e.clientX; rsy = e.clientY;
+    window.addEventListener("pointermove", onResizeMove);
+    window.addEventListener("pointerup",   onResizeEnd);
+    window.addEventListener("pointercancel", onResizeEnd);
+    e.preventDefault();
+    e.stopPropagation();
   });
-  try { ro.observe(stage); } catch {}
 
+  // --- RESET ---
   function reset() {
     stage.classList.remove("stage-manual");
     stage.style.removeProperty("left");
