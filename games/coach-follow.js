@@ -149,6 +149,27 @@ document.getElementById("view-picker")?.addEventListener("click", (e) => {
   applyViewMode(btn.dataset.view);
 });
 
+// ---------- Tile render mode (Design 1: skeleton / +silhouette / live+blur) ----------
+const TILE_MODES = ["skeleton", "silhouette", "blur"];
+let tileMode = localStorage.getItem("coachFollowTileMode");
+if (!TILE_MODES.includes(tileMode)) tileMode = "skeleton";
+function applyTileMode(m) {
+  tileMode = m;
+  localStorage.setItem("coachFollowTileMode", m);
+  document.body.classList.remove("tile-mode-skeleton", "tile-mode-silhouette", "tile-mode-blur");
+  document.body.classList.add(`tile-mode-${m}`);
+  document.querySelectorAll("#tile-mode-btn button").forEach((b) => b.classList.toggle("active", b.dataset.tm === m));
+}
+applyTileMode(tileMode);
+document.getElementById("tile-mode-btn")?.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-tm]");
+  if (!b) return;
+  applyTileMode(b.dataset.tm);
+});
+function tileWantsSilhouette() {
+  return viewMode === "silhouette" || (viewMode === "design1" && tileMode === "silhouette");
+}
+
 // ---------- Silhouette mask rendering ----------
 // MediaPipe gives one MPMask per detected person when outputSegmentationMasks is on.
 // We composite it as a flat-colored fill (alpha = mask) into the tile canvas, mirrored
@@ -831,15 +852,15 @@ function loop(t) {
       // landmarks against the capture canvas; we need to map them into tile pixel space.
       const sx = tile.poseCanvas.width  / det._W;
       const sy = tile.poseCanvas.height / det._H;
-      if (viewMode === "silhouette" && user.mask) {
+      if (tileWantsSilhouette() && user.mask) {
         drawSilhouetteMask(tile.poseCtx, user.mask, TILES[lane].color, tile.poseCanvas.width, tile.poseCanvas.height);
       }
       tile.poseCtx.save();
       tile.poseCtx.scale(sx, sy);
       drawPoseStick(tile.poseCtx, user, {
-        color: viewMode === "silhouette" ? TILES[lane].outline : TILES[lane].color,
-        outline: viewMode === "silhouette" ? "rgba(0,0,0,0.55)" : TILES[lane].outline,
-        lineW: (viewMode === "silhouette" ? 3 : 6) / Math.max(sx, sy),
+        color: tileWantsSilhouette() ? TILES[lane].outline : TILES[lane].color,
+        outline: tileWantsSilhouette() ? "rgba(0,0,0,0.55)" : TILES[lane].outline,
+        lineW: (tileWantsSilhouette() ? 3 : 6) / Math.max(sx, sy),
       });
       tile.poseCtx.restore();
     }
@@ -1045,7 +1066,7 @@ async function boot() {
   startBtn.textContent = "Loading camera…";
   try {
     await startCamera(camVideo);
-    const needSeg = viewMode === "silhouette";
+    const needSeg = tileWantsSilhouette();
     if (!tracker || tracker._n !== numPlayers || tracker._seg !== needSeg) {
       const t = await createPoseTracker({ numPoses: numPlayers, enableSegmentation: needSeg });
       tracker = wrapTracker(t);
@@ -1067,7 +1088,7 @@ async function boot() {
 window.addEventListener("resize", resizeTileCanvases);
 startBtn.addEventListener("click", boot);
 restartBtn.addEventListener("click", async () => {
-  const needSeg = viewMode === "silhouette";
+  const needSeg = tileWantsSilhouette();
   if (!tracker || tracker._n !== numPlayers || tracker._seg !== needSeg) {
     const t = await createPoseTracker({ numPoses: numPlayers, enableSegmentation: needSeg });
     tracker = wrapTracker(t);

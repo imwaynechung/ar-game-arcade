@@ -637,6 +637,35 @@
         background: transparent;
       }
       .arena-slot .tile video { opacity: 0.10; }
+      /* Tile render mode (Design 1) */
+      body.mode-design1.tile-mode-skeleton .arena-slot .tile video { opacity: 0; }
+      body.mode-design1.tile-mode-silhouette .arena-slot .tile video { opacity: 0; }
+      body.mode-design1.tile-mode-blur .arena-slot .tile video {
+        opacity: 1;
+        filter: blur(14px) brightness(0.55) saturate(1.1);
+      }
+      /* Tile-mode pill (top-right of arena) */
+      .tile-mode-btn {
+        position: fixed; top: 12px; right: 14px;
+        z-index: 6;
+        display: none; gap: 4px;
+        background: rgba(8,12,28,0.65);
+        border: 1px solid rgba(92,225,255,0.5);
+        border-radius: 999px;
+        padding: 4px;
+        font: 700 11px -apple-system,system-ui,sans-serif;
+        letter-spacing: 0.06em;
+        color: #cfe9ff;
+        pointer-events: auto;
+      }
+      body.mode-design1 .tile-mode-btn { display: inline-flex; }
+      .tile-mode-btn button {
+        border: 0; background: transparent; color: inherit;
+        padding: 6px 11px; border-radius: 999px;
+        cursor: pointer;
+      }
+      .tile-mode-btn button:hover { background: rgba(92,225,255,0.18); }
+      .tile-mode-btn button.active { background: #5ce1ff; color: #062a36; }
       .arena-slot .tile .tile-name,
       .arena-slot .tile .tile-combo { display: none; }
       .arena-slot .tile .tile-score { display: none; }
@@ -907,6 +936,11 @@
         </div>
         <div class="arena-corner arena-corner-l"><div class="ico">🕺</div>FOLLOW<br>COACH</div>
         <div class="arena-corner arena-corner-r"><div class="ico">📊</div>VIEW<br>STATS</div>
+        <div class="tile-mode-btn" id="tile-mode-btn" title="Switch player tile rendering">
+          <button data-tm="skeleton">SKELETON</button>
+          <button data-tm="silhouette">+ FILL</button>
+          <button data-tm="blur">BG BLUR</button>
+        </div>
       </div>
     </div>
 
