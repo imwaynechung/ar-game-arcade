@@ -20,15 +20,74 @@
   #ui{position:absolute;inset:0;z-index:2;pointer-events:none}
 
   /* ---------- START SCREEN ---------- */
-  #startScreen{position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,#1a2240,#06081a 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:5;padding:24px;text-align:center}
-  #startScreen h1{font-size:clamp(36px,7vw,72px);margin:0;color:var(--gold);text-shadow:4px 4px 0 var(--gold-stroke),0 0 30px rgba(255,207,58,.5);letter-spacing:2px}
-  #startScreen p{max-width:700px;font-size:17px;line-height:1.55;color:#dde;margin:0}
-  #startScreen .rules{list-style:none;padding:0;margin:8px 0;color:#cde;font-size:16px;line-height:1.8}
-  #startScreen .rules b{color:#ffcf3a}
-  #startBtn{pointer-events:auto;background:linear-gradient(180deg,#ffcf3a,#f29b1a);color:#3a1d00;border:0;padding:16px 44px;border-radius:999px;font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 8px 0 var(--gold-stroke),0 12px 30px rgba(0,0,0,.5);transition:transform .08s}
+  #startScreen{position:absolute;inset:0;background:linear-gradient(180deg,#2bbcf6 0%,#1aa1e0 55%,#0b6fb0 100%);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;z-index:5;padding:0;text-align:center;overflow-y:auto;overflow-x:hidden}
+  #startScreen .page{width:100%;min-height:100%;display:none;flex-direction:column;align-items:center;justify-content:center;padding:28px 22px 32px;gap:16px;position:relative}
+  #startScreen .page.active{display:flex}
+
+  /* confetti dots in the sky */
+  #startScreen::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:
+      radial-gradient(circle, #ffd54a 2px, transparent 3px),
+      radial-gradient(circle, #ff6b6b 2px, transparent 3px),
+      radial-gradient(circle, #6bd66b 2px, transparent 3px),
+      radial-gradient(circle, #ffffff 2px, transparent 3px);
+    background-size:140px 140px,180px 180px,220px 220px,260px 260px;
+    background-position:0 0, 60px 30px, 120px 90px, 30px 150px;
+    opacity:.5;animation:confettiDrift 18s linear infinite}
+  @keyframes confettiDrift{to{background-position:0 280px,60px 310px,120px 370px,30px 430px}}
+
+  /* HERO PAGE */
+  .hero{max-width:1100px;width:100%;display:flex;flex-direction:column;align-items:center;gap:18px;z-index:1}
+  .heroArt{width:100%;max-width:920px;border-radius:28px;overflow:hidden;
+    box-shadow:0 14px 0 #003a66, 0 28px 60px rgba(0,0,0,.55);border:6px solid #fff;
+    background:#2bbcf6;animation:heroFloat 4s ease-in-out infinite alternate}
+  .heroArt img{display:block;width:100%;height:auto}
+  @keyframes heroFloat{to{transform:translateY(-6px)}}
+  .heroTagline{display:inline-block;background:linear-gradient(180deg,#ffcf3a,#f29b1a);color:#3a1d00;
+    padding:10px 28px;border-radius:999px;font-weight:900;font-size:clamp(15px,2vw,20px);letter-spacing:2px;
+    border:4px solid #fff;box-shadow:0 6px 0 var(--gold-stroke),0 12px 24px rgba(0,0,0,.35);transform:rotate(-2deg)}
+  .heroCTA{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+
+  /* INSTRUCTIONS PAGE */
+  .insTitle{font-size:clamp(34px,6vw,60px);margin:0;color:#fff;-webkit-text-stroke:3px #0b3d66;
+    text-shadow:0 6px 0 #0b3d66,0 0 24px rgba(0,0,0,.35);letter-spacing:2px;font-style:italic;font-weight:900}
+  .insSub{color:#ffeebb;font-weight:800;letter-spacing:1px;margin:-4px 0 6px;font-size:clamp(14px,1.6vw,17px)}
+  .stepGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:1000px;width:100%;margin:6px 0 4px}
+  .stepCard{background:#fff;border-radius:20px;padding:16px 16px 18px;text-align:left;
+    border:4px solid #0b3d66;box-shadow:0 8px 0 #0b3d66,0 14px 28px rgba(0,0,0,.35);
+    position:relative;display:flex;flex-direction:column;gap:8px;color:#0b2540}
+  .stepCard .num{position:absolute;top:-18px;left:-18px;width:46px;height:46px;border-radius:50%;
+    background:linear-gradient(180deg,#ffcf3a,#f29b1a);color:#3a1d00;
+    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;
+    border:4px solid #fff;box-shadow:0 4px 0 var(--gold-stroke)}
+  .stepCard .icon{font-size:46px;line-height:1}
+  .stepCard h3{margin:0;font-size:18px;letter-spacing:.5px;color:#0b3d66}
+  .stepCard p{margin:0;font-size:14px;line-height:1.45;color:#234}
+  .stepCard.red{border-color:#c9160c;box-shadow:0 8px 0 #7a0a04,0 14px 28px rgba(0,0,0,.35)}
+  .stepCard.red h3{color:#c9160c}
+  .stepCard.blue{border-color:#0d3fb3;box-shadow:0 8px 0 #06246e,0 14px 28px rgba(0,0,0,.35)}
+  .stepCard.blue h3{color:#0d3fb3}
+  .stepCard.green{border-color:#1a8a2a;box-shadow:0 8px 0 #0d4a17,0 14px 28px rgba(0,0,0,.35)}
+  .stepCard.green h3{color:#1a8a2a}
+  .stepCard.purple{border-color:#6b2bb3;box-shadow:0 8px 0 #3a1466,0 14px 28px rgba(0,0,0,.35)}
+  .stepCard.purple h3{color:#6b2bb3}
+
+  .tips{background:rgba(11,61,102,.55);border:3px solid #ffcf3a;border-radius:16px;padding:10px 18px;
+    color:#fff;font-weight:700;font-size:14px;letter-spacing:.4px;max-width:920px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .tips b{color:#ffcf3a}
+
+  .ghostBtn{pointer-events:auto;background:rgba(255,255,255,.18);color:#fff;border:3px solid #fff;
+    padding:12px 28px;border-radius:999px;font-size:16px;font-weight:900;cursor:pointer;letter-spacing:1px;
+    backdrop-filter:blur(4px);transition:transform .08s}
+  .ghostBtn:active{transform:translateY(3px)}
+
+  #startBtn{pointer-events:auto;background:linear-gradient(180deg,#ffcf3a,#f29b1a);color:#3a1d00;border:0;
+    padding:18px 52px;border-radius:999px;font-size:24px;font-weight:900;cursor:pointer;letter-spacing:1px;
+    box-shadow:0 8px 0 var(--gold-stroke),0 14px 30px rgba(0,0,0,.55);transition:transform .08s;
+    border:4px solid #fff}
   #startBtn:active{transform:translateY(4px);box-shadow:0 4px 0 var(--gold-stroke)}
-  #startBtn:disabled{opacity:.5;cursor:not-allowed}
-  #status{font-size:13px;color:#8aa;min-height:1.2em}
+  #startBtn:disabled{opacity:.55;cursor:not-allowed}
+  #status{font-size:13px;color:#eaf6ff;min-height:1.2em;text-shadow:0 1px 2px rgba(0,0,0,.5)}
   .back-btn{position:absolute;top:18px;left:18px;color:#cde;text-decoration:none;font-size:14px;background:rgba(0,0,0,.45);padding:8px 14px;border-radius:999px;pointer-events:auto;z-index:7}
   .back-btn:hover{background:rgba(0,0,0,.7)}
 
@@ -294,18 +353,65 @@
 <div id="countdown"><div class="num" id="cdNum">3</div></div>
 
 <div id="startScreen">
-  <h1>🐉 DRAGON BOAT RACE</h1>
-  <p>Webcam team battle. Stand side-by-side. The screen splits down the middle.</p>
-  <ul class="rules">
-    <li>👈 Stand on the <b style="color:#ff7a4a">LEFT</b> = row for <b style="color:#ff7a4a">TEAM RED</b></li>
-    <li>👉 Stand on the <b style="color:#6ba8ff">RIGHT</b> = row for <b style="color:#6ba8ff">TEAM BLUE</b></li>
-    <li>🤲 Bring <b>both hands together</b> in front to grip the paddle — it'll glow on screen</li>
-    <li>🚣 Lift the paddle <b>above your shoulders</b>, then dip it <b>down past your hips</b> to score a stroke</li>
-    <li>🔥 Fast consecutive strokes build a COMBO multiplier (up to x20)</li>
-    <li>⏱️ 60 seconds — first to 100% progress, or highest score, wins</li>
-  </ul>
-  <button id="startBtn" disabled>Start Race</button>
-  <div id="status">Loading MediaPipe…</div>
+  <!-- PAGE 1: HERO LANDING -->
+  <div class="page active" id="heroPage">
+    <div class="hero">
+      <div class="heroArt">
+        <img src="../assets/bg/dragonboatbg.png" alt="Dragon Boat Race"
+             onerror="this.parentNode.style.background='linear-gradient(135deg,#ffcf3a,#ff6b6b)';this.style.display='none'"/>
+      </div>
+      <div class="heroCTA">
+        <button class="ghostBtn" id="howBtn" type="button">📖 How to Play</button>
+        <button id="startBtnHero" type="button" class="ghostBtn"
+          style="background:linear-gradient(180deg,#ffcf3a,#f29b1a);color:#3a1d00;border-color:#fff;box-shadow:0 6px 0 var(--gold-stroke)">
+          🚣 Quick Start
+        </button>
+      </div>
+      <div id="status">Loading MediaPipe…</div>
+    </div>
+  </div>
+
+  <!-- PAGE 2: HOW TO PLAY -->
+  <div class="page" id="howPage">
+    <h1 class="insTitle">HOW TO PLAY</h1>
+    <div class="insSub">⚡ STAND IN FRONT OF THE CAMERA · GRAB A FRIEND · ROW! ⚡</div>
+
+    <div class="stepGrid">
+      <div class="stepCard red">
+        <div class="num">1</div>
+        <div class="icon">👫</div>
+        <h3>Pick Your Side</h3>
+        <p>Stand <b>side-by-side</b> in front of the camera. <b>LEFT</b> player rows for 🔴 <b>TEAM RED</b>, <b>RIGHT</b> player rows for 🔵 <b>TEAM BLUE</b>.</p>
+      </div>
+      <div class="stepCard blue">
+        <div class="num">2</div>
+        <div class="icon">🤲</div>
+        <h3>Grab the Paddle</h3>
+        <p>Bring <b>both hands together</b> in front of you. A glowing paddle will appear on screen — you're ready to row!</p>
+      </div>
+      <div class="stepCard green">
+        <div class="num">3</div>
+        <div class="icon">🚣</div>
+        <h3>Row Row Row!</h3>
+        <p>Lift the paddle <b>above your shoulders</b>, then dip it <b>down past your hips</b>. That's <b>one stroke!</b> Repeat fast!</p>
+      </div>
+      <div class="stepCard purple">
+        <div class="num">4</div>
+        <div class="icon">🔥</div>
+        <h3>Build Combos</h3>
+        <p>Fast back-to-back strokes build a <b>COMBO</b> multiplier up to <b>x20</b>. The faster you row, the further your boat flies!</p>
+      </div>
+    </div>
+
+    <div class="tips">
+      ⏱️ <b>60 seconds</b> — first boat to cross the finish line wins. If time runs out, <b>highest score</b> takes the trophy! 🏆
+    </div>
+
+    <div class="heroCTA">
+      <button class="ghostBtn" id="backBtn" type="button">← Back</button>
+      <button id="startBtn" disabled>🚣‍♂️ Start Race</button>
+    </div>
+  </div>
 </div>
 
 <div id="winScreen">
@@ -1045,6 +1151,23 @@ startBtn.addEventListener('click', async ()=>{
   startBtn.disabled = true;
   try{ await startCamera(); }
   catch(e){ statusEl.textContent='Camera error: '+e.message; startBtn.disabled=false; startScreen.style.display='flex'; }
+});
+
+// Hero → How-to-play navigation
+const heroPage = document.getElementById('heroPage');
+const howPage  = document.getElementById('howPage');
+const howBtn   = document.getElementById('howBtn');
+const backBtn  = document.getElementById('backBtn');
+const startBtnHero = document.getElementById('startBtnHero');
+function showPage(which){
+  heroPage.classList.toggle('active', which === 'hero');
+  howPage.classList.toggle('active', which === 'how');
+}
+howBtn.addEventListener('click', ()=> showPage('how'));
+backBtn.addEventListener('click', ()=> showPage('hero'));
+startBtnHero.addEventListener('click', ()=>{
+  if (startBtn.disabled) { showPage('how'); return; }
+  startBtn.click();
 });
 
 // Mute toggle
