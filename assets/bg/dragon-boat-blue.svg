@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" width="800" height="360">
+  <defs>
+    <linearGradient id="bHull" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#6aa6ff"/>
+      <stop offset=".55" stop-color="#1a4fcf"/>
+      <stop offset="1" stop-color="#06246e"/>
+    </linearGradient>
+    <pattern id="bScales" x="0" y="0" width="34" height="22" patternUnits="userSpaceOnUse">
+      <path d="M0 11 q8.5 -14 17 0 t17 0" fill="none" stroke="#06246e" stroke-width="1.6" opacity=".75"/>
+      <path d="M-17 22 q8.5 -14 17 0 t17 0" fill="none" stroke="#06246e" stroke-width="1.6" opacity=".75"/>
+    </pattern>
+    <linearGradient id="bTrim" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#e8f5ff"/>
+      <stop offset=".5" stop-color="#a8d8ff"/>
+      <stop offset="1" stop-color="#3a78c8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ============ HULL ============ -->
+  <path d="M120 230 Q400 330 690 240 L680 270 Q400 360 130 280 Z"
+        fill="url(#bHull)" stroke="#031033" stroke-width="4"/>
+  <path d="M120 230 Q400 330 690 240 L680 270 Q400 360 130 280 Z"
+        fill="url(#bScales)"/>
+  <path d="M120 230 Q400 330 690 240"
+        fill="none" stroke="url(#bTrim)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M120 230 Q400 330 690 240"
+        fill="none" stroke="#3a78c8" stroke-width="3"/>
+  <path d="M150 275 Q400 350 660 275"
+        fill="none" stroke="#031033" stroke-width="3" opacity=".6"/>
+
+  <!-- ============ DRAGON HEAD ============ -->
+  <g>
+    <path d="M155 232 Q140 215 145 195 L175 215 Z" fill="#031033"/>
+
+    <!-- Mane (silver/cyan flame) -->
+    <path d="M180 110 Q205 90 220 110 Q235 100 240 125 Q255 120 250 145 Q265 145 252 170 L210 175 Z"
+          fill="url(#bTrim)" stroke="#1a3a8a" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M188 115 q12 -18 24 -4" fill="none" stroke="#1a3a8a" stroke-width="2"/>
+    <path d="M210 105 q12 -14 22 2" fill="none" stroke="#1a3a8a" stroke-width="2"/>
+    <path d="M232 130 q14 -10 20 6" fill="none" stroke="#1a3a8a" stroke-width="2"/>
+
+    <!-- Horns -->
+    <g stroke="#031033" stroke-width="2.5" stroke-linejoin="round">
+      <path d="M165 122 Q150 95 158 70 Q170 75 175 100 Q172 115 175 128 Z" fill="#f8efd6"/>
+      <path d="M165 122 q5 -8 6 -22 m-2 -8 q3 -10 7 -18" fill="none"/>
+      <path d="M195 118 Q188 90 200 68 Q212 76 210 100 Q205 115 207 128 Z" fill="#f8efd6"/>
+      <path d="M195 118 q6 -10 5 -22 m1 -10 q5 -8 8 -16" fill="none"/>
+    </g>
+
+    <!-- Head main -->
+    <path d="M210 130 Q150 130 130 165 Q120 195 145 215 Q170 230 200 218 Q230 215 245 195 L250 165 Q245 138 210 130 Z"
+          fill="url(#bHull)" stroke="#031033" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M180 145 Q210 138 235 155" fill="none" stroke="#cfe3ff" stroke-width="3" opacity=".7"/>
+
+    <!-- Cheek -->
+    <path d="M148 200 Q175 220 215 215 L218 198 Q180 200 152 188 Z"
+          fill="url(#bTrim)" stroke="#1a3a8a" stroke-width="2.5"/>
+
+    <!-- Snout -->
+    <path d="M120 180 Q90 175 78 188 Q72 200 88 207 Q105 213 130 205 Z"
+          fill="url(#bHull)" stroke="#031033" stroke-width="3.5"/>
+    <ellipse cx="92" cy="190" rx="4.5" ry="3" fill="#031033"/>
+
+    <!-- Lower jaw + teeth -->
+    <path d="M88 207 Q120 230 175 225 L172 240 Q120 248 86 225 Z"
+          fill="url(#bTrim)" stroke="#031033" stroke-width="3"/>
+    <g fill="#ffffff" stroke="#031033" stroke-width="1.5" stroke-linejoin="round">
+      <polygon points="100,212 106,224 112,212"/>
+      <polygon points="116,213 122,226 128,213"/>
+      <polygon points="132,214 138,227 144,214"/>
+      <polygon points="148,214 154,226 160,214"/>
+    </g>
+
+    <!-- Eye -->
+    <circle cx="190" cy="170" r="11" fill="#ffffff" stroke="#031033" stroke-width="2.5"/>
+    <circle cx="193" cy="172" r="5.5" fill="#031033"/>
+    <circle cx="195" cy="170" r="1.8" fill="#ffffff"/>
+    <path d="M175 158 Q190 152 210 158" fill="none" stroke="#031033" stroke-width="3" stroke-linecap="round"/>
+
+    <path d="M95 207 Q80 230 95 250" fill="none" stroke="#1a3a8a" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- ============ TAIL ============ -->
+  <g>
+    <path d="M650 240 Q700 235 720 215 Q735 195 745 215 Q740 235 720 248 Q700 258 670 255 Z"
+          fill="url(#bTrim)" stroke="#1a3a8a" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M705 215 Q720 195 735 200 Q730 215 715 222 Z"
+          fill="url(#bTrim)" stroke="#1a3a8a" stroke-width="2.5"/>
+    <path d="M695 222 q15 -8 30 -2" fill="none" stroke="#1a3a8a" stroke-width="2"/>
+    <path d="M690 235 q18 -4 32 4" fill="none" stroke="#1a3a8a" stroke-width="2"/>
+  </g>
+
+  <ellipse cx="430" cy="265" rx="190" ry="10" fill="#031033" opacity=".25"/>
+</svg>

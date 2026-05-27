@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Dragon Boat Race · VS · AR Arcade</title>
+<script type="importmap">
+{ "imports": { "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs" } }
+</script>
+<style>
+  :root{
+    --red1:#ff5b50; --red2:#c9160c; --red3:#7a0a04;
+    --blue1:#4d8dff; --blue2:#0d3fb3; --blue3:#06246e;
+    --gold:#ffcf3a; --gold-stroke:#7a4a00;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0c0f17;color:#fff;font-family:"Inter","Segoe UI",system-ui,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+  #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);filter:saturate(1.1) brightness(.95);background:#000;z-index:0}
+  #poseCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+  #ui{position:absolute;inset:0;z-index:2;pointer-events:none}
+
+  /* ---------- START SCREEN ---------- */
+  #startScreen{position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,#1a2240,#06081a 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:5;padding:24px;text-align:center}
+  #startScreen h1{font-size:clamp(36px,7vw,72px);margin:0;color:var(--gold);text-shadow:4px 4px 0 var(--gold-stroke),0 0 30px rgba(255,207,58,.5);letter-spacing:2px}
+  #startScreen p{max-width:700px;font-size:17px;line-height:1.55;color:#dde;margin:0}
+  #startScreen .rules{list-style:none;padding:0;margin:8px 0;color:#cde;font-size:16px;line-height:1.8}
+  #startScreen .rules b{color:#ffcf3a}
+  #startBtn{pointer-events:auto;background:linear-gradient(180deg,#ffcf3a,#f29b1a);color:#3a1d00;border:0;padding:16px 44px;border-radius:999px;font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 8px 0 var(--gold-stroke),0 12px 30px rgba(0,0,0,.5);transition:transform .08s}
+  #startBtn:active{transform:translateY(4px);box-shadow:0 4px 0 var(--gold-stroke)}
+  #startBtn:disabled{opacity:.5;cursor:not-allowed}
+  #status{font-size:13px;color:#8aa;min-height:1.2em}
+  .back-btn{position:absolute;top:18px;left:18px;color:#cde;text-decoration:none;font-size:14px;background:rgba(0,0,0,.45);padding:8px 14px;border-radius:999px;pointer-events:auto;z-index:7}
+  .back-btn:hover{background:rgba(0,0,0,.7)}
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{position:absolute;top:18px;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;padding:0 22px;gap:16px}
+  .teamPanel{display:flex;align-items:center;gap:14px;background:linear-gradient(180deg,#fff,#eee);border-radius:22px;padding:8px 22px 8px 8px;box-shadow:0 6px 0 rgba(0,0,0,.35),0 12px 30px rgba(0,0,0,.45);position:relative;min-width:320px}
+  .teamPanel.red{border:4px solid var(--red3)}
+  .teamPanel.blue{border:4px solid var(--blue3);flex-direction:row-reverse;padding:8px 8px 8px 22px}
+  .emblem{width:74px;height:74px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:46px;flex-shrink:0;box-shadow:0 4px 0 rgba(0,0,0,.3),inset 0 -6px 0 rgba(0,0,0,.2)}
+  .teamPanel.red .emblem{background:radial-gradient(circle at 35% 30%,#ffd9a0,#ffb04a 55%,#c9651a 100%);border:3px solid #fff}
+  .teamPanel.blue .emblem{background:radial-gradient(circle at 35% 30%,#cfe3ff,#5b95ff 55%,#1e3f8e 100%);border:3px solid #fff}
+  .teamLabel{position:absolute;top:-14px;padding:4px 18px;border-radius:999px;font-weight:900;font-size:17px;letter-spacing:2px;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.35);border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.35);white-space:nowrap}
+  .teamPanel.red .teamLabel{left:78px;background:linear-gradient(180deg,var(--red1),var(--red2))}
+  .teamPanel.blue .teamLabel{right:78px;background:linear-gradient(180deg,var(--blue1),var(--blue2))}
+  .teamInfo{display:flex;flex-direction:column;gap:4px;min-width:150px}
+  .teamPanel.blue .teamInfo{align-items:flex-end}
+  .score{font-size:40px;font-weight:900;line-height:1;text-shadow:2px 2px 0 rgba(0,0,0,.1);font-variant-numeric:tabular-nums}
+  .teamPanel.red .score{color:var(--red2)}
+  .teamPanel.blue .score{color:var(--blue2)}
+  .hearts{display:flex;gap:4px;font-size:20px}
+  .heart{filter:drop-shadow(0 1px 0 rgba(0,0,0,.3));transition:transform .2s}
+  .heart.dead{filter:grayscale(1);opacity:.35}
+  .heart.popping{transform:scale(1.4)}
+  .bar{position:absolute;bottom:-14px;left:14px;right:14px;height:14px;border-radius:999px;background:#22252b;border:3px solid #fff;overflow:hidden;box-shadow:0 4px 0 rgba(0,0,0,.35)}
+  .bar > .fill{height:100%;width:0%;border-radius:999px;transition:width .25s ease}
+  .teamPanel.red .bar .fill{background:linear-gradient(90deg,#ffd54a,#ff6b1a 50%,#d61a08)}
+  .teamPanel.blue .bar .fill{background:linear-gradient(90deg,#a8e8ff,#3aa0ff 50%,#0d3fb3)}
+
+  /* ---------- TIMER ---------- */
+  .timerWrap{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:4px;position:relative}
+  .timer{background:#fff;border:5px solid #1a3a8a;border-radius:18px;padding:6px 26px 10px;box-shadow:0 6px 0 #0d2050,0 12px 24px rgba(0,0,0,.4);text-align:center;min-width:170px}
+  .timer .lbl{font-size:12px;font-weight:800;letter-spacing:2px;color:#1a3a8a}
+  .timer .val{font-size:42px;font-weight:900;line-height:1;color:#1a3a8a;font-variant-numeric:tabular-nums}
+  .timer.low .val{color:#d61a08;animation:pulse .6s infinite alternate}
+  @keyframes pulse{to{transform:scale(1.08)}}
+  .star{position:absolute;font-size:26px;filter:drop-shadow(0 2px 0 var(--gold-stroke));animation:twinkle 1.4s infinite alternate;pointer-events:none}
+  .star.l{left:-36px;top:18px}
+  .star.r{right:-36px;top:18px}
+  @keyframes twinkle{from{transform:scale(.85) rotate(-10deg);opacity:.7}to{transform:scale(1.1) rotate(10deg);opacity:1}}
+
+  /* ---------- BANNER ---------- */
+  .banner{position:absolute;top:120px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none}
+  .banner .big{font-size:clamp(38px,5.5vw,60px);font-weight:900;color:var(--gold);-webkit-text-stroke:3px var(--gold-stroke);text-shadow:0 6px 0 var(--gold-stroke),0 10px 0 rgba(0,0,0,.25);letter-spacing:3px;line-height:.95;font-style:italic}
+  .banner .ribbon{display:inline-block;margin-top:8px;padding:6px 22px;background:linear-gradient(180deg,var(--red1),var(--red2));border:3px solid #fff;border-radius:10px;font-weight:900;letter-spacing:2px;font-size:15px;box-shadow:0 4px 0 var(--red3),0 8px 18px rgba(0,0,0,.35);transform:skewX(-5deg)}
+
+  /* ---------- COMBO STARBURST ---------- */
+  .combo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:200px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .combo .burst{position:absolute;inset:0;animation:spin 7s linear infinite;filter:drop-shadow(0 6px 0 rgba(0,0,0,.4))}
+  .combo .inner{position:relative;z-index:1;text-align:center}
+  .combo .label{font-size:22px;font-weight:900;color:#fff;-webkit-text-stroke:2px var(--gold-stroke);text-shadow:0 3px 0 var(--gold-stroke);letter-spacing:1px;font-style:italic}
+  .combo .mult{font-size:46px;font-weight:900;color:#fff;-webkit-text-stroke:2px var(--gold-stroke);text-shadow:0 3px 0 var(--gold-stroke);line-height:1;font-style:italic}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .combo.hidden{opacity:0;transition:opacity .4s}
+  .combo.pop{animation:comboPop .25s}
+  @keyframes comboPop{0%{transform:translate(-50%,-50%) scale(.9)}50%{transform:translate(-50%,-50%) scale(1.18)}100%{transform:translate(-50%,-50%) scale(1)}}
+
+  /* ---------- VS BADGE ---------- */
+  .vsBadge{position:absolute;left:50%;top:78%;transform:translate(-50%,-50%);font-size:64px;font-weight:900;color:#fff;-webkit-text-stroke:4px #1a3a8a;text-shadow:0 8px 0 #0d2050,0 0 30px rgba(255,255,255,.4);pointer-events:none;font-style:italic;animation:vsPulse 1.2s infinite alternate}
+  @keyframes vsPulse{to{transform:translate(-50%,-50%) scale(1.08)}}
+
+  /* ---------- RIVER + DRAGON BOATS ---------- */
+  #river{position:absolute;left:0;right:0;bottom:64px;height:24vh;min-height:200px;pointer-events:none;
+    background:transparent;
+    z-index:3;overflow:visible}
+  #river::before, #river::after{content:none}
+  .finishLine{position:absolute;right:1.2%;top:6%;bottom:6%;width:14px;border-radius:6px;
+    background:repeating-linear-gradient(0deg,#fff 0 14px,#111 14px 28px);box-shadow:0 0 18px rgba(255,255,255,.7);z-index:6}
+  .finishLine::after{content:'🏁';position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .lane{position:absolute;left:0;right:0;height:62%;pointer-events:none;z-index:4}
+  .lane.red{top:6%}
+  .lane.blue{bottom:4%}   /* overlaps red lane slightly to save space */
+  .boat{position:absolute;top:50%;width:20%;max-width:260px;height:auto;pointer-events:none;
+    filter:drop-shadow(0 10px 16px rgba(0,0,0,.55));object-fit:contain;
+    left:0;transform:translateY(-50%) scaleX(-1);
+    transition:left .35s cubic-bezier(.22,.61,.36,1)}
+  .wake{position:absolute;top:50%;left:0;width:18%;height:18px;pointer-events:none;
+    transform:translateY(-50%);opacity:.9;z-index:3;
+    background:radial-gradient(ellipse at right center, rgba(255,255,255,.9), rgba(255,255,255,0) 70%);
+    transition:left .35s cubic-bezier(.22,.61,.36,1), width .35s cubic-bezier(.22,.61,.36,1);filter:blur(1px)}
+
+  /* ---------- BOTTOM PROGRESS BARS ---------- */
+  .bottomBars{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:space-between;padding:0 22px;gap:24px}
+  .progBar{flex:1;background:#fff;border-radius:999px;padding:6px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 6px 0 rgba(0,0,0,.35),0 10px 24px rgba(0,0,0,.4);border:3px solid #1a1a22;max-width:46%}
+  .progBar .flag{font-size:22px}
+  .progBar .label{font-weight:900;letter-spacing:1px;font-size:12px;color:#222;white-space:nowrap}
+  .progBar .track{flex:1;height:14px;background:#22252b;border-radius:999px;overflow:hidden;border:2px solid #111}
+  .progBar .fill{height:100%;width:0%;border-radius:999px;transition:width .25s ease}
+  .progBar.red .fill{background:linear-gradient(90deg,#ffd54a,#ff6b1a 60%,#d61a08)}
+  .progBar.blue .fill{background:linear-gradient(90deg,#a8e8ff,#3aa0ff 60%,#0d3fb3)}
+  .progBar .pct{font-weight:900;color:#222;min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
+
+  /* ---------- COUNTDOWN ---------- */
+  #countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:4;pointer-events:none}
+  #countdown.show{display:flex}
+  #countdown .num{font-size:200px;font-weight:900;color:var(--gold);-webkit-text-stroke:6px var(--gold-stroke);text-shadow:0 10px 0 var(--gold-stroke),0 0 50px rgba(255,207,58,.6);animation:cdPop 1s}
+  @keyframes cdPop{0%{transform:scale(.3);opacity:0}30%{transform:scale(1.2);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1.4);opacity:0}}
+
+  /* ---------- WIN OVERLAY ---------- */
+  #winScreen{position:absolute;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;z-index:6;text-align:center;padding:24px}
+  #winScreen.show{display:flex}
+  #winScreen h2{font-size:clamp(56px,9vw,96px);margin:0;color:var(--gold);-webkit-text-stroke:4px var(--gold-stroke);text-shadow:0 8px 0 var(--gold-stroke);letter-spacing:3px}
+  #winScreen h2.red{color:#ff7a4a}
+  #winScreen h2.blue{color:#6ba8ff}
+  #winScreen .sub{font-size:22px;color:#fff;font-weight:600}
+  #winScreen .actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  #winScreen button,#winScreen a{pointer-events:auto;background:linear-gradient(180deg,#ffcf3a,#f29b1a);border:0;padding:14px 36px;border-radius:999px;font-size:18px;font-weight:900;cursor:pointer;color:#3a1d00;box-shadow:0 6px 0 var(--gold-stroke);text-decoration:none;display:inline-block}
+  #winScreen a.alt{background:linear-gradient(180deg,#5a6680,#3a4360);color:#fff;box-shadow:0 6px 0 #1a2030}
+
+  /* ---------- RESULTS MODAL ---------- */
+  #resultsScreen{position:fixed;inset:0;background:rgba(8,12,24,.92);display:none;align-items:center;justify-content:center;z-index:50;padding:24px;overflow-y:auto}
+  #resultsScreen.show{display:flex}
+  #resultsScreen .resultsCard{background:linear-gradient(180deg,#12182a,#0a0f1c);border:2px solid rgba(255,207,58,.4);border-radius:20px;padding:28px;max-width:980px;width:100%;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  #resultsScreen h3{margin:0 0 8px;font-size:28px;color:var(--gold);text-align:center;letter-spacing:1px}
+  #resultsScreen .winLine{text-align:center;font-size:22px;font-weight:800;margin-bottom:18px;color:#ffd770}
+  #resultsScreen .winLine.red{color:#ff8a5a}
+  #resultsScreen .winLine.blue{color:#7ab8ff}
+  #resultsScreen .resultsCols,#resultsScreen .teamCols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:720px){#resultsScreen .resultsCols,#resultsScreen .teamCols{grid-template-columns:1fr}}
+  #resultsScreen .teamCol{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px}
+  #resultsScreen .teamCol h4{margin:0 0 12px;font-size:18px;letter-spacing:.5px}
+  #resultsScreen .teamCol.red h4{color:#ff8a5a}
+  #resultsScreen .teamCol.blue h4{color:#7ab8ff}
+  #resultsScreen .statRow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.08);font-size:14px}
+  #resultsScreen .statRow:last-of-type{border-bottom:0}
+  #resultsScreen .statLabel{color:#cdd6e6}
+  #resultsScreen .statValue{font-weight:800;color:#fff}
+  #resultsScreen .chartLabel{margin-top:14px;margin-bottom:6px;font-size:12px;color:#9aa6bd;text-transform:uppercase;letter-spacing:1px}
+  #resultsScreen svg{width:100%;height:60px;display:block}
+  #resultsScreen .resultsActions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+  #resultsScreen .resultsActions button,#resultsScreen .resultsActions a{background:linear-gradient(180deg,#ffcf3a,#f29b1a);border:0;padding:12px 30px;border-radius:999px;font-size:16px;font-weight:900;cursor:pointer;color:#3a1d00;box-shadow:0 5px 0 var(--gold-stroke);text-decoration:none;display:inline-block}
+  #resultsScreen .resultsActions a.alt,#resultsScreen .resultsActions button.alt{background:linear-gradient(180deg,#5a6680,#3a4360);color:#fff;box-shadow:0 5px 0 #1a2030}
+  #resultsScreen .benefitsPanel{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:720px){#resultsScreen .benefitsPanel{grid-template-columns:1fr}}
+  #resultsScreen .benefitsCol{background:linear-gradient(180deg,rgba(255,207,58,.08),rgba(255,255,255,.02));border:1px solid rgba(255,207,58,.25);border-radius:14px;padding:14px 16px}
+  #resultsScreen .benefitsTitle{font-size:15px;font-weight:800;color:var(--gold);margin-bottom:8px;letter-spacing:.5px}
+  #resultsScreen .benefitsList{list-style:none;margin:0;padding:0;font-size:13px;color:#dde4f3;line-height:1.55}
+  #resultsScreen .benefitsList li{padding:4px 0;border-bottom:1px dashed rgba(255,255,255,.06)}
+  #resultsScreen .benefitsList li:last-child{border-bottom:0}
+  #resultsScreen .benefitsList b{color:#fff}
+
+  /* ---------- STROKE FX ---------- */
+  .strokeFx{position:absolute;font-size:38px;font-weight:900;pointer-events:none;animation:strokeFloat 1s forwards;text-shadow:0 4px 0 rgba(0,0,0,.4);-webkit-text-stroke:2px #000}
+  .strokeFx.red{color:#ffcf3a}
+  .strokeFx.blue{color:#a8e8ff}
+  @keyframes strokeFloat{0%{transform:translate(-50%,0) scale(.6);opacity:0}20%{transform:translate(-50%,-20px) scale(1.1);opacity:1}100%{transform:translate(-50%,-110px) scale(1);opacity:0}}
+
+  /* ---------- PADDLE WATER SPLASH ---------- */
+  .splashDrop{position:absolute;width:14px;height:14px;border-radius:50%;pointer-events:none;z-index:8;
+    background:radial-gradient(circle at 35% 30%, #ffffff 0%, #d6eeff 40%, #5ab2ff 75%, #1e6dd6 100%);
+    box-shadow:0 0 10px rgba(150,210,255,.85), inset 0 0 2px #fff;
+    transform:translate(-50%,-50%);will-change:transform,opacity;
+    animation:splashFly var(--d,800ms) cubic-bezier(.2,.6,.4,1) forwards}
+  .splashRing{position:absolute;width:28px;height:28px;border-radius:50%;pointer-events:none;z-index:7;
+    border:3px solid rgba(190,230,255,.9);transform:translate(-50%,-50%) scale(.2);
+    animation:splashRingAnim 700ms ease-out forwards}
+  @keyframes splashFly{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
+    15%{opacity:1}
+    100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)), calc(-50% + var(--dy,0px))) scale(.6)}
+  }
+  @keyframes splashRingAnim{
+    0%{opacity:.95;transform:translate(-50%,-50%) scale(.2)}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(2.6)}
+  }
+</style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline muted></video>
+<canvas id="poseCanvas"></canvas>
+
+<a class="back-btn" href="../index.html">← Menu</a>
+
+<div id="ui">
+
+  <div class="topbar">
+    <div class="teamPanel red">
+      <div class="emblem">🐲</div>
+      <div class="teamInfo">
+        <div class="score" id="redScore">0</div>
+        <div class="hearts" id="redHearts"><span class="heart">❤️</span><span class="heart">❤️</span><span class="heart">❤️</span></div>
+      </div>
+      <div class="teamLabel">TEAM RED</div>
+      <div class="bar"><div class="fill" id="redBar"></div></div>
+    </div>
+
+    <div class="timerWrap">
+      <span class="star l">⭐</span>
+      <span class="star r">⭐</span>
+      <div class="timer" id="timerBox">
+        <div class="lbl">TIME LEFT</div>
+        <div class="val" id="timerVal">01:00</div>
+      </div>
+    </div>
+
+    <div class="teamPanel blue">
+      <div class="emblem">🐉</div>
+      <div class="teamInfo">
+        <div class="score" id="blueScore">0</div>
+        <div class="hearts" id="blueHearts"><span class="heart">❤️</span><span class="heart">❤️</span><span class="heart">❤️</span></div>
+      </div>
+      <div class="teamLabel">TEAM BLUE</div>
+      <div class="bar"><div class="fill" id="blueBar"></div></div>
+    </div>
+  </div>
+
+  <div class="banner">
+    <div class="big">TEAM BATTLE!</div>
+    <div class="ribbon">ROW FASTER TO WIN!</div>
+  </div>
+
+  <!-- River + dragon boats racing left -> right -->
+  <div id="river">
+    <div class="lane red">
+      <div class="wake" id="redWake"></div>
+      <img class="boat red" id="redBoat" src="../assets/bg/dragon-boat-red.png" alt="Red dragon boat"/>
+    </div>
+    <div class="lane blue">
+      <div class="wake" id="blueWake"></div>
+      <img class="boat blue" id="blueBoat" src="../assets/bg/dragon-boat-blue.png" alt="Blue dragon boat"/>
+    </div>
+    <div class="finishLine"></div>
+  </div>
+
+  <!-- COMBO -->
+  <div class="combo hidden" id="combo">
+    <svg class="burst" viewBox="0 0 200 200">
+      <defs>
+        <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#fff5b0"/>
+          <stop offset=".55" stop-color="#ffcf3a"/>
+          <stop offset="1" stop-color="#ff7a1a"/>
+        </radialGradient>
+      </defs>
+      <polygon points="100,0 115,55 170,30 145,80 200,100 145,120 170,170 115,145 100,200 85,145 30,170 55,120 0,100 55,80 30,30 85,55"
+        fill="url(#bg)" stroke="#7a4a00" stroke-width="4" stroke-linejoin="round"/>
+    </svg>
+    <div class="inner">
+      <div class="label">COMBO</div>
+      <div class="mult" id="comboMult">x1</div>
+    </div>
+  </div>
+
+  <div class="vsBadge">VS</div>
+  <button id="muteBtn" type="button" title="Mute" style="position:absolute;right:14px;top:14px;z-index:50;background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:8px 12px;font:600 14px/1 ui-sans-serif,system-ui;cursor:pointer">🔊</button>
+
+  <div class="bottomBars">
+    <div class="progBar red">
+      <span class="flag">🚩</span>
+      <span class="label">RED TEAM PROGRESS</span>
+      <div class="track"><div class="fill" id="redProg"></div></div>
+      <span class="pct" id="redPct">0%</span>
+    </div>
+    <div class="progBar blue">
+      <span class="flag">🏳️</span>
+      <span class="label">BLUE TEAM PROGRESS</span>
+      <div class="track"><div class="fill" id="blueProg"></div></div>
+      <span class="pct" id="bluePct">0%</span>
+    </div>
+  </div>
+</div>
+
+<div id="countdown"><div class="num" id="cdNum">3</div></div>
+
+<div id="startScreen">
+  <h1>🐉 DRAGON BOAT RACE</h1>
+  <p>Webcam team battle. Stand side-by-side. The screen splits down the middle.</p>
+  <ul class="rules">
+    <li>👈 Stand on the <b style="color:#ff7a4a">LEFT</b> = row for <b style="color:#ff7a4a">TEAM RED</b></li>
+    <li>👉 Stand on the <b style="color:#6ba8ff">RIGHT</b> = row for <b style="color:#6ba8ff">TEAM BLUE</b></li>
+    <li>🤲 Bring <b>both hands together</b> in front to grip the paddle — it'll glow on screen</li>
+    <li>🚣 Lift the paddle <b>above your shoulders</b>, then dip it <b>down past your hips</b> to score a stroke</li>
+    <li>🔥 Fast consecutive strokes build a COMBO multiplier (up to x20)</li>
+    <li>⏱️ 60 seconds — first to 100% progress, or highest score, wins</li>
+  </ul>
+  <button id="startBtn" disabled>Start Race</button>
+  <div id="status">Loading MediaPipe…</div>
+</div>
+
+<div id="winScreen">
+  <h2 id="winTitle">RED WINS!</h2>
+  <div class="sub" id="winSub"></div>
+  <div class="actions">
+    <button id="resultsBtn" type="button">📊 View Results</button>
+    <button onclick="location.reload()">🔁 Rematch</button>
+    <a class="alt" href="../index.html">← Menu</a>
+  </div>
+</div>
+
+<div id="resultsScreen">
+  <div class="resultsCard">
+    <h3>🏁 Race Results</h3>
+    <div class="winLine" id="resultsWinLine"></div>
+    <div class="teamCols">
+      <div class="teamCol red" id="resultsRed"></div>
+      <div class="teamCol blue" id="resultsBlue"></div>
+    </div>
+    <div class="benefitsPanel">
+      <div class="benefitsCol">
+        <div class="benefitsTitle">💪 Muscles worked</div>
+        <ul class="benefitsList">
+          <li><b>Lats &amp; upper back</b> — the pulling power on every stroke</li>
+          <li><b>Shoulders &amp; rotator cuff</b> — paddle lift &amp; reach</li>
+          <li><b>Biceps &amp; forearms</b> — grip and drive phase</li>
+          <li><b>Core &amp; obliques</b> — torso rotation drives the boat</li>
+          <li><b>Glutes &amp; hamstrings</b> — stable base for power transfer</li>
+          <li><b>Cardio system</b> — heart &amp; lungs at race pace</li>
+        </ul>
+      </div>
+      <div class="benefitsCol">
+        <div class="benefitsTitle">✨ Health benefits</div>
+        <ul class="benefitsList">
+          <li><b>Full-body conditioning</b> — over 80% of major muscles engaged</li>
+          <li><b>Better posture</b> — strengthens the posterior chain</li>
+          <li><b>Cardio endurance</b> — interval-style high-intensity bursts</li>
+          <li><b>Rotational power</b> — protects the spine in daily movement</li>
+          <li><b>Coordination &amp; rhythm</b> — brain–body timing under load</li>
+          <li><b>Calorie burn</b> — high output in a short window</li>
+        </ul>
+      </div>
+    </div>
+    <div class="resultsActions">
+      <button onclick="location.reload()">🔁 Rematch</button>
+      <a class="alt" href="../index.html">← Menu</a>
+      <button class="alt" id="resultsCloseBtn" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
+
+// ---------- DOM ----------
+const video = document.getElementById('video');
+const canvas = document.getElementById('poseCanvas');
+const ctx = canvas.getContext('2d');
+
+// ---------- Paddle artwork ----------
+// Cartoon paddle PNG (cropped, transparent bg): T-handle at upper-right, blade at lower-left.
+// Natural handle->blade axis runs from (W, 0) to (0, H) in the cropped 445x600 image.
+const paddleImg = { red: new Image(), blue: new Image() };
+paddleImg.red.src  = '../assets/bg/paddle-red.png';
+paddleImg.blue.src = '../assets/bg/paddle-blue.png';
+function paddleAxis(img){
+  // Recomputed lazily once image dims are known.
+  const w = img.naturalWidth || 445, h = img.naturalHeight || 600;
+  return { phi: Math.atan2(h, -w), len: Math.hypot(w, h) };
+}
+const startBtn = document.getElementById('startBtn');
+const startScreen = document.getElementById('startScreen');
+const statusEl = document.getElementById('status');
+const ui = {
+  redScore: document.getElementById('redScore'),
+  blueScore: document.getElementById('blueScore'),
+  redBar: document.getElementById('redBar'),
+  blueBar: document.getElementById('blueBar'),
+  redProg: document.getElementById('redProg'),
+  blueProg: document.getElementById('blueProg'),
+  redPct: document.getElementById('redPct'),
+  bluePct: document.getElementById('bluePct'),
+  redHearts: document.getElementById('redHearts'),
+  blueHearts: document.getElementById('blueHearts'),
+  timerVal: document.getElementById('timerVal'),
+  timerBox: document.getElementById('timerBox'),
+  combo: document.getElementById('combo'),
+  comboMult: document.getElementById('comboMult'),
+  winScreen: document.getElementById('winScreen'),
+  winTitle: document.getElementById('winTitle'),
+  winSub: document.getElementById('winSub'),
+  countdown: document.getElementById('countdown'),
+  cdNum: document.getElementById('cdNum'),
+  redBoat: document.getElementById('redBoat'),
+  blueBoat: document.getElementById('blueBoat'),
+  redWake: document.getElementById('redWake'),
+  blueWake: document.getElementById('blueWake'),
+  resultsScreen: document.getElementById('resultsScreen'),
+  resultsWinLine: document.getElementById('resultsWinLine'),
+  resultsRed: document.getElementById('resultsRed'),
+  resultsBlue: document.getElementById('resultsBlue'),
+  resultsBtn: document.getElementById('resultsBtn'),
+  resultsCloseBtn: document.getElementById('resultsCloseBtn'),
+};
+
+function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize); resize();
+
+// ---------- GAME STATE ----------
+const GAME = {
+  duration: 60,
+  state: 'idle',        // idle | countdown | running | over
+  startTs: 0,
+  teams: {
+    red:  { score:0, progress:0, hearts:3, combo:1, lastStrokeTs:0, lastActivityTs:0, _prevMidY:0, _hasPrev:false, _gripFrames:0, paddle:null, strokeTimes:[] },
+    blue: { score:0, progress:0, hearts:3, combo:1, lastStrokeTs:0, lastActivityTs:0, _prevMidY:0, _hasPrev:false, _gripFrames:0, paddle:null, strokeTimes:[] },
+  }
+};
+
+function updateHearts(team){
+  const el = team==='red'?ui.redHearts:ui.blueHearts;
+  const h = GAME.teams[team].hearts;
+  [...el.children].forEach((s,i)=>{ s.classList.toggle('dead', i>=h); });
+}
+// Boats race left -> right across the river; position driven by team progress (0..100).
+function updateBoatPosition(team){
+  const boat = team==='red' ? ui.redBoat : ui.blueBoat;
+  const wake = team==='red' ? ui.redWake : ui.blueWake;
+  if (!boat) return;
+  // Boat starts at left edge (0%), finish line sits at ~94% — usable track is 78% of lane width.
+  const p = Math.max(0, Math.min(100, GAME.teams[team].progress));
+  const xPct = p * 0.78; // 0..78% of lane width (leaves room for boat + finish line)
+  boat.style.left = xPct.toFixed(2) + '%';
+  if (wake){
+    // Wake stretches behind the boat as it moves forward.
+    const wakeWidth = 8 + xPct * 0.25; // grows with distance
+    wake.style.width = wakeWidth.toFixed(1) + '%';
+    wake.style.left = Math.max(0, xPct - wakeWidth + 4).toFixed(2) + '%';
+  }
+}
+function showCombo(mult){
+  ui.comboMult.textContent = 'x'+mult;
+  ui.combo.classList.remove('hidden');
+  ui.combo.classList.remove('pop'); void ui.combo.offsetWidth; ui.combo.classList.add('pop');
+  clearTimeout(showCombo._t);
+  showCombo._t = setTimeout(()=>ui.combo.classList.add('hidden'), 1600);
+}
+function flyText(team, text){
+  const el = document.createElement('div');
+  el.className = 'strokeFx '+team;
+  el.textContent = text;
+  el.style.left = (team==='red' ? '25%' : '75%');
+  el.style.top = '40%';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1000);
+}
+function popHeart(team){
+  const el = team==='red'?ui.redHearts:ui.blueHearts;
+  const liveHearts = [...el.children].filter(h=>!h.classList.contains('dead'));
+  const last = liveHearts[liveHearts.length-1];
+  if (!last) return;
+  last.classList.add('popping');
+  setTimeout(()=>{ last.classList.remove('popping'); last.classList.add('dead'); }, 200);
+}
+
+// ---------- WATER SPLASH FX ----------
+// Spawn a burst of droplet particles at (x,y) on screen.
+function spawnSplash(x, y, opts = {}){
+  if (x == null || y == null) return;
+  const count = opts.count ?? 8;
+  const power = opts.power ?? 1;            // 1 = stroke, 0.4 = ambient drip
+  const upBias = opts.upBias ?? 0.7;        // 0..1; how much droplets favor going up
+  // Ring
+  const ring = document.createElement('div');
+  ring.className = 'splashRing';
+  ring.style.left = x + 'px';
+  ring.style.top = y + 'px';
+  ring.style.width = (28 * power) + 'px';
+  ring.style.height = (28 * power) + 'px';
+  document.body.appendChild(ring);
+  setTimeout(() => ring.remove(), 720);
+  // Droplets
+  for (let i = 0; i < count; i++){
+    const d = document.createElement('div');
+    d.className = 'splashDrop';
+    const size = (8 + Math.random() * 12) * power;
+    d.style.width = d.style.height = size + 'px';
+    d.style.left = x + 'px';
+    d.style.top = y + 'px';
+    // Direction: hemisphere biased upward (negative dy)
+    const ang = (-Math.PI/2) + (Math.random() - 0.5) * Math.PI * (1.1 - upBias * 0.4);
+    const dist = (60 + Math.random() * 110) * power;
+    const dx = Math.cos(ang) * dist;
+    const dy = Math.sin(ang) * dist + (1 - upBias) * 40;
+    d.style.setProperty('--dx', dx.toFixed(1) + 'px');
+    d.style.setProperty('--dy', dy.toFixed(1) + 'px');
+    d.style.setProperty('--d', (650 + Math.random() * 300) + 'ms');
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 1000);
+  }
+}
+
+// Random ambient splashes from whichever paddle is currently visible.
+let _splashAmbientTimer = null;
+function startSplashAmbient(){
+  stopSplashAmbient();
+  const tick = () => {
+    if (GAME.state === 'running'){
+      const teams = ['red','blue'].filter(k => GAME.teams[k].bladeTip);
+      if (teams.length){
+        const k = teams[Math.floor(Math.random() * teams.length)];
+        const tip = GAME.teams[k].bladeTip;
+        if (tip) spawnSplash(tip.x, tip.y, { count: 3, power: 0.5, upBias: 0.5 });
+      }
+    }
+    _splashAmbientTimer = setTimeout(tick, 350 + Math.random() * 500);
+  };
+  _splashAmbientTimer = setTimeout(tick, 600);
+}
+function stopSplashAmbient(){
+  if (_splashAmbientTimer){ clearTimeout(_splashAmbientTimer); _splashAmbientTimer = null; }
+}
+
+// ---------- AUDIO ----------
+let ac, master, bgmGain, sfxGain, noiseBuffer;
+function ensureAudio(){
+  if (ac) return ac;
+  ac = new (window.AudioContext||window.webkitAudioContext)();
+  master = ac.createGain(); master.gain.value = 0.9; master.connect(ac.destination);
+  bgmGain = ac.createGain(); bgmGain.gain.value = 0.45; bgmGain.connect(master);
+  sfxGain = ac.createGain(); sfxGain.gain.value = 1.0; sfxGain.connect(master);
+  // White noise buffer (2s) for whoosh/splash
+  const len = ac.sampleRate * 2;
+  noiseBuffer = ac.createBuffer(1, len, ac.sampleRate);
+  const ch = noiseBuffer.getChannelData(0);
+  for (let i=0;i<len;i++) ch[i] = Math.random()*2-1;
+  return ac;
+}
+function beep(freq, ms=70, type='triangle', gain=0.06){
+  try{
+    const c = ensureAudio();
+    const o = c.createOscillator(); const g = c.createGain();
+    o.frequency.value = freq; o.type=type;
+    g.gain.setValueAtTime(gain, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + ms/1000);
+    o.connect(g).connect(sfxGain); o.start();
+    o.stop(c.currentTime + ms/1000);
+  }catch(e){}
+}
+function noiseHit({ filter='bandpass', freq=1200, q=1.5, gain=0.35, attack=0.005, decay=0.18, sweepTo=null }){
+  try{
+    const c = ensureAudio();
+    const src = c.createBufferSource(); src.buffer = noiseBuffer;
+    const flt = c.createBiquadFilter(); flt.type = filter; flt.frequency.value = freq; flt.Q.value = q;
+    if (sweepTo != null) flt.frequency.exponentialRampToValueAtTime(sweepTo, c.currentTime + attack + decay);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(gain, c.currentTime + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + attack + decay);
+    src.connect(flt).connect(g).connect(sfxGain); src.start();
+    src.stop(c.currentTime + attack + decay + 0.05);
+  }catch(e){}
+}
+function drumHit(team){
+  // Taiko-style boom: pitched sine sweep + body noise thump
+  try{
+    const c = ensureAudio();
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(team==='red'?170:210, c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(55, c.currentTime+0.16);
+    g.gain.setValueAtTime(0.22, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+0.22);
+    o.connect(g).connect(sfxGain); o.start(); o.stop(c.currentTime+0.24);
+    // body thump
+    noiseHit({ filter:'lowpass', freq:240, q:0.7, gain:0.18, attack:0.003, decay:0.09 });
+  }catch(e){}
+}
+function strokeSfx(team){
+  // Paddle whoosh (descending sweep) + water splash
+  noiseHit({ filter:'bandpass', freq:1800, q:1.2, gain:0.30, attack:0.008, decay:0.22, sweepTo:300 });
+  setTimeout(()=> noiseHit({ filter:'highpass', freq:2500, q:0.6, gain:0.18, attack:0.004, decay:0.12 }), 90);
+  drumHit(team);
+}
+function comboChime(combo, team){
+  // Pentatonic stack scaled by combo level
+  const base = team==='red' ? 523.25 : 587.33; // C5 / D5
+  const steps = [0, 3, 5, 7, 10, 12, 14];
+  const step = steps[Math.min(steps.length-1, Math.max(0, combo-3))];
+  beep(base * Math.pow(2, step/12), 140, 'triangle', 0.06);
+  setTimeout(()=> beep(base * Math.pow(2, (step+7)/12), 180, 'sine', 0.04), 70);
+}
+function heartLostSfx(){
+  // Detuned descending warble
+  try{
+    const c = ensureAudio();
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type='sawtooth'; o.frequency.setValueAtTime(440, c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(110, c.currentTime+0.35);
+    g.gain.setValueAtTime(0.18, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+0.4);
+    o.connect(g).connect(sfxGain); o.start(); o.stop(c.currentTime+0.42);
+    noiseHit({ filter:'lowpass', freq:600, q:0.5, gain:0.12, attack:0.005, decay:0.3 });
+  }catch(e){}
+}
+function fanfare(win){
+  // Major (win) or minor (lose/draw) arpeggio
+  const notes = win ? [523.25, 659.25, 783.99, 1046.5, 1318.5]
+                    : [440.0, 415.3, 369.99, 329.63];
+  notes.forEach((f, i) => setTimeout(()=> beep(f, 260, 'triangle', 0.09), i*110));
+  setTimeout(()=> beep(win? 1046.5 : 261.6, 600, 'sine', 0.07), notes.length*110);
+}
+
+// ---------- BACKGROUND MUSIC (Taiko-style loop) ----------
+let bgmTimer = null, bgmStep = 0;
+const BGM_BPM = 104;
+const BGM_PATTERN = [ // 16-step pattern: 'D'=big drum, 'd'=small, 'k'=rim, '.'=rest
+  'D','.','d','.','D','d','.','d',
+  'D','.','d','D','.','d','k','.'
+];
+function bgmTick(){
+  const c = ensureAudio();
+  const step = BGM_PATTERN[bgmStep % BGM_PATTERN.length];
+  const t = c.currentTime;
+  if (step === 'D' || step === 'd'){
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type='sine';
+    const f0 = step==='D' ? 90 : 140;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(45, t+0.18);
+    const peak = step==='D' ? 0.55 : 0.30;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t+0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.22);
+    o.connect(g).connect(bgmGain); o.start(t); o.stop(t+0.25);
+  } else if (step === 'k'){
+    // Wood-block rim: short bandpass click
+    const src = c.createBufferSource(); src.buffer = noiseBuffer;
+    const flt = c.createBiquadFilter(); flt.type='bandpass'; flt.frequency.value=2400; flt.Q.value=3;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.35, t+0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.06);
+    src.connect(flt).connect(g).connect(bgmGain); src.start(t); src.stop(t+0.08);
+  }
+  bgmStep++;
+}
+function startBgm(){
+  ensureAudio();
+  stopBgm();
+  bgmStep = 0;
+  const stepMs = (60_000 / BGM_BPM) / 2; // 8th notes
+  bgmTimer = setInterval(bgmTick, stepMs);
+}
+function stopBgm(){
+  if (bgmTimer){ clearInterval(bgmTimer); bgmTimer = null; }
+}
+function fadeBgm(target=0, ms=600){
+  try{
+    const c = ensureAudio();
+    bgmGain.gain.cancelScheduledValues(c.currentTime);
+    bgmGain.gain.setValueAtTime(bgmGain.gain.value, c.currentTime);
+    bgmGain.gain.linearRampToValueAtTime(target, c.currentTime + ms/1000);
+  }catch(e){}
+}
+
+// ---------- MP3 SFX KIT ----------
+// Plays the user-supplied sound files in assets/sounds/. We clone <audio>
+// elements on each play so overlapping triggers work. Volume tracks the
+// global _muted flag so the mute button still applies.
+const SFX_DIR = '../assets/sounds/';
+const SFX_FILES = {
+  bgm:      'bg%20music.mp3',
+  crowd:    'crowd.mp3',
+  paddle:   'paddle%20splash.mp3',
+  point:    'every%20pts.mp3',
+  combo10:  '10%20combo%20sound.mp3',
+  finish:   'game%20finished.mp3',
+  thriller: 'last%2010%20sec.mp3',
+};
+const SFX_VOL = { bgm:0.55, crowd:0.7, paddle:0.9, point:0.8, combo10:1.0, finish:1.0, thriller:0.9 };
+const sfxPrototypes = {};
+let bgmAudio = null, crowdAudio = null;
+function preloadSfx(){
+  for (const [k, file] of Object.entries(SFX_FILES)){
+    const a = new Audio(SFX_DIR + file);
+    a.preload = 'auto';
+    sfxPrototypes[k] = a;
+  }
+}
+preloadSfx();
+function _isMuted(){ return typeof _muted !== 'undefined' && _muted; }
+function playSfx(key, { volume } = {}){
+  const proto = sfxPrototypes[key]; if (!proto) return null;
+  const a = proto.cloneNode();
+  a.volume = (_isMuted() ? 0 : 1) * (volume ?? SFX_VOL[key] ?? 1);
+  a.play().catch(()=>{});
+  return a;
+}
+function startBgmFile(){
+  if (bgmAudio) { try{ bgmAudio.pause(); }catch(e){} }
+  bgmAudio = new Audio(SFX_DIR + SFX_FILES.bgm);
+  bgmAudio.loop = true;
+  bgmAudio.volume = (_isMuted() ? 0 : 1) * SFX_VOL.bgm;
+  bgmAudio.play().catch(()=>{});
+}
+function stopBgmFile(fadeMs=600){
+  if (!bgmAudio) return;
+  const a = bgmAudio; bgmAudio = null;
+  const start = a.volume; const t0 = performance.now();
+  const fade = setInterval(()=>{
+    const k = Math.min(1, (performance.now()-t0)/fadeMs);
+    a.volume = start * (1-k);
+    if (k >= 1){ clearInterval(fade); try{ a.pause(); }catch(e){} }
+  }, 30);
+}
+function updateAudioMute(){
+  const v = _isMuted() ? 0 : 1;
+  if (bgmAudio) bgmAudio.volume = v * SFX_VOL.bgm;
+  if (crowdAudio) crowdAudio.volume = v * SFX_VOL.crowd;
+  if (thrillerAudio) thrillerAudio.volume = v * SFX_VOL.thriller;
+  if (_isMuted() && 'speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch(e){} }
+}
+
+// ---------- LAST-10-SEC THRILLER + SPEECH COUNTDOWN ----------
+let thrillerAudio = null;
+let lastSpokenSec = null;
+let thrillerStarted = false;
+function startThriller(){
+  if (thrillerStarted) return;
+  thrillerStarted = true;
+  try { thrillerAudio = new Audio(SFX_DIR + SFX_FILES.thriller);
+    thrillerAudio.volume = (_isMuted() ? 0 : 1) * SFX_VOL.thriller;
+    thrillerAudio.play().catch(()=>{});
+  } catch(e){}
+}
+function stopThriller(){
+  thrillerStarted = false;
+  if (thrillerAudio){ try{ thrillerAudio.pause(); }catch(e){} thrillerAudio = null; }
+  if ('speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch(e){} }
+  lastSpokenSec = null;
+}
+function speakCount(n){
+  if (_isMuted()) return;
+  if (!('speechSynthesis' in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(String(n));
+    u.rate = 1.15; u.pitch = 1.0; u.volume = 1.0; u.lang = 'en-US';
+    speechSynthesis.speak(u);
+  } catch(e){}
+}
+
+// Random crowd reactions during play
+let crowdTimer = null;
+function startCrowdLoop(){
+  stopCrowdLoop();
+  const tick = ()=>{
+    if (GAME.state === 'running' && Math.random() < 0.55){
+      playSfx('crowd');
+    }
+    crowdTimer = setTimeout(tick, 7000 + Math.random() * 9000); // 7–16s
+  };
+  crowdTimer = setTimeout(tick, 4000 + Math.random() * 4000);
+}
+function stopCrowdLoop(){
+  if (crowdTimer){ clearTimeout(crowdTimer); crowdTimer = null; }
+}
+
+// ---------- STROKE REGISTRATION ----------
+function registerStroke(team){
+  if (GAME.state !== 'running') return;
+  const t = GAME.teams[team];
+  const now = performance.now();
+  if (now - t.lastStrokeTs < 240) return; // debounce
+  if (now - t.lastStrokeTs < 1300) t.combo = Math.min(20, t.combo + 1);
+  else t.combo = 1;
+  t.lastStrokeTs = now;
+  t.lastActivityTs = now;
+  const pts = 10 * t.combo;
+  t.score += pts;
+  // Boat-track progress: 15,000 pts = full track (100%). 9,000 ≈ 60% (past halfway).
+  t.progress = Math.min(100, (t.score / 15000) * 100);
+  // Record successful stroke time (seconds since race start) for health analytics
+  t.strokeTimes.push(Math.max(0, (now - GAME.startTs) / 1000));
+  t.strokeCount = (t.strokeCount || 0) + 1;
+  // Paddle splash every 2 successful strokes
+  if (t.strokeCount % 2 === 0) playSfx('paddle');
+  // Point ding every 3 strokes
+  if (t.strokeCount % 3 === 0) playSfx('point');
+  // 10-combo milestone (10, 20, ...)
+  if (t.combo > 0 && t.combo % 10 === 0) playSfx('combo10');
+
+  if (team==='red'){
+    ui.redScore.textContent = t.score;
+    ui.redBar.style.width = t.progress+'%';
+    ui.redProg.style.width = t.progress+'%';
+    ui.redPct.textContent = Math.round(t.progress)+'%';
+  } else {
+    ui.blueScore.textContent = t.score;
+    ui.blueBar.style.width = t.progress+'%';
+    ui.blueProg.style.width = t.progress+'%';
+    ui.bluePct.textContent = Math.round(t.progress)+'%';
+  }
+  updateBoatPosition(team);
+  showCombo(t.combo);
+  flyText(team, '+'+pts);
+  // Big water splash from the paddle blade on every successful stroke
+  const tip = t.bladeTip;
+  if (tip) spawnSplash(tip.x, tip.y, { count: 10 + Math.min(8, t.combo), power: 1.0 + Math.min(0.6, t.combo * 0.06), upBias: 0.8 });
+  // No early end — game runs full 60s, highest score wins
+}
+
+// ---------- IDLE PENALTY ----------
+function tickIdleHearts(){
+  if (GAME.state !== 'running') return;
+  const now = performance.now();
+  for (const k of ['red','blue']){
+    const t = GAME.teams[k];
+    if (!t.lastActivityTs) t.lastActivityTs = now;
+    if (now - t.lastActivityTs > 4500 && t.hearts > 0){
+      t.hearts -= 1;
+      t.lastActivityTs = now;
+      popHeart(k);
+      setTimeout(()=>updateHearts(k), 220);
+      heartLostSfx();
+      // Hearts are cosmetic only — do not end the game early
+    }
+  }
+}
+setInterval(tickIdleHearts, 500);
+
+// ---------- END ----------
+function endGame(){
+  if (GAME.state === 'over') return;
+  GAME.state = 'over';
+  const r = GAME.teams.red, b = GAME.teams.blue;
+  let winner;
+  if (r.score > b.score) winner = 'RED';
+  else if (b.score > r.score) winner = 'BLUE';
+  else winner = 'DRAW';
+  ui.winTitle.className = winner==='RED'?'red':winner==='BLUE'?'blue':'';
+  ui.winTitle.textContent = winner==='DRAW' ? "IT'S A DRAW!" : winner+' WINS!';
+  ui.winSub.textContent = `🐲 Red ${r.score} (${Math.round(r.progress)}%) · 🐉 Blue ${b.score} (${Math.round(b.progress)}%)`;
+  ui.winScreen.classList.add('show');
+  stopBgmFile(700);
+  stopCrowdLoop();
+  stopSplashAmbient();
+  stopThriller();
+  playSfx('finish');
+  GAME._lastWinner = winner;
+}
+
+// ---------- RESULTS / HEALTH ANALYTICS ----------
+function computeTeamStats(team){
+  const t = GAME.teams[team];
+  const times = (t.strokeTimes || []).slice().sort((a,b)=>a-b);
+  const strokes = times.length;
+  const duration = Math.max(1, Math.min(GAME.duration, (performance.now() - GAME.startTs) / 1000));
+  const spm = strokes / (duration / 60);  // strokes per minute
+
+  // Body movement level (based on strokes-per-minute)
+  let movement = 'Resting', movementPct = 0;
+  if (spm >= 70)      { movement = 'Intense';   movementPct = 100; }
+  else if (spm >= 50) { movement = 'Vigorous';  movementPct = 80; }
+  else if (spm >= 30) { movement = 'Moderate';  movementPct = 60; }
+  else if (spm >= 15) { movement = 'Light';     movementPct = 35; }
+  else if (spm > 0)   { movement = 'Very Light';movementPct = 15; }
+
+  // Calories — rough estimate: ~0.5 kcal per dragon-boat stroke (full upper-body engagement)
+  const calories = Math.round(strokes * 0.5);
+
+  // Rhythm — how consistent the stroke intervals are (lower std-dev relative to mean = better)
+  const intervals = [];
+  for (let i = 1; i < times.length; i++) intervals.push(times[i] - times[i-1]);
+  let rhythm = 0;
+  if (intervals.length >= 2){
+    const mean = intervals.reduce((a,b)=>a+b,0) / intervals.length;
+    const variance = intervals.reduce((a,b)=>a+(b-mean)**2,0) / intervals.length;
+    const std = Math.sqrt(variance);
+    const cv = mean > 0 ? std / mean : 1;
+    rhythm = Math.round(Math.max(0, Math.min(100, 100 - cv * 100)));
+  }
+
+  // Consistency — % of 6-second buckets across the full race that had at least one stroke
+  const BUCKETS = 10;
+  const bucketSec = GAME.duration / BUCKETS;
+  const hits = new Set();
+  for (const ts of times){
+    hits.add(Math.min(BUCKETS - 1, Math.floor(ts / bucketSec)));
+  }
+  const consistency = Math.round((hits.size / BUCKETS) * 100);
+
+  return { strokes, duration, spm, movement, movementPct, calories, rhythm, consistency, times, score: t.score };
+}
+
+// Build a small SVG sparkline showing stroke timing density over the race.
+function buildSparkline(times, color){
+  const W = 100, H = 50;
+  const BUCKETS = 20;
+  const bucketSec = GAME.duration / BUCKETS;
+  const counts = new Array(BUCKETS).fill(0);
+  for (const ts of times){
+    const i = Math.min(BUCKETS - 1, Math.floor(ts / bucketSec));
+    counts[i]++;
+  }
+  const max = Math.max(1, ...counts);
+  const bw = W / BUCKETS;
+  let bars = '';
+  for (let i = 0; i < BUCKETS; i++){
+    const h = (counts[i] / max) * (H - 6);
+    const x = i * bw + 0.5;
+    const y = H - h;
+    bars += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${(bw - 1).toFixed(2)}" height="${h.toFixed(2)}" rx="1.2" fill="${color}" opacity="0.9"/>`;
+  }
+  return `<svg class="sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${bars}</svg>`;
+}
+
+function renderTeamColumn(team, stats){
+  const isRed = team === 'red';
+  const emoji = isRed ? '🐲' : '🐉';
+  const label = isRed ? 'TEAM RED' : 'TEAM BLUE';
+  const color = isRed ? '#ff8a5a' : '#7fbcff';
+  const bar = (pct) => `<div class="statBar"><div style="width:${Math.max(0,Math.min(100,pct))}%"></div></div>`;
+  const row = (icon, lbl, val, pct) => `
+    <div class="statRow">
+      <div class="lbl">${icon} ${lbl}</div>
+      <div class="val">${val}</div>
+    </div>
+    ${pct != null ? bar(pct) : ''}`;
+  return `
+    <h4>${emoji} ${label} <span style="margin-left:auto;font-size:14px;color:#cfd6e4">Score ${stats.score.toLocaleString()}</span></h4>
+    ${row('🚣', 'Strokes (successful)', stats.strokes)}
+    ${row('💪', 'Body movement', `${stats.movement} <span style="color:#9aa6bf;font-weight:600">(${stats.spm.toFixed(0)} spm)</span>`, stats.movementPct)}
+    ${row('⏱️', 'Duration', `${stats.duration.toFixed(0)}s`)}
+    ${row('🔥', 'Calories burnt (approx)', `${stats.calories} kcal`)}
+    ${row('🎵', 'Rhythm', `${stats.rhythm}%`, stats.rhythm)}
+    ${row('📏', 'Consistency', `${stats.consistency}%`, stats.consistency)}
+    <div class="chartLabel">Stroke activity over time</div>
+    ${buildSparkline(stats.times, color)}
+  `;
+}
+
+function showResults(){
+  const r = computeTeamStats('red');
+  const b = computeTeamStats('blue');
+  const w = GAME._lastWinner;
+  ui.resultsWinLine.className = 'winLine ' + (w === 'RED' ? 'red' : w === 'BLUE' ? 'blue' : '');
+  ui.resultsWinLine.textContent = w === 'DRAW' ? "🤝 It's a draw!" : `🏆 ${w} team wins!`;
+  ui.resultsRed.innerHTML = renderTeamColumn('red', r);
+  ui.resultsBlue.innerHTML = renderTeamColumn('blue', b);
+  ui.resultsScreen.classList.add('show');
+}
+
+if (ui.resultsBtn) ui.resultsBtn.addEventListener('click', showResults);
+if (ui.resultsCloseBtn) ui.resultsCloseBtn.addEventListener('click', () => ui.resultsScreen.classList.remove('show'));
+
+// ---------- TIMER ----------
+function updateTimer(){
+  if (GAME.state!=='running') return;
+  const elapsed = (performance.now() - GAME.startTs)/1000;
+  const remain = Math.max(0, GAME.duration - elapsed);
+  const m = Math.floor(remain/60).toString().padStart(2,'0');
+  const s = Math.floor(remain%60).toString().padStart(2,'0');
+  ui.timerVal.textContent = `${m}:${s}`;
+  ui.timerBox.classList.toggle('low', remain<=10);
+  // Final 10 seconds: thriller music + spoken countdown 10..1
+  if (remain <= 10 && remain > 0){
+    if (!thrillerStarted) startThriller();
+    const intSec = Math.ceil(remain); // 10,9,...,1
+    if (intSec >= 1 && intSec <= 10 && intSec !== lastSpokenSec){
+      lastSpokenSec = intSec;
+      speakCount(intSec);
+    }
+  }
+  if (remain <= 0) endGame();
+}
+setInterval(updateTimer, 200);
+
+// ---------- MEDIAPIPE ----------
+let pose;
+async function initPose(){
+  try{
+    statusEl.textContent = 'Loading pose model…';
+    const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+    pose = await PoseLandmarker.createFromOptions(fileset, {
+      baseOptions:{
+        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+        delegate: 'GPU',
+      },
+      runningMode:'VIDEO',
+      numPoses:4,
+      minPoseDetectionConfidence:0.5,
+      minPosePresenceConfidence:0.5,
+      minTrackingConfidence:0.5,
+    });
+    statusEl.textContent = 'Ready! Click Start Race.';
+    startBtn.disabled = false;
+  } catch(e){
+    statusEl.textContent = 'Failed to load model: ' + e.message;
+  }
+}
+
+async function startCamera(){
+  ensureAudio();
+  const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} }, audio:false });
+  video.srcObject = stream;
+  await new Promise(r => video.onloadedmetadata = r);
+  await video.play();
+  // Countdown 3-2-1-GO
+  startScreen.style.display = 'none';
+  await countdown();
+  GAME.state = 'running';
+  GAME.startTs = performance.now();
+  GAME.teams.red.lastActivityTs = GAME.teams.blue.lastActivityTs = performance.now();
+  GAME.teams.red.strokeCount = 0; GAME.teams.blue.strokeCount = 0;
+  GAME.teams.red.strokeTimes = []; GAME.teams.blue.strokeTimes = [];
+  updateBoatPosition('red'); updateBoatPosition('blue');
+  thrillerStarted = false; lastSpokenSec = null;
+  startBgmFile();
+  startCrowdLoop();
+  startSplashAmbient();
+  loop();
+}
+
+async function countdown(){
+  ui.countdown.classList.add('show');
+  for (const n of ['3','2','1','GO!']) {
+    ui.cdNum.textContent = n;
+    ui.cdNum.style.animation='none'; void ui.cdNum.offsetWidth; ui.cdNum.style.animation='';
+    beep(n==='GO!'?880:440, 200, 'triangle', 0.08);
+    await new Promise(r => setTimeout(r, 900));
+  }
+  ui.countdown.classList.remove('show');
+}
+
+startBtn.addEventListener('click', async ()=>{
+  startBtn.disabled = true;
+  try{ await startCamera(); }
+  catch(e){ statusEl.textContent='Camera error: '+e.message; startBtn.disabled=false; startScreen.style.display='flex'; }
+});
+
+// Mute toggle
+const muteBtn = document.getElementById('muteBtn');
+let _muted = false;
+muteBtn.addEventListener('click', ()=>{
+  ensureAudio();
+  _muted = !_muted;
+  master.gain.linearRampToValueAtTime(_muted ? 0 : 0.9, ac.currentTime + 0.15);
+  updateAudioMute();
+  muteBtn.textContent = _muted ? '🔇' : '🔊';
+});
+
+// ---------- POSE → TEAM + STROKE ----------
+// Video is mirrored via CSS; landmarks use raw coords. We mirror x as (1 - p.x).
+function classifyTeam(lm){
+  // Average mirrored x of shoulders+hips
+  const idx = [11,12,23,24];
+  let sum=0, n=0;
+  for (const i of idx){ const p = lm[i]; if (p){ sum += (1 - p.x); n++; } }
+  if (!n) return null;
+  return (sum/n) < 0.5 ? 'red' : 'blue';
+}
+
+function processPaddle(team, lm){
+  const lW = lm[15], rW = lm[16], lS = lm[11], rS = lm[12];
+  const t = GAME.teams[team];
+  if (!lW || !rW || !lS || !rS){ t.paddle = null; t._gripFrames = 0; return; }
+  const shoulderW = Math.hypot(lS.x - rS.x, lS.y - rS.y) || 0.001;
+  const handDist = Math.hypot(lW.x - rW.x, lW.y - rW.y);
+  // Hands together if their distance is within 85% of shoulder width
+  const gripping = handDist < shoulderW * 0.85;
+  if (gripping) t._gripFrames = Math.min(8, t._gripFrames + 1);
+  else t._gripFrames = Math.max(0, t._gripFrames - 1);
+  const isGripping = t._gripFrames >= 2; // hysteresis
+  if (!isGripping){ t.paddle = null; t._hasPrev = false; return; }
+
+  // Paddle endpoints = wrists (mirrored)
+  t.paddle = {
+    ax: (1 - lW.x), ay: lW.y,
+    bx: (1 - rW.x), by: rW.y,
+  };
+
+  // Normalize paddle midpoint Y relative to shoulder line (negative = above shoulders, positive = below)
+  const shoulderMidY = (lS.y + rS.y) / 2;
+  const hipMidY = (lm[23] && lm[24]) ? (lm[23].y + lm[24].y) / 2 : shoulderMidY + 0.25;
+  const torso = Math.max(0.05, hipMidY - shoulderMidY);
+  const paddleMidY = (lW.y + rW.y) / 2;
+  const midY = (paddleMidY - shoulderMidY) / torso; // ~0 at shoulders, ~1 at hips
+
+  if (t._hasPrev && Math.abs(midY - t._prevMidY) > 0.04) t.lastActivityTs = performance.now();
+
+  // --- Stroke detection: lift → dip state machine ---
+  // Track the highest point (smallest midY) reached recently. When the paddle
+  // dips well below that peak, fire a stroke. Forgiving thresholds + 1.2s window.
+  const now = performance.now();
+  if (t._strokePeakY == null || midY < t._strokePeakY){
+    t._strokePeakY = midY;
+    t._strokePeakTs = now;
+  }
+  // Expire stale peak
+  if (now - (t._strokePeakTs || 0) > 1200){
+    t._strokePeakY = midY;
+    t._strokePeakTs = now;
+  }
+  // Conditions: paddle was lifted to ~shoulder height or higher, and now dropped
+  // by at least ~half a torso to reach mid-torso or below.
+  const LIFT_MAX   = 0.15;   // peak must have been at or above this (smaller = higher)
+  const DIP_MIN    = 0.45;   // current must be at or below this
+  const DROP_MIN   = 0.45;   // total drop in normalized torso units
+  if (t._strokePeakY <= LIFT_MAX && midY >= DIP_MIN && (midY - t._strokePeakY) >= DROP_MIN){
+    registerStroke(team);
+    t._strokePeakY = midY;       // reset; next stroke starts from here
+    t._strokePeakTs = now;
+  }
+
+  t._prevMidY = midY;
+  t._hasPrev = true;
+}
+
+function drawPaddle(team){
+  const t = GAME.teams[team]; const p = t.paddle; if (!p) return;
+  const img = paddleImg[team];
+  if (!img || !img.complete || !img.naturalWidth) return;
+  // Pick top hand (smaller y) as A, bottom hand as B so paddle points blade-down toward water.
+  let ax = p.ax * canvas.width, ay = p.ay * canvas.height;
+  let bx = p.bx * canvas.width, by = p.by * canvas.height;
+  if (ay > by) { [ax, bx] = [bx, ax]; [ay, by] = [by, ay]; }
+  const dx = bx - ax, dy = by - ay;
+  const handDist = Math.hypot(dx, dy) || 1;
+  const desiredAngle = Math.atan2(dy, dx);
+  const mx = (ax + bx) / 2, my = (ay + by) / 2;
+  // Scale so the painted paddle axis ~ 2.6x the player's hand spread.
+  const { phi, len: axisLen } = paddleAxis(img);
+  const targetAxisPx = Math.max(handDist * 2.6, 220);
+  const scale = targetAxisPx / axisLen;
+  const w = img.naturalWidth * scale;
+  const h = img.naturalHeight * scale;
+  ctx.save();
+  ctx.translate(mx, my);
+  ctx.rotate(desiredAngle - phi);
+  ctx.shadowColor = team === 'red' ? 'rgba(255,90,42,.55)' : 'rgba(58,122,255,.55)';
+  ctx.shadowBlur = 26;
+  ctx.drawImage(img, -w/2, -h/2, w, h);
+  ctx.restore();
+  // Remember blade tip for splash FX (extends from midpoint in the paddle's direction).
+  const tipDist = targetAxisPx / 2;
+  t.bladeTip = {
+    x: mx + Math.cos(desiredAngle) * tipDist,
+    y: my + Math.sin(desiredAngle) * tipDist,
+  };
+}
+
+function drawGripHint(team, lm){
+  const lW = lm[15], rW = lm[16]; if (!lW || !rW) return;
+  const ax = (1-lW.x)*canvas.width, ay = lW.y*canvas.height;
+  const bx = (1-rW.x)*canvas.width, by = rW.y*canvas.height;
+  const mx = (ax+bx)/2, my = (ay+by)/2;
+  ctx.save();
+  ctx.setLineDash([6,8]);
+  ctx.strokeStyle = team==='red' ? 'rgba(255,122,74,.55)' : 'rgba(107,168,255,.55)';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = team==='red' ? 'rgba(255,122,74,.9)' : 'rgba(107,168,255,.9)';
+  ctx.font = 'bold 18px ui-sans-serif, system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('🤲 bring hands together', mx, my - 14);
+  ctx.restore();
+}
+
+// ---------- POSE OVERLAY ----------
+const POSE_EDGES = [[11,13],[13,15],[12,14],[14,16],[11,12],[23,24],[11,23],[12,24],[23,25],[25,27],[24,26],[26,28]];
+function drawPose(lm, color){
+  ctx.strokeStyle = color; ctx.lineWidth = 5; ctx.fillStyle = color;
+  ctx.shadowBlur = 12; ctx.shadowColor = color;
+  for (const [a,b] of POSE_EDGES){
+    const pa = lm[a], pb = lm[b]; if (!pa||!pb) continue;
+    const ax = (1-pa.x)*canvas.width, ay = pa.y*canvas.height;
+    const bx = (1-pb.x)*canvas.width, by = pb.y*canvas.height;
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke();
+  }
+  for (const i of [11,12,15,16,23,24]){
+    const p = lm[i]; if (!p) continue;
+    ctx.beginPath(); ctx.arc((1-p.x)*canvas.width, p.y*canvas.height, 7, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+}
+
+// Center divider
+function drawDivider(){
+  const x = canvas.width/2;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.25)';
+  ctx.lineWidth = 2; ctx.setLineDash([8,12]);
+  ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- MAIN LOOP ----------
+let lastVideoTs = -1;
+function loop(){
+  if (GAME.state === 'over') return;
+  if (!pose || video.readyState < 2){ requestAnimationFrame(loop); return; }
+  const now = performance.now();
+  if (video.currentTime !== lastVideoTs){
+    lastVideoTs = video.currentTime;
+    let res = null;
+    try { res = pose.detectForVideo(video, now); } catch(e){}
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawDivider();
+    if (res && res.landmarks){
+      for (const lm of res.landmarks){
+        const team = classifyTeam(lm);
+        if (!team) continue;
+        drawPose(lm, team==='red' ? 'rgba(255,107,76,0.9)' : 'rgba(107,168,255,0.9)');
+        processPaddle(team, lm);
+        if (GAME.teams[team].paddle) drawPaddle(team);
+        else drawGripHint(team, lm);
+      }
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+initPose();
+</script>
+</body>
+</html>

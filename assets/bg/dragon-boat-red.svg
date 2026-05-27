@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" width="800" height="360">
+  <defs>
+    <!-- Hull gradient -->
+    <linearGradient id="rHull" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ff7a5a"/>
+      <stop offset=".55" stop-color="#d8160c"/>
+      <stop offset="1" stop-color="#7a0a04"/>
+    </linearGradient>
+    <linearGradient id="rHullDark" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#c91408"/>
+      <stop offset="1" stop-color="#5a0604"/>
+    </linearGradient>
+    <!-- Scale pattern -->
+    <pattern id="rScales" x="0" y="0" width="34" height="22" patternUnits="userSpaceOnUse">
+      <path d="M0 11 q8.5 -14 17 0 t17 0" fill="none" stroke="#5a0604" stroke-width="1.6" opacity=".75"/>
+      <path d="M-17 22 q8.5 -14 17 0 t17 0" fill="none" stroke="#5a0604" stroke-width="1.6" opacity=".75"/>
+    </pattern>
+    <!-- Mane gradient (gold) -->
+    <linearGradient id="rMane" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff3a8"/>
+      <stop offset=".5" stop-color="#ffcf3a"/>
+      <stop offset="1" stop-color="#c98800"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ============ HULL ============ -->
+  <!-- Outer hull silhouette -->
+  <path d="M120 230
+           Q400 330 690 240
+           L680 270
+           Q400 360 130 280 Z"
+        fill="url(#rHull)" stroke="#3a0202" stroke-width="4"/>
+  <!-- Scale fill on hull -->
+  <path d="M120 230
+           Q400 330 690 240
+           L680 270
+           Q400 360 130 280 Z"
+        fill="url(#rScales)"/>
+  <!-- Hull top gold rim -->
+  <path d="M120 230 Q400 330 690 240"
+        fill="none" stroke="url(#rMane)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M120 230 Q400 330 690 240"
+        fill="none" stroke="#c98800" stroke-width="3"/>
+
+  <!-- Belly shadow -->
+  <path d="M150 275 Q400 350 660 275"
+        fill="none" stroke="#3a0202" stroke-width="3" opacity=".6"/>
+
+  <!-- ============ DRAGON HEAD (left) ============ -->
+  <g>
+    <!-- Neck/collar shadow -->
+    <path d="M155 232 Q140 215 145 195 L175 215 Z" fill="#5a0604"/>
+
+    <!-- Mane (gold flame-like) behind head -->
+    <path d="M180 110
+             Q205 90 220 110
+             Q235 100 240 125
+             Q255 120 250 145
+             Q265 145 252 170
+             L210 175
+             Z"
+          fill="url(#rMane)" stroke="#7a4a00" stroke-width="3" stroke-linejoin="round"/>
+    <!-- Mane wisps -->
+    <path d="M188 115 q12 -18 24 -4" fill="none" stroke="#7a4a00" stroke-width="2"/>
+    <path d="M210 105 q12 -14 22 2" fill="none" stroke="#7a4a00" stroke-width="2"/>
+    <path d="M232 130 q14 -10 20 6" fill="none" stroke="#7a4a00" stroke-width="2"/>
+
+    <!-- Horns (white/cream, twisted) -->
+    <g stroke="#3a0202" stroke-width="2.5" stroke-linejoin="round">
+      <path d="M165 122
+               Q150 95 158 70
+               Q170 75 175 100
+               Q172 115 175 128 Z"
+            fill="#f8efd6"/>
+      <path d="M165 122 q5 -8 6 -22 m-2 -8 q3 -10 7 -18" fill="none"/>
+      <path d="M195 118
+               Q188 90 200 68
+               Q212 76 210 100
+               Q205 115 207 128 Z"
+            fill="#f8efd6"/>
+      <path d="M195 118 q6 -10 5 -22 m1 -10 q5 -8 8 -16" fill="none"/>
+    </g>
+
+    <!-- Head main shape (red, with gold underside) -->
+    <path d="M210 130
+             Q150 130 130 165
+             Q120 195 145 215
+             Q170 230 200 218
+             Q230 215 245 195
+             L250 165
+             Q245 138 210 130 Z"
+          fill="url(#rHull)" stroke="#3a0202" stroke-width="4" stroke-linejoin="round"/>
+    <!-- Head highlight -->
+    <path d="M180 145 Q210 138 235 155" fill="none" stroke="#ffb39a" stroke-width="3" opacity=".7"/>
+    <!-- Cheek (gold trim) -->
+    <path d="M148 200 Q175 220 215 215 L218 198 Q180 200 152 188 Z"
+          fill="url(#rMane)" stroke="#7a4a00" stroke-width="2.5"/>
+
+    <!-- Snout / upper jaw -->
+    <path d="M120 180
+             Q90 175 78 188
+             Q72 200 88 207
+             Q105 213 130 205 Z"
+          fill="url(#rHull)" stroke="#3a0202" stroke-width="3.5"/>
+    <!-- Nostril -->
+    <ellipse cx="92" cy="190" rx="4.5" ry="3" fill="#3a0202"/>
+
+    <!-- Lower jaw (gold) with teeth -->
+    <path d="M88 207
+             Q120 230 175 225
+             L172 240
+             Q120 248 86 225 Z"
+          fill="url(#rMane)" stroke="#3a0202" stroke-width="3"/>
+    <!-- Teeth (white triangles) -->
+    <g fill="#ffffff" stroke="#3a0202" stroke-width="1.5" stroke-linejoin="round">
+      <polygon points="100,212 106,224 112,212"/>
+      <polygon points="116,213 122,226 128,213"/>
+      <polygon points="132,214 138,227 144,214"/>
+      <polygon points="148,214 154,226 160,214"/>
+    </g>
+
+    <!-- Eye -->
+    <circle cx="190" cy="170" r="11" fill="#ffffff" stroke="#3a0202" stroke-width="2.5"/>
+    <circle cx="193" cy="172" r="5.5" fill="#3a0202"/>
+    <circle cx="195" cy="170" r="1.8" fill="#ffffff"/>
+    <!-- Brow -->
+    <path d="M175 158 Q190 152 210 158" fill="none" stroke="#3a0202" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Whisker / barbel -->
+    <path d="M95 207 Q80 230 95 250" fill="none" stroke="#7a4a00" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- ============ TAIL (right) ============ -->
+  <g>
+    <!-- Tail base -->
+    <path d="M650 240
+             Q700 235 720 215
+             Q735 195 745 215
+             Q740 235 720 248
+             Q700 258 670 255 Z"
+          fill="url(#rMane)" stroke="#7a4a00" stroke-width="3" stroke-linejoin="round"/>
+    <!-- Tail upper feather -->
+    <path d="M705 215
+             Q720 195 735 200
+             Q730 215 715 222 Z"
+          fill="url(#rMane)" stroke="#7a4a00" stroke-width="2.5"/>
+    <!-- Tail lines -->
+    <path d="M695 222 q15 -8 30 -2" fill="none" stroke="#7a4a00" stroke-width="2"/>
+    <path d="M690 235 q18 -4 32 4" fill="none" stroke="#7a4a00" stroke-width="2"/>
+  </g>
+
+  <!-- ============ EMPTY DECK SHADOW ============ -->
+  <ellipse cx="430" cy="265" rx="190" ry="10" fill="#3a0202" opacity=".25"/>
+</svg>
