@@ -106,12 +106,41 @@
     padding:14px 28px;border-radius:999px;font-size:16px;font-weight:900;letter-spacing:1px;cursor:pointer;
     font-family:inherit;box-shadow:0 5px 0 #7a4a00;text-decoration:none}
   .actions a.ghost{background:#fff;color:#2a0a1d;box-shadow:0 5px 0 #aaa}
+
+  /* mode select */
+  #modeSelect{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,rgba(15,58,42,.92),rgba(42,110,74,.85));z-index:9;padding:20px;text-align:center}
+  #modeSelect.show{display:flex}
+  .modeCard{max-width:760px;width:100%;background:linear-gradient(180deg,#fff8e8,#ffe7c4);
+    border:6px solid #fff;border-radius:26px;padding:28px;color:#0a2a1a;
+    box-shadow:0 14px 0 #0a2a1a,0 28px 60px rgba(0,0,0,.55)}
+  .modeCard h2{margin:0;font-size:36px;color:#1a8a2a;font-style:italic;letter-spacing:2px}
+  .modeCard .sub{margin:6px 0 18px;font-size:18px;color:#0a2a1a;font-weight:700}
+  .modeBtns{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+  .modeBtn{pointer-events:auto;flex:1;min-width:240px;max-width:300px;border:5px solid #0a2a1a;
+    border-radius:22px;padding:24px 18px;background:#fff;cursor:pointer;font-family:inherit;
+    color:#0a2a1a;font-weight:900;letter-spacing:1px;box-shadow:0 8px 0 #0a2a1a;transition:transform .08s}
+  .modeBtn:active{transform:translateY(4px);box-shadow:0 4px 0 #0a2a1a}
+  .modeBtn .em{font-size:72px;line-height:1;display:block;margin-bottom:6px}
+  .modeBtn .ttl{font-size:26px;letter-spacing:2px}
+  .modeBtn .det{font-size:14px;color:#555;font-weight:700;margin-top:4px}
+  .modeBtn.solo{background:linear-gradient(180deg,#fff7c4,#ffcf3a)}
+  .modeBtn.vs{background:linear-gradient(180deg,#c4e8ff,#74b8ff)}
+
+  /* divider only in vs mode */
+  #divider{position:absolute;left:50%;top:5%;bottom:18%;width:4px;
+    background:linear-gradient(180deg,transparent,#ffcf3a,transparent);opacity:.55;
+    transform:translateX(-50%);z-index:3;display:none}
+  body.vs #divider{display:block}
+  body.solo .scorePill.blue{display:none}
+  body.solo .scorePill.red{left:50%;transform:translateX(-50%);top:84px}
 </style>
 </head>
 <body>
 
 <video id="video" autoplay playsinline muted></video>
 <canvas id="fx"></canvas>
+<div id="divider"></div>
 
 <div id="ui">
   <div class="scorePill red"><span class="lbl">P1</span><span id="scoreRed">0</span></div>
@@ -120,6 +149,25 @@
 </div>
 
 <div id="countdown"><div id="cdNum">3</div></div>
+
+<div id="modeSelect">
+  <div class="modeCard">
+    <h2>HOW MANY PLAYERS?</h2>
+    <div class="sub">Pick a mode to play.</div>
+    <div class="modeBtns">
+      <button class="modeBtn solo" id="mode1Btn" type="button">
+        <span class="em">&#x1F9CD;</span>
+        <span class="ttl">1 PLAYER</span>
+        <div class="det">Use both hands. Full screen.</div>
+      </button>
+      <button class="modeBtn vs" id="mode2Btn" type="button">
+        <span class="em">&#x1F9CD;&#x1F9CD;</span>
+        <span class="ttl">2 PLAYERS</span>
+        <div class="det">Split screen. P1 left vs P2 right.</div>
+      </button>
+    </div>
+  </div>
+</div>
 
 <div id="lobby">
   <div class="lobbyCard">
@@ -149,13 +197,13 @@
   <a class="back-btn" href="../index.html">&larr; Back</a>
   <div class="hero">
     <h1>Color Baskets</h1>
-    <p>Foods fall from the sky. Touch with either hand to grab. Drop into the matching colored basket. Wrong color = no score. Most correct in 60s wins!</p>
+    <p>Foods fall from the sky. Touch with either hand to grab. Drop into the matching colored basket. <b>Wrong color = &minus;1 point.</b> Most correct in 60s wins!</p>
   </div>
   <div class="steps">
     <div class="step"><span class="n">1</span><h3>Grab</h3><p>Touch a falling food with either hand &mdash; it sticks to your palm.</p></div>
     <div class="step"><span class="n">2</span><h3>Carry</h3><p>Move your hand toward a basket at the bottom.</p></div>
     <div class="step"><span class="n">3</span><h3>Drop</h3><p>Bring your hand into the basket to drop the food.</p></div>
-    <div class="step"><span class="n">4</span><h3>Match</h3><p>Green food &rarr; green basket. Red food &rarr; red basket. Wrong = no score.</p></div>
+    <div class="step"><span class="n">4</span><h3>Match</h3><p>Green food &rarr; green basket. Red food &rarr; red basket. Wrong = <b>&minus;1 point</b>.</p></div>
   </div>
   <button id="startBtn">&#9654; START</button>
   <div id="status">Loading pose model...</div>
@@ -204,6 +252,7 @@ window.addEventListener('resize', resizeCanvas);
 const ui = {
   scoreRed: $('scoreRed'), scoreBlue: $('scoreBlue'), timer: $('timer'),
   countdown: $('countdown'), cdNum: $('cdNum'),
+  modeSelect: $('modeSelect'), mode1Btn: $('mode1Btn'), mode2Btn: $('mode2Btn'),
   lobby: $('lobby'),
   slotRed: $('slotRed'), slotBlue: $('slotBlue'),
   stateRed: $('stateRed'), stateBlue: $('stateBlue'),
@@ -409,13 +458,17 @@ const FOODS = [
 
 const GAME = {
   state: 'idle',
+  mode: 'vs', // 'solo' | 'vs'
   startTs: 0,
   durationMs: 60000,
   foods: [],        // {id, food, x, y, vy, rot, spin, state, carriedBy, lastSeenTs}
   hands: {},        // 'red-L'|'red-R'|'blue-L'|'blue-R' -> {x,y,ts}
   scores: { red: 0, blue: 0 },
   sorted: { red: 0, blue: 0 }, // total successful sorts
+  wrong:  { red: 0, blue: 0 }, // total wrong drops
 };
+
+const WRONG_PENALTY = 1; // minor penalty per wrong-basket drop (score clamped at 0)
 
 const FALL_SPEED = 0.00024;                 // slow, senior-friendly
 const SPAWN_INTERVAL_MS = 850;
@@ -561,9 +614,14 @@ function updateCarried(now, dt){
           addParticles(food.x, food.y, basketColor === 'green' ? '#3cd06a' : '#ff5b50', 22);
           food.resultColor = '#3cd06a';
         } else {
-          // wrong basket: no score
-          beep(180, 200, 'sawtooth', 0.06);
-          addParticles(food.x, food.y, '#ff5b50', 10);
+          // wrong basket: minor penalty (score clamped at 0)
+          if (team) {
+            GAME.scores[team] = Math.max(0, GAME.scores[team] - WRONG_PENALTY);
+            GAME.wrong[team] += 1;
+            (team === 'red' ? ui.scoreRed : ui.scoreBlue).textContent = GAME.scores[team];
+          }
+          beep(180, 220, 'sawtooth', 0.07);
+          addParticles(food.x, food.y, '#ff5b50', 12);
           food.resultColor = '#ff5b50';
         }
         food.state = 'gone';
@@ -687,16 +745,27 @@ function loop(){
   if (pose && video.readyState >= 2) {
     const res = pose.detectForVideo(video, now);
     if (res.landmarks) {
-      // assign hands to teams; if same team detected twice (unlikely), keep first
-      const claimed = { red:false, blue:false };
-      for (const lm of res.landmarks) {
-        const p = readPose(lm);
-        if (!p) continue;
-        const team = assignTeam(p.cx);
-        if (claimed[team]) continue;
-        claimed[team] = true;
-        if (p.hands.L) newHands[`${team}-L`] = { x:p.hands.L.x, y:p.hands.L.y, ts:now };
-        if (p.hands.R) newHands[`${team}-R`] = { x:p.hands.R.x, y:p.hands.R.y, ts:now };
+      if (GAME.mode === 'solo') {
+        // single player: pick the first valid pose, all hands go to 'red'
+        for (const lm of res.landmarks) {
+          const p = readPose(lm);
+          if (!p) continue;
+          if (p.hands.L) newHands[`red-L`] = { x:p.hands.L.x, y:p.hands.L.y, ts:now };
+          if (p.hands.R) newHands[`red-R`] = { x:p.hands.R.x, y:p.hands.R.y, ts:now };
+          break;
+        }
+      } else {
+        // vs: red on left half, blue on right half
+        const claimed = { red:false, blue:false };
+        for (const lm of res.landmarks) {
+          const p = readPose(lm);
+          if (!p) continue;
+          const team = assignTeam(p.cx);
+          if (claimed[team]) continue;
+          claimed[team] = true;
+          if (p.hands.L) newHands[`${team}-L`] = { x:p.hands.L.x, y:p.hands.L.y, ts:now };
+          if (p.hands.R) newHands[`${team}-R`] = { x:p.hands.R.x, y:p.hands.R.y, ts:now };
+        }
       }
     }
   }
@@ -744,12 +813,20 @@ function lobbyLoop(){
   if (pose && video.readyState >= 2) {
     const res = pose.detectForVideo(video, now);
     if (res.landmarks) {
-      for (const lm of res.landmarks) {
-        const p = readPose(lm);
-        if (!p) continue;
-        const team = assignTeam(p.cx);
-        if (team === 'red' && !posedRed) posedRed = p;
-        if (team === 'blue' && !posedBlue) posedBlue = p;
+      if (GAME.mode === 'solo') {
+        for (const lm of res.landmarks) {
+          const p = readPose(lm);
+          if (!p) continue;
+          if (!posedRed) posedRed = p;
+        }
+      } else {
+        for (const lm of res.landmarks) {
+          const p = readPose(lm);
+          if (!p) continue;
+          const team = assignTeam(p.cx);
+          if (team === 'red' && !posedRed) posedRed = p;
+          if (team === 'blue' && !posedBlue) posedBlue = p;
+        }
       }
     }
   }
@@ -757,8 +834,9 @@ function lobbyLoop(){
     ['red',  posedRed,  ui.slotRed,  ui.stateRed,  ui.gripBarRed],
     ['blue', posedBlue, ui.slotBlue, ui.stateBlue, ui.gripBarBlue],
   ]) {
+    if (GAME.mode === 'solo' && team === 'blue') continue;
     if (data) { stateEl.textContent = 'DETECTED \u2705'; barEl.style.width = '100%'; slot.classList.add('ready'); }
-    else { stateEl.textContent = team === 'red' ? 'Stand on LEFT' : 'Stand on RIGHT'; barEl.style.width = '0%'; slot.classList.remove('ready'); }
+    else { stateEl.textContent = GAME.mode === 'solo' ? 'Step in front of camera' : (team === 'red' ? 'Stand on LEFT' : 'Stand on RIGHT'); barEl.style.width = '0%'; slot.classList.remove('ready'); }
   }
   requestAnimationFrame(lobbyLoop);
 }
@@ -775,6 +853,21 @@ async function startGame(){
     ui.startBtn.disabled = false; return;
   }
   ui.startScreen.style.display = 'none';
+  ui.modeSelect.classList.add('show');
+  GAME.state = 'modeSelect';
+}
+function pickMode(mode){
+  GAME.mode = mode;
+  document.body.classList.toggle('solo', mode === 'solo');
+  document.body.classList.toggle('vs',   mode === 'vs');
+  if (mode === 'solo') {
+    ui.slotBlue.style.display = 'none';
+    ui.slotRed.querySelector('.lbl').textContent = 'PLAYER 1';
+  } else {
+    ui.slotBlue.style.display = '';
+    ui.slotRed.querySelector('.lbl').textContent = 'PLAYER 1 - LEFT';
+  }
+  ui.modeSelect.classList.remove('show');
   GAME.state = 'lobby';
   ui.lobby.classList.add('show');
   ui.slotRed.classList.remove('ready'); ui.slotBlue.classList.remove('ready');
@@ -789,6 +882,7 @@ async function runCountdownThenPlay(){
   GAME.startTs = performance.now();
   GAME.scores = { red:0, blue:0 };
   GAME.sorted = { red:0, blue:0 };
+  GAME.wrong  = { red:0, blue:0 };
   GAME.foods = [];
   GAME.hands = {};
   lastSpawnTs = 0; lastTs = 0;
@@ -814,14 +908,23 @@ function endGame(){
   setTimeout(() => playSfx('crowd'), 400);
   const r = GAME.scores.red, b = GAME.scores.blue;
   ui.resScRed.textContent = r; ui.resScBlue.textContent = b;
-  ui.resSubRed.textContent  = `${r} sorted`;
-  ui.resSubBlue.textContent = `${b} sorted`;
+  ui.resSubRed.textContent  = `${GAME.sorted.red} sorted \u00b7 ${GAME.wrong.red} wrong`;
+  ui.resSubBlue.textContent = `${GAME.sorted.blue} sorted \u00b7 ${GAME.wrong.blue} wrong`;
   ui.resRed.classList.remove('win'); ui.resBlue.classList.remove('win');
-  if (r > b) { ui.resRed.classList.add('win'); ui.resultsTitle.textContent = '\u{1F3C6} PLAYER 1 WINS!'; }
-  else if (b > r) { ui.resBlue.classList.add('win'); ui.resultsTitle.textContent = '\u{1F3C6} PLAYER 2 WINS!'; }
-  else { ui.resultsTitle.textContent = 'IT\u0027S A TIE!'; }
+  if (GAME.mode === 'solo') {
+    ui.resBlue.style.display = 'none';
+    ui.resultsTitle.textContent = r > 0 ? `\u{1F3C6} ${r} SORTED!` : 'GAME OVER';
+  } else {
+    ui.resBlue.style.display = '';
+    if (r > b) { ui.resRed.classList.add('win'); ui.resultsTitle.textContent = '\u{1F3C6} PLAYER 1 WINS!'; }
+    else if (b > r) { ui.resBlue.classList.add('win'); ui.resultsTitle.textContent = '\u{1F3C6} PLAYER 2 WINS!'; }
+    else { ui.resultsTitle.textContent = 'IT\u0027S A TIE!'; }
+  }
   ui.results.classList.add('show');
 }
+
+ui.mode1Btn.addEventListener('click', () => pickMode('solo'));
+ui.mode2Btn.addEventListener('click', () => pickMode('vs'));
 
 ui.startBtn.addEventListener('click', () => { ui.startBtn.disabled = true; startGame(); });
 ui.lobbyStartBtn.addEventListener('click', () => {
@@ -832,9 +935,8 @@ ui.lobbyStartBtn.addEventListener('click', () => {
 });
 ui.playAgainBtn.addEventListener('click', () => {
   ui.results.classList.remove('show');
-  GAME.state = 'lobby';
-  ui.lobby.classList.add('show');
-  lobbyLoop();
+  ui.modeSelect.classList.add('show');
+  GAME.state = 'modeSelect';
 });
 </script>
 </body>
