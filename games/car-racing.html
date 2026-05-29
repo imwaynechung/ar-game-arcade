@@ -178,6 +178,11 @@
   .gripBar{height:8px;background:#e8e8e8;border-radius:4px;margin-top:8px;overflow:hidden}
   .gripBar > div{height:100%;width:0;background:linear-gradient(90deg,#7CFFB2,#1a8a2a);transition:width .12s}
   .lobbyFoot{margin-top:14px;font-size:14px;color:#666}
+  .lobbyStart{margin-top:18px;pointer-events:auto;background:linear-gradient(180deg,#7CFFB2,#1a8a2a);
+    color:#06240f;border:0;padding:18px 42px;border-radius:999px;font-size:22px;font-weight:900;
+    letter-spacing:2px;cursor:pointer;font-family:inherit;
+    box-shadow:0 6px 0 #0d4a17,0 14px 28px rgba(0,0,0,.35);transition:transform .08s}
+  .lobbyStart:active{transform:translateY(3px);box-shadow:0 3px 0 #0d4a17,0 8px 18px rgba(0,0,0,.35)}
   /* mode toggle */
   .modeRow{margin:4px 0 14px;display:flex;flex-direction:column;align-items:center;gap:8px}
   .modeLbl{font-size:13px;letter-spacing:2px;color:#5b3a3a;font-weight:900}
@@ -333,7 +338,8 @@
         <div class="gripBar"><div id="gripBarBlue"></div></div>
       </div>
     </div>
-    <div class="lobbyFoot">💡 Solo? Either side works — the race begins as soon as <b>one</b> player is ready.</div>
+    <div class="lobbyFoot">💡 Stand on your side so the camera can see you. Solo? Either side works.</div>
+    <button class="lobbyStart" id="lobbyStartBtn" type="button">▶ START RACE</button>
   </div>
 </div>
 
@@ -574,6 +580,7 @@ const ui = {
   lobbySub: document.getElementById('lobbySub'),
   modeBody: document.getElementById('modeBody'),
   modeHand: document.getElementById('modeHand'),
+  lobbyStartBtn: document.getElementById('lobbyStartBtn'),
 };
 
 function resize(){
@@ -1090,34 +1097,25 @@ function lobbyLoop(){
     if (detectedBlue) drawWheel('blue', detectedBlue.cx * window.innerWidth, detectedBlue.cy * window.innerHeight, detectedBlue.angle, detectedBlue.gripping);
   }
 
-  // accumulate grip
+  // detection-only status (no hold timer — user clicks START RACE when ready)
   for (const [team, data, slot, stateEl, barEl] of [
     ['red',  detectedRed,  ui.slotRed,  ui.stateRed,  ui.gripBarRed],
     ['blue', detectedBlue, ui.slotBlue, ui.stateBlue, ui.gripBarBlue],
   ]) {
-    if (data && data.gripping) {
-      GAME._lobbyGrip[team] = Math.min(LOBBY_GRIP_REQUIRED_MS, GAME._lobbyGrip[team] + dt);
-      stateEl.textContent = GAME._lobbyGrip[team] >= LOBBY_GRIP_REQUIRED_MS ? '✅ READY!' : 'Hold still…';
+    const ready = !!(data && data.gripping);
+    if (ready) {
+      stateEl.textContent = '✅ DETECTED';
+      barEl.style.width = '100%';
     } else if (data) {
-      GAME._lobbyGrip[team] = Math.max(0, GAME._lobbyGrip[team] - dt * 0.5);
-      stateEl.textContent  = GAME.controlMode === 'body' ? '🧍 Stand up tall' : '🖐️ Raise both hands';
+      stateEl.textContent = GAME.controlMode === 'body' ? '🧍 Stand up tall' : '🖐️ Raise both hands';
+      barEl.style.width = '50%';
     } else {
-      GAME._lobbyGrip[team] = Math.max(0, GAME._lobbyGrip[team] - dt);
-      stateEl.textContent  = team === 'red' ? 'Stand on LEFT' : 'Stand on RIGHT';
+      stateEl.textContent = team === 'red' ? 'Stand on LEFT' : 'Stand on RIGHT';
+      barEl.style.width = '0%';
     }
-    const pct = (GAME._lobbyGrip[team] / LOBBY_GRIP_REQUIRED_MS) * 100;
-    barEl.style.width = pct + '%';
-    slot.classList.toggle('ready', GAME._lobbyGrip[team] >= LOBBY_GRIP_REQUIRED_MS);
+    slot.classList.toggle('ready', ready);
   }
 
-  // start race when ANY player is ready
-  if (GAME._lobbyGrip.red >= LOBBY_GRIP_REQUIRED_MS || GAME._lobbyGrip.blue >= LOBBY_GRIP_REQUIRED_MS) {
-    GAME.state = 'starting';
-    ui.lobby.classList.remove('show');
-    fctx.clearRect(0,0,window.innerWidth, window.innerHeight);
-    runCountdownThenPlay();
-    return;
-  }
   requestAnimationFrame(lobbyLoop);
 }
 
@@ -1165,6 +1163,13 @@ function setControlMode(mode){
 }
 ui.modeBody.addEventListener('click', () => setControlMode('body'));
 ui.modeHand.addEventListener('click', () => setControlMode('hand'));
+ui.lobbyStartBtn.addEventListener('click', () => {
+  if (GAME.state !== 'lobby') return;
+  GAME.state = 'starting';
+  ui.lobby.classList.remove('show');
+  fctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  runCountdownThenPlay();
+});
 
 // ---------- POSE → STEERING ----------
 // Use LEFT_WRIST(15), RIGHT_WRIST(16), and shoulders for grip detection
