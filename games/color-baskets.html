@@ -474,10 +474,22 @@ const FALL_SPEED = 0.00024;                 // slow, senior-friendly
 const SPAWN_INTERVAL_MS = 850;
 const PICKUP_RADIUS = 0.09;                 // generous, in min(W,H) units
 const HAND_GRACE_MS = 500;                  // grab persists if hand briefly lost
-const BASKET = {
-  green: { cx: 0.18, cy: 0.84, halfW: 0.13, halfH: 0.13 },
-  red:   { cx: 0.82, cy: 0.84, halfW: 0.13, halfH: 0.13 },
-};
+
+// Basket layouts.
+//  - solo: 2 big baskets (green left, red right) spanning full width
+//  - vs:   4 baskets (P1 = red team owns left half: green @ 0.10, red @ 0.40;
+//                     P2 = blue team owns right half: green @ 0.60, red @ 0.90)
+const BASKETS_SOLO = [
+  { team:'red',  color:'green', cx:0.18, cy:0.84, halfW:0.13, halfH:0.13 },
+  { team:'red',  color:'red',   cx:0.82, cy:0.84, halfW:0.13, halfH:0.13 },
+];
+const BASKETS_VS = [
+  { team:'red',  color:'green', cx:0.10, cy:0.84, halfW:0.085, halfH:0.11 },
+  { team:'red',  color:'red',   cx:0.40, cy:0.84, halfW:0.085, halfH:0.11 },
+  { team:'blue', color:'green', cx:0.60, cy:0.84, halfW:0.085, halfH:0.11 },
+  { team:'blue', color:'red',   cx:0.90, cy:0.84, halfW:0.085, halfH:0.11 },
+];
+function getBaskets(){ return GAME.mode === 'vs' ? BASKETS_VS : BASKETS_SOLO; }
 
 let nextFoodId = 1;
 function spawnFood(){
@@ -599,19 +611,19 @@ function updateCarried(now, dt){
         food.vy = FALL_SPEED;
       }
     }
-    // basket collision
-    for (const basketColor of ['green','red']) {
-      const b = BASKET[basketColor];
+    // basket collision (only check baskets that belong to the carrier's team)
+    const team = food.carriedBy ? food.carriedBy.team : null;
+    for (const b of getBaskets()) {
+      if (team && b.team !== team) continue; // not your basket
       const inside = Math.abs(food.x - b.cx) < b.halfW && Math.abs(food.y - b.cy) < b.halfH;
       if (inside) {
-        const team = food.carriedBy ? food.carriedBy.team : null;
-        const correct = food.food.color === basketColor;
+        const correct = food.food.color === b.color;
         if (correct && team) {
           GAME.scores[team] += 1;
           GAME.sorted[team] += 1;
           (team === 'red' ? ui.scoreRed : ui.scoreBlue).textContent = GAME.scores[team];
           playSfx('point');
-          addParticles(food.x, food.y, basketColor === 'green' ? '#3cd06a' : '#ff5b50', 22);
+          addParticles(food.x, food.y, b.color === 'green' ? '#3cd06a' : '#ff5b50', 22);
           food.resultColor = '#3cd06a';
         } else {
           // wrong basket: minor penalty (score clamped at 0)
@@ -625,6 +637,7 @@ function updateCarried(now, dt){
           food.resultColor = '#ff5b50';
         }
         food.state = 'gone';
+        break;
       }
     }
   }
@@ -646,12 +659,12 @@ function updateFalling(dt){
 
 function drawBaskets(){
   const W = window.innerWidth, H = window.innerHeight;
-  const baseSize = Math.min(W, H) * 0.30;
-  for (const [color, key, label, tint] of [
-    ['green', 'basketGreen', 'GREEN', '#3cd06a'],
-    ['red',   'basketRed',   'RED',   '#ff5b50'],
-  ]) {
-    const b = BASKET[color];
+  const baskets = getBaskets();
+  const baseSize = Math.min(W, H) * (GAME.mode === 'vs' ? 0.22 : 0.30);
+  for (const b of baskets) {
+    const tint = b.color === 'green' ? '#3cd06a' : '#ff5b50';
+    const key = b.color === 'green' ? 'basketGreen' : 'basketRed';
+    const label = b.color === 'green' ? 'GREEN' : 'RED';
     const cx = b.cx * W, cy = b.cy * H;
     const img = SVG_IMAGES[key];
     // active zone glow
@@ -670,12 +683,12 @@ function drawBaskets(){
     }
     // label above basket
     fxCtx.save();
-    fxCtx.font = '900 36px Inter, system-ui, sans-serif';
+    fxCtx.font = `900 ${GAME.mode === 'vs' ? 26 : 36}px Inter, system-ui, sans-serif`;
     fxCtx.textAlign = 'center';
     fxCtx.lineWidth = 6;
     fxCtx.strokeStyle = '#000';
     fxCtx.fillStyle = tint;
-    const ly = cy - baseSize/2 - 14;
+    const ly = cy - baseSize/2 - 10;
     fxCtx.strokeText(label, cx, ly);
     fxCtx.fillText(label, cx, ly);
     fxCtx.restore();
