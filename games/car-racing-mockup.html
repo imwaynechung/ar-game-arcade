@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Coin Rush GP · UI Mockup</title>
+<style>
+  :root{
+    --red1:#ff5b50; --red2:#c9160c; --red3:#7a0a04;
+    --blue1:#4d8dff; --blue2:#0d3fb3; --blue3:#06246e;
+    --gold:#ffcf3a; --gold-stroke:#7a4a00;
+    --road:#2a2d35; --line:#f3e96b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0c0f17;color:#fff;
+    font-family:"Inter","Segoe UI",system-ui,sans-serif;overflow:hidden;user-select:none}
+
+  /* ----- Stage: night highway scene ----- */
+  .stage{position:absolute;inset:0;overflow:hidden}
+  .sky{position:absolute;inset:0;background:
+    radial-gradient(circle at 50% 90%, rgba(255,180,80,.25), transparent 55%),
+    linear-gradient(180deg,#0a1430 0%,#1a2b66 35%,#2b3f8a 55%,#5b3a6e 75%,#a14a55 100%)}
+  .stars{position:absolute;inset:0;background-image:
+    radial-gradient(1px 1px at 10% 12%, #fff,transparent 40%),
+    radial-gradient(1px 1px at 22% 8%, #fff,transparent 40%),
+    radial-gradient(1px 1px at 40% 15%, #fff,transparent 40%),
+    radial-gradient(1px 1px at 70% 6%, #fff,transparent 40%),
+    radial-gradient(1px 1px at 88% 18%, #fff,transparent 40%),
+    radial-gradient(1px 1px at 55% 22%, #fff,transparent 40%);opacity:.9}
+  .mountains{position:absolute;left:0;right:0;bottom:46%;height:18%;
+    background:linear-gradient(180deg,#1a1c40,#0a0c25);
+    clip-path:polygon(0 100%, 0 60%, 8% 30%, 16% 55%, 24% 25%, 35% 60%, 45% 20%, 55% 55%, 65% 30%, 75% 60%, 84% 25%, 92% 55%, 100% 35%, 100% 100%)}
+  .city{position:absolute;left:0;right:0;bottom:42%;height:8%;
+    background:linear-gradient(180deg,#0a0c20,#040611);
+    clip-path:polygon(0 100%, 0 70%, 5% 70%, 6% 40%, 9% 40%, 10% 60%, 14% 60%, 15% 25%, 18% 25%, 19% 55%, 24% 55%, 25% 35%, 30% 35%, 31% 65%, 36% 65%, 37% 45%, 42% 45%, 43% 25%, 46% 25%, 47% 60%, 52% 60%, 53% 40%, 58% 40%, 59% 70%, 64% 70%, 65% 30%, 70% 30%, 71% 55%, 76% 55%, 77% 35%, 82% 35%, 83% 65%, 88% 65%, 89% 45%, 94% 45%, 95% 60%, 100% 60%, 100% 100%)}
+
+  /* ----- Two-lane highway (red on left, blue on right) ----- */
+  .roads{position:absolute;left:0;right:0;bottom:0;height:50%;
+    display:flex;gap:0;perspective:600px}
+  .road{flex:1;position:relative;overflow:hidden;
+    background:linear-gradient(180deg, #1a1c24 0%, var(--road) 25%, var(--road) 100%);
+    transform-origin:50% 0;transform:rotateX(34deg);
+    border-left:4px solid rgba(255,255,255,.15);border-right:4px solid rgba(255,255,255,.15)}
+  .road::before, .road::after{content:"";position:absolute;top:0;bottom:0;width:6px;background:#e8e3d2;opacity:.85}
+  .road::before{left:8%} .road::after{right:8%}
+  /* dashed center line */
+  .road .dash{position:absolute;top:0;bottom:0;left:50%;width:8px;transform:translateX(-50%);
+    background:repeating-linear-gradient(180deg, var(--line) 0 40px, transparent 40px 80px)}
+  /* shoulder gradient blends to horizon */
+  .road .fade{position:absolute;top:0;left:0;right:0;height:35%;
+    background:linear-gradient(180deg, rgba(20,22,40,.95), transparent)}
+
+  /* ----- Car sprites ----- */
+  .car{position:absolute;bottom:6%;left:50%;transform:translateX(-50%);width:120px}
+  .car svg{display:block;width:100%;filter:drop-shadow(0 10px 18px rgba(0,0,0,.5))}
+
+  /* ----- Coins floating on road ----- */
+  .coin{position:absolute;width:34px;height:34px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #fff7c4, #ffcf3a 55%, #c98a00 100%);
+    border:3px solid #7a4a00;box-shadow:0 4px 0 #5a3500, 0 8px 18px rgba(0,0,0,.45);
+    display:flex;align-items:center;justify-content:center;font-weight:900;color:#7a4a00;font-size:18px;font-style:italic}
+  .coin.big{width:46px;height:46px;font-size:24px}
+
+  /* ----- Cone obstacle ----- */
+  .cone{position:absolute;width:34px;height:42px}
+  .cone svg{width:100%;height:100%;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))}
+
+  /* ----- Steering wheel overlay (drawn over player video region in real game) ----- */
+  .wheel{position:absolute;width:160px;height:160px}
+  .wheel.left{left:8%;top:42%}
+  .wheel.right{right:8%;top:42%}
+  .wheel svg{width:100%;height:100%;filter:drop-shadow(0 8px 20px rgba(0,0,0,.6))}
+  .wheel.left svg{transform:rotate(-12deg)}
+  .wheel.right svg{transform:rotate(15deg)}
+
+  /* ----- HUD ----- */
+  .hud{position:absolute;inset:0;pointer-events:none}
+  .scorePill{position:absolute;top:18px;display:flex;align-items:center;gap:10px;
+    padding:10px 18px;border-radius:999px;color:#fff;font-weight:900;font-size:26px;font-style:italic;
+    -webkit-text-stroke:2px rgba(0,0,0,.5);text-shadow:0 3px 0 rgba(0,0,0,.5);
+    border:3px solid rgba(255,255,255,.6);box-shadow:0 8px 20px rgba(0,0,0,.4)}
+  .scorePill.red{left:18px;background:linear-gradient(180deg,var(--red1),var(--red2))}
+  .scorePill.blue{right:18px;background:linear-gradient(180deg,var(--blue1),var(--blue2))}
+  .scorePill .ico{font-size:24px}
+
+  .timer{position:absolute;top:18px;left:50%;transform:translateX(-50%);
+    padding:8px 22px;border-radius:14px;background:rgba(0,0,0,.5);
+    border:2px solid rgba(255,255,255,.25);font-weight:900;font-size:30px;letter-spacing:2px;
+    color:#ffe27a;-webkit-text-stroke:1px #4a3000}
+
+  .speedo{position:absolute;bottom:14px;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 50% 40%,#222 0%,#0c0e14 70%);
+    border:4px solid #c9c4b0;box-shadow:0 8px 24px rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;flex-direction:column;color:#ffcf3a;
+    font-weight:900;font-style:italic}
+  .speedo.left{left:14px}
+  .speedo.right{right:14px}
+  .speedo .v{font-size:34px;line-height:1;text-shadow:0 0 8px #ff7a1a}
+  .speedo .u{font-size:11px;opacity:.7;letter-spacing:2px;margin-top:2px}
+  .speedo .needle{position:absolute;left:50%;top:50%;width:4px;height:46px;background:linear-gradient(180deg,#ff5b50,#7a0a04);transform-origin:50% 100%;border-radius:2px;
+    transform:translate(-50%,-100%) rotate(40deg)}
+
+  /* ----- Combo (per-side, same style as boat race) ----- */
+  .combo{position:absolute;top:28%;width:170px;text-align:center;pointer-events:none;
+    font-style:italic;font-weight:900;line-height:1}
+  .combo.left{left:6%}
+  .combo.right{right:6%}
+  .combo .pops{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:80px;justify-content:flex-end;margin-bottom:6px}
+  .combo .pts{font-size:42px;color:#ffcf3a;-webkit-text-stroke:3px var(--gold-stroke);text-shadow:0 4px 0 var(--gold-stroke);display:block}
+  .combo .pts.s{font-size:32px;color:#ffe27a}
+  .combo .lbl{font-size:22px;letter-spacing:2px;color:#fff;-webkit-text-stroke:2px #1a3a8a;text-shadow:0 4px 0 #1a3a8a}
+  .combo .mult{font-size:62px;color:#fff;display:block;margin-top:2px;
+    -webkit-text-stroke:3px #c9160c;text-shadow:0 6px 0 #c9160c}
+  .combo.right .mult{-webkit-text-stroke:3px #0d3fb3;text-shadow:0 6px 0 #0d3fb3}
+
+  /* ----- Hearts (lives) ----- */
+  .hearts{position:absolute;top:78px;display:flex;gap:6px}
+  .hearts.left{left:22px}
+  .hearts.right{right:22px}
+  .hearts span{font-size:24px;filter:drop-shadow(0 2px 0 #5a0000)}
+  .hearts span.off{opacity:.25;filter:grayscale(1)}
+
+  /* ----- Grip hint ----- */
+  .gripHint{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);
+    padding:10px 18px;border-radius:14px;background:rgba(0,0,0,.55);
+    border:2px dashed #ffcf3a;font-weight:800;color:#ffe27a;letter-spacing:1px}
+
+  /* ----- Devider between two players ----- */
+  .divider{position:absolute;top:0;bottom:0;left:50%;width:4px;
+    background:linear-gradient(180deg, transparent, rgba(255,255,255,.4) 30%, rgba(255,255,255,.4) 70%, transparent);
+    transform:translateX(-50%);z-index:4;pointer-events:none}
+
+  /* ----- Footer label ----- */
+  .meta{position:absolute;left:0;right:0;bottom:0;text-align:center;color:#ffd76a;
+    font-size:12px;letter-spacing:2px;padding:6px 0;background:rgba(0,0,0,.4);font-style:italic}
+
+  /* sparkle on coin pickup demo */
+  .spark{position:absolute;width:60px;height:60px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.9), rgba(255,207,58,.3) 40%, transparent 70%);
+    pointer-events:none;animation:sparkPulse 1.4s ease-out infinite}
+  @keyframes sparkPulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="sky"></div>
+  <div class="stars"></div>
+  <div class="mountains"></div>
+  <div class="city"></div>
+
+  <!-- Two lanes -->
+  <div class="roads">
+    <div class="road">
+      <div class="dash"></div>
+      <div class="fade"></div>
+      <!-- coins -->
+      <div class="coin" style="left:35%;top:25%">$</div>
+      <div class="coin" style="left:60%;top:42%">$</div>
+      <div class="coin big" style="left:48%;top:62%">$</div>
+      <!-- cone -->
+      <div class="cone" style="left:25%;top:55%">
+        <svg viewBox="0 0 40 50">
+          <polygon points="20,2 6,46 34,46" fill="#ff7a1a" stroke="#7a3a00" stroke-width="2"/>
+          <rect x="9" y="18" width="22" height="5" fill="#fff"/>
+          <rect x="3" y="44" width="34" height="5" fill="#222" rx="1"/>
+        </svg>
+      </div>
+      <!-- sparkle near front of car -->
+      <div class="spark" style="left:42%;bottom:18%"></div>
+      <!-- red car -->
+      <div class="car">
+        <svg viewBox="0 0 140 90">
+          <defs><linearGradient id="r1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ff7a6e"/><stop offset="1" stop-color="#c9160c"/></linearGradient></defs>
+          <!-- body -->
+          <path d="M14 60 L26 32 Q34 22 50 20 L92 20 Q108 22 116 32 L128 60 L128 74 Q128 80 122 80 L18 80 Q12 80 12 74 Z"
+            fill="url(#r1)" stroke="#5a0500" stroke-width="3"/>
+          <!-- windshield -->
+          <path d="M40 32 Q70 26 102 32 L114 56 L26 56 Z" fill="#cfeaff" stroke="#08203a" stroke-width="2" opacity=".9"/>
+          <!-- wheels -->
+          <circle cx="36" cy="80" r="12" fill="#0a0a0a" stroke="#444" stroke-width="3"/>
+          <circle cx="104" cy="80" r="12" fill="#0a0a0a" stroke="#444" stroke-width="3"/>
+          <circle cx="36" cy="80" r="4" fill="#bbb"/>
+          <circle cx="104" cy="80" r="4" fill="#bbb"/>
+          <!-- headlights -->
+          <circle cx="22" cy="60" r="4" fill="#fff8c8"/>
+          <circle cx="120" cy="60" r="4" fill="#fff8c8"/>
+          <!-- racing stripe -->
+          <rect x="64" y="22" width="14" height="56" fill="#fff" opacity=".8"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="road">
+      <div class="dash"></div>
+      <div class="fade"></div>
+      <!-- coins -->
+      <div class="coin" style="left:30%;top:30%">$</div>
+      <div class="coin" style="left:55%;top:18%">$</div>
+      <div class="coin big" style="left:45%;top:50%">$</div>
+      <div class="coin" style="left:62%;top:66%">$</div>
+      <!-- blue car -->
+      <div class="car">
+        <svg viewBox="0 0 140 90">
+          <defs><linearGradient id="b1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#7ab3ff"/><stop offset="1" stop-color="#0d3fb3"/></linearGradient></defs>
+          <path d="M14 60 L26 32 Q34 22 50 20 L92 20 Q108 22 116 32 L128 60 L128 74 Q128 80 122 80 L18 80 Q12 80 12 74 Z"
+            fill="url(#b1)" stroke="#04153f" stroke-width="3"/>
+          <path d="M40 32 Q70 26 102 32 L114 56 L26 56 Z" fill="#cfeaff" stroke="#08203a" stroke-width="2" opacity=".9"/>
+          <circle cx="36" cy="80" r="12" fill="#0a0a0a" stroke="#444" stroke-width="3"/>
+          <circle cx="104" cy="80" r="12" fill="#0a0a0a" stroke="#444" stroke-width="3"/>
+          <circle cx="36" cy="80" r="4" fill="#bbb"/>
+          <circle cx="104" cy="80" r="4" fill="#bbb"/>
+          <circle cx="22" cy="60" r="4" fill="#fff8c8"/>
+          <circle cx="120" cy="60" r="4" fill="#fff8c8"/>
+          <rect x="64" y="22" width="14" height="56" fill="#fff" opacity=".8"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Steering wheel overlays (where player's hands would be) -->
+  <div class="wheel left">
+    <svg viewBox="0 0 200 200">
+      <defs>
+        <radialGradient id="rim" cx="50%" cy="40%" r="60%">
+          <stop offset="0" stop-color="#3a3f55"/>
+          <stop offset="1" stop-color="#0a0c14"/>
+        </radialGradient>
+        <radialGradient id="hub" cx="50%" cy="45%" r="55%">
+          <stop offset="0" stop-color="#ff7a6e"/>
+          <stop offset="1" stop-color="#7a0a04"/>
+        </radialGradient>
+      </defs>
+      <!-- outer rim -->
+      <circle cx="100" cy="100" r="90" fill="url(#rim)" stroke="#1c1f2c" stroke-width="6"/>
+      <circle cx="100" cy="100" r="74" fill="none" stroke="#22252f" stroke-width="6"/>
+      <!-- spokes -->
+      <rect x="94" y="30" width="12" height="140" rx="6" fill="#2a2d3a"/>
+      <rect x="30" y="94" width="140" height="12" rx="6" fill="#2a2d3a"/>
+      <!-- hub -->
+      <circle cx="100" cy="100" r="34" fill="url(#hub)" stroke="#3a0500" stroke-width="3"/>
+      <text x="100" y="108" text-anchor="middle" font-size="22" font-weight="900"
+        fill="#fff" font-family="Inter,sans-serif" font-style="italic">GP</text>
+      <!-- grip dots -->
+      <circle cx="100" cy="22" r="6" fill="#ffcf3a"/>
+      <circle cx="100" cy="178" r="6" fill="#ffcf3a"/>
+      <circle cx="22" cy="100" r="6" fill="#ffcf3a"/>
+      <circle cx="178" cy="100" r="6" fill="#ffcf3a"/>
+    </svg>
+  </div>
+
+  <div class="wheel right">
+    <svg viewBox="0 0 200 200">
+      <defs>
+        <radialGradient id="rim2" cx="50%" cy="40%" r="60%">
+          <stop offset="0" stop-color="#3a3f55"/>
+          <stop offset="1" stop-color="#0a0c14"/>
+        </radialGradient>
+        <radialGradient id="hub2" cx="50%" cy="45%" r="55%">
+          <stop offset="0" stop-color="#7ab3ff"/>
+          <stop offset="1" stop-color="#04153f"/>
+        </radialGradient>
+      </defs>
+      <circle cx="100" cy="100" r="90" fill="url(#rim2)" stroke="#1c1f2c" stroke-width="6"/>
+      <circle cx="100" cy="100" r="74" fill="none" stroke="#22252f" stroke-width="6"/>
+      <rect x="94" y="30" width="12" height="140" rx="6" fill="#2a2d3a"/>
+      <rect x="30" y="94" width="140" height="12" rx="6" fill="#2a2d3a"/>
+      <circle cx="100" cy="100" r="34" fill="url(#hub2)" stroke="#02091f" stroke-width="3"/>
+      <text x="100" y="108" text-anchor="middle" font-size="22" font-weight="900"
+        fill="#fff" font-family="Inter,sans-serif" font-style="italic">GP</text>
+      <circle cx="100" cy="22" r="6" fill="#ffcf3a"/>
+      <circle cx="100" cy="178" r="6" fill="#ffcf3a"/>
+      <circle cx="22" cy="100" r="6" fill="#ffcf3a"/>
+      <circle cx="178" cy="100" r="6" fill="#ffcf3a"/>
+    </svg>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="scorePill red"><span class="ico">🪙</span><span>420</span></div>
+    <div class="timer">00:42</div>
+    <div class="scorePill blue"><span>380</span><span class="ico">🪙</span></div>
+
+    <div class="hearts left">
+      <span>❤️</span><span>❤️</span><span>❤️</span><span class="off">❤️</span><span class="off">❤️</span>
+    </div>
+    <div class="hearts right">
+      <span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span class="off">❤️</span>
+    </div>
+
+    <div class="speedo left">
+      <div class="needle"></div>
+      <div class="v">88</div><div class="u">KM/H</div>
+    </div>
+    <div class="speedo right">
+      <div class="needle" style="transform:translate(-50%,-100%) rotate(70deg)"></div>
+      <div class="v">102</div><div class="u">KM/H</div>
+    </div>
+
+    <!-- Combo panels (mirroring boat race) -->
+    <div class="combo left">
+      <div class="pops">
+        <span class="pts s">+10</span>
+        <span class="pts">+25</span>
+      </div>
+      <span class="lbl">COMBO</span>
+      <span class="mult">x4</span>
+    </div>
+    <div class="combo right">
+      <div class="pops">
+        <span class="pts s">+10</span>
+        <span class="pts">+50</span>
+      </div>
+      <span class="lbl">COMBO</span>
+      <span class="mult">x7</span>
+    </div>
+
+    <div class="gripHint">🖐️ HOLD THE WHEEL — Both hands in front of chest</div>
+  </div>
+
+  <div class="meta">COIN RUSH GP · UI MOCKUP · v0 — NOT WIRED TO CAMERA</div>
+</div>
+
+</body>
+</html>
