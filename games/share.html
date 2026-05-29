@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>My Dragon Boat Record · AR Arcade</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#2bbcf6 0%,#0b6fb0 100%);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#fff;padding:24px}
+  .wrap{max-width:480px;margin:0 auto}
+  .card{background:#fff;color:#1a2240;border-radius:24px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}
+  .avatar{font-size:96px;line-height:1;margin-bottom:6px}
+  h1{margin:0;font-size:28px}
+  .team{display:inline-block;margin-top:6px;padding:4px 14px;border-radius:999px;font-weight:800;letter-spacing:1px;font-size:12px;color:#fff}
+  .team.red{background:linear-gradient(180deg,#ff5b50,#c9160c)}
+  .team.blue{background:linear-gradient(180deg,#4d8dff,#0d3fb3)}
+  .score{margin:18px 0 6px;font-size:54px;font-weight:900;color:#ffcf3a;-webkit-text-stroke:2px #7a4a00;line-height:1}
+  .scoreLbl{font-size:12px;color:#5a6680;letter-spacing:1px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:18px}
+  .stat{background:#f4f6fb;border-radius:12px;padding:10px}
+  .stat .l{font-size:11px;color:#5a6680;font-weight:600;letter-spacing:.3px}
+  .stat .v{font-size:20px;font-weight:900;color:#1a2240}
+  .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .btn{display:inline-block;background:linear-gradient(180deg,#ffcf3a,#f29b1a);color:#3a1d00;padding:12px 22px;border-radius:999px;font-weight:800;text-decoration:none;border:0;cursor:pointer;font-size:14px}
+  .btn.alt{background:#1a2240;color:#fff}
+  .err{background:#fff;color:#1a2240;border-radius:18px;padding:24px;text-align:center}
+  footer{text-align:center;color:rgba(255,255,255,.7);font-size:12px;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="root"></div>
+  <footer>🐉 AR Arcade · Dragon Boat Race</footer>
+</div>
+<script>
+function decode(){
+  try{
+    const h = location.hash || '';
+    const m = h.match(/p=([^&]+)/);
+    if (!m) return null;
+    const json = decodeURIComponent(escape(atob(m[1])));
+    return JSON.parse(json);
+  }catch(e){ return null; }
+}
+const p = decode();
+const root = document.getElementById('root');
+if (!p){
+  root.innerHTML = '<div class="err"><h2>Invalid or missing record</h2><p>Open this page by scanning a QR from the game.</p></div>';
+} else {
+  const teamCls = p.t === 'red' ? 'red' : 'blue';
+  const teamLbl = p.t === 'red' ? 'TEAM RED' : 'TEAM BLUE';
+  const json = JSON.stringify(p, null, 2);
+  const dataUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(json);
+  root.innerHTML = `
+    <div class="card">
+      <div class="avatar">${p.a || '🐉'}</div>
+      <h1>${p.n || 'Player'}'s Record</h1>
+      <div class="team ${teamCls}">${teamLbl}</div>
+      <div class="score">${(p.s||0).toLocaleString()}</div>
+      <div class="scoreLbl">SCORE</div>
+      <div class="grid">
+        <div class="stat"><div class="l">🚣 Strokes</div><div class="v">${p.str||0}</div></div>
+        <div class="stat"><div class="l">🔥 Calories</div><div class="v">${p.kcal||0} kcal</div></div>
+        <div class="stat"><div class="l">🎵 Rhythm</div><div class="v">${p.rhy||0}%</div></div>
+        <div class="stat"><div class="l">🎯 Stability</div><div class="v">${p.con||0}%</div></div>
+        <div class="stat"><div class="l">⚡ Pace</div><div class="v">${p.spm||0} spm</div></div>
+        <div class="stat"><div class="l">⏱ Duration</div><div class="v">${p.dur||0}s</div></div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="${dataUrl}" download="dragon-boat-${(p.n||'record')}-${p.ts||Date.now()}.json">⬇️ Download JSON</a>
+        <a class="btn alt" href="../index.html">🎮 Play Again</a>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>

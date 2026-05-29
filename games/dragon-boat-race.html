@@ -197,36 +197,105 @@
   #winScreen a.alt{background:linear-gradient(180deg,#5a6680,#3a4360);color:#fff;box-shadow:0 6px 0 #1a2030}
 
   /* ---------- RESULTS MODAL ---------- */
-  #resultsScreen{position:fixed;inset:0;background:rgba(8,12,24,.92);display:none;align-items:center;justify-content:center;z-index:50;padding:24px;overflow-y:auto}
+  /* ---------- RESULTS MODAL (redesigned) ---------- */
+  #resultsScreen{position:fixed;inset:0;background:linear-gradient(180deg,#0a1226 0%,#060a18 100%);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:24px;overflow-y:auto}
   #resultsScreen.show{display:flex}
-  #resultsScreen .resultsCard{background:linear-gradient(180deg,#12182a,#0a0f1c);border:2px solid rgba(255,207,58,.4);border-radius:20px;padding:28px;max-width:980px;width:100%;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-  #resultsScreen h3{margin:0 0 8px;font-size:28px;color:var(--gold);text-align:center;letter-spacing:1px}
-  #resultsScreen .winLine{text-align:center;font-size:22px;font-weight:800;margin-bottom:18px;color:#ffd770}
-  #resultsScreen .winLine.red{color:#ff8a5a}
-  #resultsScreen .winLine.blue{color:#7ab8ff}
-  #resultsScreen .resultsCols,#resultsScreen .teamCols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  @media (max-width:720px){#resultsScreen .resultsCols,#resultsScreen .teamCols{grid-template-columns:1fr}}
-  #resultsScreen .teamCol{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px}
-  #resultsScreen .teamCol h4{margin:0 0 12px;font-size:18px;letter-spacing:.5px}
-  #resultsScreen .teamCol.red h4{color:#ff8a5a}
-  #resultsScreen .teamCol.blue h4{color:#7ab8ff}
-  #resultsScreen .statRow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.08);font-size:14px}
-  #resultsScreen .statRow:last-of-type{border-bottom:0}
-  #resultsScreen .statLabel{color:#cdd6e6}
-  #resultsScreen .statValue{font-weight:800;color:#fff}
-  #resultsScreen .chartLabel{margin-top:14px;margin-bottom:6px;font-size:12px;color:#9aa6bd;text-transform:uppercase;letter-spacing:1px}
-  #resultsScreen svg{width:100%;height:60px;display:block}
-  #resultsScreen .resultsActions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
-  #resultsScreen .resultsActions button,#resultsScreen .resultsActions a{background:linear-gradient(180deg,#ffcf3a,#f29b1a);border:0;padding:12px 30px;border-radius:999px;font-size:16px;font-weight:900;cursor:pointer;color:#3a1d00;box-shadow:0 5px 0 var(--gold-stroke);text-decoration:none;display:inline-block}
-  #resultsScreen .resultsActions a.alt,#resultsScreen .resultsActions button.alt{background:linear-gradient(180deg,#5a6680,#3a4360);color:#fff;box-shadow:0 5px 0 #1a2030}
-  #resultsScreen .benefitsPanel{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media (max-width:720px){#resultsScreen .benefitsPanel{grid-template-columns:1fr}}
-  #resultsScreen .benefitsCol{background:linear-gradient(180deg,rgba(255,207,58,.08),rgba(255,255,255,.02));border:1px solid rgba(255,207,58,.25);border-radius:14px;padding:14px 16px}
-  #resultsScreen .benefitsTitle{font-size:15px;font-weight:800;color:var(--gold);margin-bottom:8px;letter-spacing:.5px}
-  #resultsScreen .benefitsList{list-style:none;margin:0;padding:0;font-size:13px;color:#dde4f3;line-height:1.55}
-  #resultsScreen .benefitsList li{padding:4px 0;border-bottom:1px dashed rgba(255,255,255,.06)}
-  #resultsScreen .benefitsList li:last-child{border-bottom:0}
-  #resultsScreen .benefitsList b{color:#fff}
+  #resultsScreen::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.06;background-image:repeating-linear-gradient(45deg,#7ab8ff 0 2px,transparent 2px 22px)}
+  #resultsScreen .resultsCard{position:relative;background:transparent;border:0;border-radius:0;padding:18px 8px 24px;max-width:1280px;width:100%;color:#fff}
+
+  /* Header */
+  #resultsScreen .hdr{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:18px;text-align:center}
+  #resultsScreen .hdr .trophy{font-size:56px;filter:drop-shadow(0 6px 0 rgba(0,0,0,.4))}
+  #resultsScreen .hdr h3{margin:0;font-size:clamp(34px,4.5vw,52px);font-weight:900;letter-spacing:1px;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.45)}
+  #resultsScreen .hdr h3.red{color:#ff8a5a}
+  #resultsScreen .hdr h3.blue{color:#7ab8ff}
+  #resultsScreen .hdr .sub{color:#9fb1d4;font-size:15px;font-weight:500}
+
+  /* Top stat tiles */
+  #resultsScreen .statTiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  @media (max-width:820px){#resultsScreen .statTiles{grid-template-columns:repeat(2,1fr)}}
+  #resultsScreen .tile{background:linear-gradient(180deg,#162242,#0c1530);border:1px solid rgba(122,184,255,.15);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px}
+  #resultsScreen .tile .ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  #resultsScreen .tile .ico.red{background:rgba(255,138,90,.18);color:#ff8a5a}
+  #resultsScreen .tile .ico.blue{background:rgba(122,184,255,.18);color:#7ab8ff}
+  #resultsScreen .tile .ico.orange{background:rgba(255,165,80,.18);color:#ffa550}
+  #resultsScreen .tile .ico.green{background:rgba(120,220,140,.16);color:#78dc8c}
+  #resultsScreen .tile .lbl{font-size:12px;color:#9fb1d4;font-weight:600;letter-spacing:.4px}
+  #resultsScreen .tile .val{font-size:24px;font-weight:900;color:#fff;line-height:1.1;font-variant-numeric:tabular-nums}
+  #resultsScreen .tile .vs{font-size:11px;color:#ff8a5a;font-weight:700;margin-top:2px}
+  #resultsScreen .tile .vs.blue{color:#7ab8ff}
+  #resultsScreen .tile .levelBar{display:flex;gap:3px;margin-top:6px}
+  #resultsScreen .tile .levelBar span{width:14px;height:8px;border-radius:2px;background:rgba(255,255,255,.1)}
+  #resultsScreen .tile .levelBar span.on{background:#7ab8ff}
+  #resultsScreen .tile .miniBar{margin-top:8px;height:6px;width:100%;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+  #resultsScreen .tile .miniBar > i{display:block;height:100%;background:linear-gradient(90deg,#7ab8ff,#3a8aff);border-radius:999px}
+
+  /* Player cards */
+  #resultsScreen .playerGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  @media (max-width:820px){#resultsScreen .playerGrid{grid-template-columns:1fr}}
+  .pCard{position:relative;background:#10182f;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:14px 16px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;overflow:hidden}
+  .pCard:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.5);border-color:rgba(255,207,58,.45)}
+  .pCard .badge{position:absolute;top:0;left:0;padding:4px 10px;font-weight:900;font-size:13px;color:#fff;border-bottom-right-radius:8px;letter-spacing:.8px;font-variant-numeric:tabular-nums}
+  .pCard.red .badge{background:#c9160c}
+  .pCard.blue .badge{background:#0d3fb3}
+  .pCard .team{position:absolute;top:10px;right:14px;font-size:13px;font-weight:800;letter-spacing:1px}
+  .pCard.red .team{color:#ff8a5a}
+  .pCard.blue .team{color:#7ab8ff}
+  .pCard h4{margin:0 0 12px 50px;font-size:18px;font-weight:800;color:#fff;letter-spacing:.4px}
+  .pCard .pBody{display:flex;align-items:flex-start;gap:14px}
+  .pCard .avatar{width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:56px;flex-shrink:0;border:4px solid;background:#1a2746;box-shadow:0 4px 0 rgba(0,0,0,.3),inset 0 -6px 0 rgba(0,0,0,.18)}
+  .pCard.red .avatar{border-color:#ff8a5a}
+  .pCard.blue .avatar{border-color:#7ab8ff}
+  .pCard .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;flex:1;min-width:0}
+  @media (max-width:520px){.pCard .stats{grid-template-columns:repeat(3,1fr)}}
+  .pCard .stat{text-align:center;min-width:0}
+  .pCard .stat .label{font-size:11px;color:#9fb1d4;font-weight:600;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:3px;margin-bottom:3px}
+  .pCard .stat .num{font-size:18px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1}
+  .pCard .stat .num.red{color:#ff8a5a}
+  .pCard .stat .num.blue{color:#7ab8ff}
+  .pCard .stat .num.green{color:#78dc8c}
+  .pCard .stat .num.orange{color:#ffa550}
+  .pCard .stat .sm{font-size:11px;color:#9fb1d4}
+  .pCard .ring{width:38px;height:38px;margin:0 auto;position:relative}
+  .pCard .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .pCard .ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff}
+  .pCard .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .pCard .tag{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;color:#cfd6e4;display:flex;align-items:center;gap:4px}
+  .pCard .tip{margin-top:10px;font-size:12px;color:#cfd6e4;display:flex;gap:6px;align-items:flex-start}
+  .pCard .tip .ic{flex-shrink:0;color:#ffcf3a}
+  .pCard .qrHint{position:absolute;bottom:8px;right:12px;font-size:10px;color:#7a8aa8;font-weight:700;letter-spacing:.4px;opacity:.7}
+
+  /* Benefits + tips bottom row */
+  #resultsScreen .bottomRow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+  @media (max-width:820px){#resultsScreen .bottomRow{grid-template-columns:1fr}}
+  #resultsScreen .panel{background:#10182f;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px 16px}
+  #resultsScreen .panel h5{margin:0 0 10px;font-size:14px;font-weight:800;color:#fff;letter-spacing:.5px}
+  #resultsScreen .benefitsRow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media (max-width:560px){#resultsScreen .benefitsRow{grid-template-columns:repeat(2,1fr)}}
+  #resultsScreen .benefit{display:flex;gap:8px;align-items:flex-start}
+  #resultsScreen .benefit .bi{font-size:22px;line-height:1}
+  #resultsScreen .benefit .bt{font-size:12px;color:#cfd6e4;line-height:1.35}
+  #resultsScreen .benefit .bt b{display:block;color:#fff;font-size:13px;margin-bottom:2px}
+  #resultsScreen .coachTip{display:flex;gap:8px;align-items:flex-start;padding:6px 0;font-size:13px;color:#dde4f3}
+  #resultsScreen .coachTip .check{color:#78dc8c;flex-shrink:0;font-weight:900}
+
+  /* Action bar */
+  #resultsScreen .resultsActions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+  #resultsScreen .resultsActions button,#resultsScreen .resultsActions a{background:linear-gradient(180deg,#ffcf3a,#f29b1a);border:0;padding:14px 32px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;color:#3a1d00;box-shadow:0 5px 0 var(--gold-stroke);text-decoration:none;display:inline-flex;align-items:center;gap:8px;min-width:150px;justify-content:center}
+  #resultsScreen .resultsActions .menu{background:linear-gradient(180deg,#3a8aff,#1a5ad0);color:#fff;box-shadow:0 5px 0 #0a2f80}
+  #resultsScreen .resultsActions .close{background:linear-gradient(180deg,#6a7588,#454e60);color:#fff;box-shadow:0 5px 0 #232a36}
+
+  /* QR modal */
+  #qrModal{position:fixed;inset:0;background:rgba(4,7,18,.85);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+  #qrModal.show{display:flex}
+  #qrModal .qrCard{background:#fff;border-radius:20px;padding:24px 28px;max-width:380px;width:100%;text-align:center;color:#1a2240;box-shadow:0 20px 60px rgba(0,0,0,.6);position:relative}
+  #qrModal .qrCard h4{margin:0 0 4px;font-size:22px;font-weight:900}
+  #qrModal .qrCard .sub{color:#5a6680;font-size:13px;margin-bottom:14px}
+  #qrModal .qrBox{background:#fff;padding:8px;border-radius:12px;border:3px solid #1a2240;display:inline-block;line-height:0}
+  #qrModal .qrBox canvas,#qrModal .qrBox img{display:block;width:240px;height:240px}
+  #qrModal .qrFoot{margin-top:14px;font-size:12px;color:#5a6680}
+  #qrModal .qrClose{position:absolute;top:8px;right:8px;background:#eef1f7;border:0;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;color:#1a2240;font-weight:900}
+  #qrModal .qrDownload{margin-top:12px;display:inline-block;background:linear-gradient(180deg,#ffcf3a,#f29b1a);color:#3a1d00;padding:10px 22px;border-radius:999px;font-weight:800;border:0;cursor:pointer;text-decoration:none;font-size:14px}
 
   /* ---------- STROKE FX ---------- */
   .strokeFx{position:absolute;font-size:38px;font-weight:900;pointer-events:none;animation:strokeFloat 1s forwards;text-shadow:0 4px 0 rgba(0,0,0,.4);-webkit-text-stroke:2px #000}
@@ -425,44 +494,56 @@
 </div>
 
 <div id="resultsScreen">
-  <div class="resultsCard">
-    <h3>🏁 Race Results</h3>
-    <div class="winLine" id="resultsWinLine"></div>
-    <div class="teamCols">
-      <div class="teamCol red" id="resultsRed"></div>
-      <div class="teamCol blue" id="resultsBlue"></div>
+  <div class="resultsCard" id="resultsCardEl">
+    <div class="hdr">
+      <div class="trophy">🏆</div>
+      <h3 id="resultsTitle">Team Wins!</h3>
+      <div class="sub" id="resultsSub">Great teamwork and strong performance.</div>
     </div>
-    <div class="benefitsPanel">
-      <div class="benefitsCol">
-        <div class="benefitsTitle">💪 Muscles worked</div>
-        <ul class="benefitsList">
-          <li><b>Lats &amp; upper back</b> — the pulling power on every stroke</li>
-          <li><b>Shoulders &amp; rotator cuff</b> — paddle lift &amp; reach</li>
-          <li><b>Biceps &amp; forearms</b> — grip and drive phase</li>
-          <li><b>Core &amp; obliques</b> — torso rotation drives the boat</li>
-          <li><b>Glutes &amp; hamstrings</b> — stable base for power transfer</li>
-          <li><b>Cardio system</b> — heart &amp; lungs at race pace</li>
-        </ul>
+
+    <div class="statTiles" id="statTiles"></div>
+
+    <div class="playerGrid" id="playerGrid"></div>
+
+    <div class="bottomRow">
+      <div class="panel">
+        <h5>💪 Team Health Benefits</h5>
+        <div class="benefitsRow">
+          <div class="benefit"><div class="bi" style="color:#ff8a5a">💪</div><div class="bt"><b>Upper-body strength</b>Arms, shoulders &amp; back</div></div>
+          <div class="benefit"><div class="bi" style="color:#ff5a7a">❤️</div><div class="bt"><b>Cardio health</b>Heart &amp; lung endurance</div></div>
+          <div class="benefit"><div class="bi" style="color:#78dc8c">🤸</div><div class="bt"><b>Coordination</b>Rhythm, balance &amp; control</div></div>
+          <div class="benefit"><div class="bi" style="color:#ffa550">👥</div><div class="bt"><b>Teamwork</b>Build trust &amp; sync</div></div>
+        </div>
       </div>
-      <div class="benefitsCol">
-        <div class="benefitsTitle">✨ Health benefits</div>
-        <ul class="benefitsList">
-          <li><b>Full-body conditioning</b> — over 80% of major muscles engaged</li>
-          <li><b>Better posture</b> — strengthens the posterior chain</li>
-          <li><b>Cardio endurance</b> — interval-style high-intensity bursts</li>
-          <li><b>Rotational power</b> — protects the spine in daily movement</li>
-          <li><b>Coordination &amp; rhythm</b> — brain–body timing under load</li>
-          <li><b>Calorie burn</b> — high output in a short window</li>
-        </ul>
+      <div class="panel">
+        <h5>🎯 Coach Tips</h5>
+        <div class="coachTip"><span class="check">✓</span><span>Steady, even strokes build power and endurance.</span></div>
+        <div class="coachTip"><span class="check">✓</span><span>Consistent tempo wins more races than raw speed.</span></div>
+        <div class="coachTip"><span class="check">✓</span><span>Teamwork matters — communicate &amp; cheer each other on.</span></div>
       </div>
     </div>
+
     <div class="resultsActions">
       <button onclick="location.reload()">🔁 Rematch</button>
-      <a class="alt" href="../index.html">← Menu</a>
-      <button class="alt" id="resultsCloseBtn" type="button">Close</button>
+      <a class="menu" href="../index.html">🏠 Menu</a>
+      <button class="close" id="resultsCloseBtn" type="button">✕ Close</button>
     </div>
   </div>
 </div>
+
+<!-- QR modal -->
+<div id="qrModal">
+  <div class="qrCard">
+    <button class="qrClose" id="qrCloseBtn" type="button">✕</button>
+    <h4 id="qrTitle">Scan to download</h4>
+    <div class="sub" id="qrSub">Scan with your phone to save your record.</div>
+    <div class="qrBox"><canvas id="qrCanvas"></canvas></div>
+    <div class="qrFoot" id="qrFoot"></div>
+    <a class="qrDownload" id="qrDownload" download="dragon-boat-record.json" href="#">⬇️ Download JSON</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 
 <script type="module">
 import { PoseLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
@@ -511,9 +592,10 @@ const ui = {
   redWake: document.getElementById('redWake'),
   blueWake: document.getElementById('blueWake'),
   resultsScreen: document.getElementById('resultsScreen'),
-  resultsWinLine: document.getElementById('resultsWinLine'),
-  resultsRed: document.getElementById('resultsRed'),
-  resultsBlue: document.getElementById('resultsBlue'),
+  resultsTitle: document.getElementById('resultsTitle'),
+  resultsSub: document.getElementById('resultsSub'),
+  statTiles: document.getElementById('statTiles'),
+  playerGrid: document.getElementById('playerGrid'),
   resultsBtn: document.getElementById('resultsBtn'),
   resultsCloseBtn: document.getElementById('resultsCloseBtn'),
 };
@@ -1030,40 +1112,244 @@ function buildSparkline(times, color){
 }
 
 function renderTeamColumn(team, stats){
+  // (legacy) kept for backward-compat; no longer used by the redesigned results modal.
+  return '';
+}
+
+// ---------- REDESIGNED RESULTS ----------
+// Cartoon 2D animal avatar pool — randomly assigned per match.
+const AVATAR_POOL = ['🦊','🐯','🐼','🐶','🐱','🐵','🐰','🐨','🐻','🐸','🐲','🐉'];
+const NAME_POOL   = ['Luca','Maya','Alex','Zoe','Ben','Mia','Kai','Tara','Leo','Nova'];
+function pickRandom(arr, exclude){
+  const choices = arr.filter(x => !exclude || !exclude.includes(x));
+  return choices[Math.floor(Math.random() * choices.length)];
+}
+
+// Map rhythm% / movement to descriptive tags
+function describeMovement(spm){
+  if (spm >= 70) return { label: 'Intense',   color: 'red'    };
+  if (spm >= 50) return { label: 'Vigorous',  color: 'orange' };
+  if (spm >= 30) return { label: 'Moderate',  color: 'green'  };
+  if (spm >= 15) return { label: 'Light',     color: 'blue'   };
+  return            { label: 'Resting',   color: 'blue'   };
+}
+function describeRhythm(rhythm){
+  if (rhythm >= 80) return 'Strong';
+  if (rhythm >= 60) return 'Steady';
+  return 'Uneven';
+}
+function pickTips(stats){
+  const tips = [];
+  if (stats.rhythm >= 80) tips.push('Excellent timing — your rhythm carried the team!');
+  else if (stats.rhythm >= 60) tips.push('Solid rhythm — keep working on consistency.');
+  else tips.push('Focus on smoother, more even strokes next round.');
+  return tips[0];
+}
+function muscleTagsFor(stats){
+  const tags = [{ ic:'💪', name:'Upper body' }, { ic:'❤️', name:'Cardio' }];
+  if (stats.rhythm >= 60) tags.push({ ic:'🧘', name:'Coordination' });
+  else tags.push({ ic:'🎯', name:'Core' });
+  return tags;
+}
+
+function ringSvg(pct, color){
+  const r = 16, c = 2 * Math.PI * r;
+  const off = c * (1 - Math.max(0, Math.min(100, pct))/100);
+  return `<svg viewBox="0 0 40 40">
+    <circle cx="20" cy="20" r="${r}" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>
+    <circle cx="20" cy="20" r="${r}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}"/>
+  </svg>`;
+}
+
+function renderPlayerCard(idx, team, stats, player){
   const isRed = team === 'red';
-  const emoji = isRed ? '🐲' : '🐉';
-  const label = isRed ? 'TEAM RED' : 'TEAM BLUE';
-  const color = isRed ? '#ff8a5a' : '#7fbcff';
-  const bar = (pct) => `<div class="statBar"><div style="width:${Math.max(0,Math.min(100,pct))}%"></div></div>`;
-  const row = (icon, lbl, val, pct) => `
-    <div class="statRow">
-      <div class="lbl">${icon} ${lbl}</div>
-      <div class="val">${val}</div>
-    </div>
-    ${pct != null ? bar(pct) : ''}`;
+  const teamColor = isRed ? '#ff8a5a' : '#7ab8ff';
+  const colorClass = isRed ? 'red' : 'blue';
+  const mv = describeMovement(stats.spm);
+  const rh = describeRhythm(stats.rhythm);
+  const tags = muscleTagsFor(stats);
   return `
-    <h4>${emoji} ${label} <span style="margin-left:auto;font-size:14px;color:#cfd6e4">Score ${stats.score.toLocaleString()}</span></h4>
-    ${row('🚣', 'Strokes (successful)', stats.strokes)}
-    ${row('💪', 'Body movement', `${stats.movement} <span style="color:#9aa6bf;font-weight:600">(${stats.spm.toFixed(0)} spm)</span>`, stats.movementPct)}
-    ${row('⏱️', 'Duration', `${stats.duration.toFixed(0)}s`)}
-    ${row('🔥', 'Calories burnt (approx)', `${stats.calories} kcal`)}
-    ${row('🎵', 'Rhythm', `${stats.rhythm}%`, stats.rhythm)}
-    ${row('📏', 'Consistency', `${stats.consistency}%`, stats.consistency)}
-    <div class="chartLabel">Stroke activity over time</div>
-    ${buildSparkline(stats.times, color)}
-  `;
+    <div class="pCard ${colorClass}" data-team="${team}">
+      <div class="badge">${String(idx).padStart(2,'0')}</div>
+      <div class="team">${isRed ? 'RED' : 'BLUE'}</div>
+      <h4>${player.name}</h4>
+      <div class="pBody">
+        <div class="avatar">${player.avatar}</div>
+        <div class="stats">
+          <div class="stat">
+            <div class="label">Score</div>
+            <div class="num ${colorClass}">${stats.score.toLocaleString()}</div>
+          </div>
+          <div class="stat">
+            <div class="label">Move</div>
+            <div class="num ${mv.color}">${mv.label}</div>
+            <div class="sm">${stats.spm.toFixed(0)} spm</div>
+          </div>
+          <div class="stat">
+            <div class="label">🔥 kcal</div>
+            <div class="num orange">${stats.calories}</div>
+          </div>
+          <div class="stat">
+            <div class="label">Stability</div>
+            <div class="ring">${ringSvg(stats.consistency, teamColor)}<div class="pct">${stats.consistency}%</div></div>
+          </div>
+          <div class="stat">
+            <div class="label">Rhythm</div>
+            <div class="num green">${rh}</div>
+            <div class="sm">${stats.rhythm}%</div>
+          </div>
+        </div>
+      </div>
+      <div class="tags">
+        ${tags.map(t => `<span class="tag">${t.ic} ${t.name}</span>`).join('')}
+      </div>
+      <div class="tip"><span class="ic">★</span><span>${pickTips(stats)}</span></div>
+      <div class="qrHint">📱 TAP TO GET QR</div>
+    </div>`;
+}
+
+function renderStatTiles(r, b, winner){
+  const teamScore = r.score + b.score;
+  const otherScore = winner === 'RED' ? b.score : (winner === 'BLUE' ? r.score : Math.min(r.score, b.score));
+  const avgKcal = r.calories + b.calories;
+  const otherKcal = winner === 'RED' ? b.calories : r.calories;
+  const avgStability = Math.round((r.consistency + b.consistency) / 2);
+  const avgSpm = (r.spm + b.spm) / 2;
+  const mv = describeMovement(avgSpm);
+  const intensityBars = mv.label === 'Intense' ? 7 : mv.label === 'Vigorous' ? 6 : mv.label === 'Moderate' ? 4 : mv.label === 'Light' ? 2 : 1;
+  return `
+    <div class="tile">
+      <div class="ico red">👥</div>
+      <div>
+        <div class="lbl">Team Score</div>
+        <div class="val">${teamScore.toLocaleString()}</div>
+        ${otherScore ? `<div class="vs">vs ${otherScore.toLocaleString()}</div>` : ''}
+      </div>
+    </div>
+    <div class="tile">
+      <div class="ico red">💗</div>
+      <div>
+        <div class="lbl">Movement Intensity</div>
+        <div class="val" style="font-size:18px;color:#ff8a5a">${mv.label}</div>
+        <div class="levelBar">${Array.from({length:7},(_,i)=>`<span class="${i<intensityBars?'on':''}"></span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="tile">
+      <div class="ico blue">🎯</div>
+      <div>
+        <div class="lbl">Team Stability</div>
+        <div class="val">${avgStability}%</div>
+        <div class="miniBar"><i style="width:${avgStability}%"></i></div>
+      </div>
+    </div>
+    <div class="tile">
+      <div class="ico orange">🔥</div>
+      <div>
+        <div class="lbl">Calories Burnt</div>
+        <div class="val">${avgKcal} kcal</div>
+        ${otherKcal ? `<div class="vs">vs ${otherKcal} kcal</div>` : ''}
+      </div>
+    </div>`;
+}
+
+// Persisted players for the current match (so cards & QR codes stay consistent)
+let CURRENT_PLAYERS = null;
+function buildPlayers(){
+  if (CURRENT_PLAYERS) return CURRENT_PLAYERS;
+  const a1 = pickRandom(AVATAR_POOL);
+  const a2 = pickRandom(AVATAR_POOL, [a1]);
+  const n1 = pickRandom(NAME_POOL);
+  const n2 = pickRandom(NAME_POOL, [n1]);
+  CURRENT_PLAYERS = {
+    red:  { name: n1, avatar: a1 },
+    blue: { name: n2, avatar: a2 },
+  };
+  return CURRENT_PLAYERS;
 }
 
 function showResults(){
   const r = computeTeamStats('red');
   const b = computeTeamStats('blue');
   const w = GAME._lastWinner;
-  ui.resultsWinLine.className = 'winLine ' + (w === 'RED' ? 'red' : w === 'BLUE' ? 'blue' : '');
-  ui.resultsWinLine.textContent = w === 'DRAW' ? "🤝 It's a draw!" : `🏆 ${w} team wins!`;
-  ui.resultsRed.innerHTML = renderTeamColumn('red', r);
-  ui.resultsBlue.innerHTML = renderTeamColumn('blue', b);
+  const players = buildPlayers();
+
+  // Title
+  if (w === 'DRAW') {
+    ui.resultsTitle.className = '';
+    ui.resultsTitle.textContent = "🤝 It's a Draw!";
+    ui.resultsSub.textContent = 'Both teams gave it everything.';
+  } else {
+    const cls = w === 'RED' ? 'red' : 'blue';
+    ui.resultsTitle.className = cls;
+    ui.resultsTitle.textContent = `${w === 'RED' ? 'Red' : 'Blue'} Team Wins!`;
+    ui.resultsSub.textContent = 'Great teamwork and strong performance.';
+  }
+
+  ui.statTiles.innerHTML = renderStatTiles(r, b, w);
+  ui.playerGrid.innerHTML =
+    renderPlayerCard(1, 'red',  r, players.red) +
+    renderPlayerCard(2, 'blue', b, players.blue);
+
+  // Wire per-card QR clicks
+  ui.playerGrid.querySelectorAll('.pCard').forEach(card => {
+    card.addEventListener('click', () => {
+      const team = card.dataset.team;
+      const stats = team === 'red' ? r : b;
+      const player = players[team];
+      openQrForPlayer(team, player, stats);
+    });
+  });
+
   ui.resultsScreen.classList.add('show');
 }
+
+// ---------- QR / SHARE ----------
+function buildShareUrl(team, player, stats){
+  const payload = {
+    g: 'dragon-boat',
+    t: team,
+    n: player.name,
+    a: player.avatar,
+    s: stats.score,
+    str: stats.strokes,
+    kcal: stats.calories,
+    rhy: stats.rhythm,
+    con: stats.consistency,
+    spm: Math.round(stats.spm),
+    dur: Math.round(stats.duration),
+    ts: Date.now(),
+  };
+  const json = JSON.stringify(payload);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  const origin = (location.origin && !location.origin.startsWith('file')) ? location.origin : 'https://ar-game-arcade.vercel.app';
+  return { url: `${origin}/games/share.html#p=${b64}`, payload, json };
+}
+
+function openQrForPlayer(team, player, stats){
+  const { url, json, payload } = buildShareUrl(team, player, stats);
+  const modal = document.getElementById('qrModal');
+  document.getElementById('qrTitle').textContent = `${player.avatar} ${player.name}'s Record`;
+  document.getElementById('qrSub').textContent  = `Scan to view & download · Score ${payload.s.toLocaleString()}`;
+  document.getElementById('qrFoot').textContent = `${payload.str} strokes · ${payload.kcal} kcal · ${payload.con}% stability`;
+  const dl = document.getElementById('qrDownload');
+  dl.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(json);
+  dl.download = `dragon-boat-${player.name}-${payload.ts}.json`;
+
+  const canvas = document.getElementById('qrCanvas');
+  if (window.QRCode && QRCode.toCanvas) {
+    QRCode.toCanvas(canvas, url, { width: 240, margin: 1, color: { dark: '#1a2240', light: '#ffffff' } }, () => {});
+  } else {
+    // fallback: external image
+    const img = document.createElement('img');
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(url);
+    canvas.replaceWith(img); img.id = 'qrCanvas';
+  }
+  modal.classList.add('show');
+}
+
+const qrModal = document.getElementById('qrModal');
+document.getElementById('qrCloseBtn').addEventListener('click', () => qrModal.classList.remove('show'));
+qrModal.addEventListener('click', (e) => { if (e.target === qrModal) qrModal.classList.remove('show'); });
 
 if (ui.resultsBtn) ui.resultsBtn.addEventListener('click', showResults);
 if (ui.resultsCloseBtn) ui.resultsCloseBtn.addEventListener('click', () => ui.resultsScreen.classList.remove('show'));
@@ -1343,7 +1629,8 @@ function loop(){
       for (const lm of res.landmarks){
         const team = classifyTeam(lm);
         if (!team) continue;
-        drawPose(lm, team==='red' ? 'rgba(255,107,76,0.9)' : 'rgba(107,168,255,0.9)');
+        // Pose landmarks hidden — paddle + grip hint provide all the visual feedback.
+        // drawPose(lm, team==='red' ? 'rgba(255,107,76,0.9)' : 'rgba(107,168,255,0.9)');
         processPaddle(team, lm);
         if (GAME.teams[team].paddle) drawPaddle(team);
         else drawGripHint(team, lm);
