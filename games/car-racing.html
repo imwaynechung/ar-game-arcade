@@ -88,35 +88,39 @@
   .back-btn:hover{background:rgba(0,0,0,.7)}
 
   /* ---------- TOP HUD ---------- */
-  .scorePill{position:absolute;top:18px;display:flex;align-items:center;gap:10px;
-    padding:10px 18px;border-radius:999px;color:#fff;font-weight:900;font-size:26px;font-style:italic;
+  .scorePill{position:absolute;top:18px;display:flex;align-items:center;gap:14px;
+    padding:14px 26px;border-radius:999px;color:#fff;font-weight:900;font-size:44px;font-style:italic;
     -webkit-text-stroke:2px rgba(0,0,0,.5);text-shadow:0 3px 0 rgba(0,0,0,.5);
-    border:3px solid rgba(255,255,255,.6);box-shadow:0 8px 20px rgba(0,0,0,.4)}
+    border:4px solid rgba(255,255,255,.7);box-shadow:0 8px 20px rgba(0,0,0,.4)}
   .scorePill.red{left:18px;background:linear-gradient(180deg,var(--red1),var(--red2))}
   .scorePill.blue{right:18px;background:linear-gradient(180deg,var(--blue1),var(--blue2))}
-  .scorePill .ico{font-size:22px}
+  .scorePill .ico{font-size:34px}
 
   .timer{position:absolute;top:18px;left:50%;transform:translateX(-50%);
-    padding:8px 22px;border-radius:14px;background:rgba(0,0,0,.5);
-    border:2px solid rgba(255,255,255,.25);font-weight:900;font-size:30px;letter-spacing:2px;
+    padding:12px 32px;border-radius:16px;background:rgba(0,0,0,.6);
+    border:3px solid rgba(255,255,255,.35);font-weight:900;font-size:54px;letter-spacing:3px;
     color:#ffe27a;-webkit-text-stroke:1px #4a3000}
 
-  .hearts{position:absolute;top:74px;display:flex;gap:6px}
+  .hearts{position:absolute;top:96px;display:flex;gap:8px}
   .hearts.left{left:24px}
   .hearts.right{right:24px}
-  .hearts span{font-size:22px;filter:drop-shadow(0 2px 0 #5a0000)}
+  .hearts span{font-size:30px;filter:drop-shadow(0 2px 0 #5a0000)}
   .hearts span.off{opacity:.25;filter:grayscale(1)}
 
-  .speedo{position:absolute;bottom:14px;width:110px;height:110px;border-radius:50%;
+  .speedo{position:absolute;bottom:14px;width:140px;height:140px;border-radius:50%;
     background:radial-gradient(circle at 50% 40%,#222 0%,#0c0e14 70%);
-    border:4px solid #c9c4b0;box-shadow:0 8px 24px rgba(0,0,0,.6);
+    border:5px solid #c9c4b0;box-shadow:0 8px 24px rgba(0,0,0,.6);
     display:flex;align-items:center;justify-content:center;flex-direction:column;color:#ffcf3a;
-    font-weight:900;font-style:italic;pointer-events:none}
+    font-weight:900;font-style:italic;pointer-events:none;overflow:visible}
   .speedo.left{left:14px} .speedo.right{right:14px}
-  .speedo .v{font-size:30px;line-height:1;text-shadow:0 0 8px #ff7a1a}
-  .speedo .u{font-size:10px;opacity:.7;letter-spacing:2px;margin-top:2px}
-  .speedo .needle{position:absolute;left:50%;top:50%;width:4px;height:40px;background:linear-gradient(180deg,#ff5b50,#7a0a04);
+  .speedo .v{font-size:38px;line-height:1;text-shadow:0 0 8px #ff7a1a}
+  .speedo .u{font-size:11px;opacity:.75;letter-spacing:2px;margin-top:2px}
+  .speedo .needle{position:absolute;left:50%;top:50%;width:5px;height:50px;background:linear-gradient(180deg,#ff5b50,#7a0a04);
     transform-origin:50% 100%;border-radius:2px;transform:translate(-50%,-100%) rotate(-90deg);transition:transform .15s}
+  /* mini steering wheel above the speedo, rotates with steering */
+  .miniWheel{position:absolute;top:-58px;left:50%;transform:translateX(-50%);width:54px;height:54px;
+    pointer-events:none;transition:transform .12s}
+  .miniWheel.gripping{filter:drop-shadow(0 0 6px #7CFFB2)}
 
   .divider{position:absolute;top:0;bottom:0;left:50%;width:4px;
     background:linear-gradient(180deg, transparent, rgba(255,255,255,.4) 30%, rgba(255,255,255,.4) 70%, transparent);
@@ -148,6 +152,37 @@
   .gripHint.left{left:6%}
   .gripHint.right{right:6%}
   .gripHint.hidden{opacity:0}
+
+  /* ---------- LOBBY (pre-game grip detection) ---------- */
+  #lobby{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(8,10,20,.55);backdrop-filter:blur(2px);z-index:8;pointer-events:none;padding:20px}
+  #lobby.show{display:flex}
+  .lobbyCard{text-align:center;padding:30px 36px;border-radius:26px;max-width:640px;width:100%;
+    background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(245,240,255,.92));color:#1a1d2e;
+    border:6px solid #ffcf3a;box-shadow:0 18px 50px rgba(0,0,0,.6)}
+  .lobbyCard h2{margin:0;font-size:38px;color:#a14a55;font-style:italic;letter-spacing:1px}
+  .lobbyCard .sub{margin:6px 0 14px;font-size:18px;color:#3a1d2a;font-weight:700}
+  .lobbyIcon{font-size:90px;line-height:1;display:inline-block;animation:waveHand 1.2s ease-in-out infinite alternate;transform-origin:70% 100%}
+  @keyframes waveHand{from{transform:rotate(-14deg)}to{transform:rotate(16deg)}}
+  .lobbyPlayers{display:flex;gap:16px;justify-content:center;margin-top:8px}
+  .lpSlot{flex:1;max-width:240px;padding:14px;border-radius:16px;border:4px dashed #bbb;
+    background:rgba(255,255,255,.7);font-weight:900;color:#888;transition:all .2s}
+  .lpSlot.red{border-color:#c9160c}
+  .lpSlot.blue{border-color:#0d3fb3}
+  .lpSlot.ready{border-style:solid;background:linear-gradient(180deg,#fff7c4,#ffcf3a);color:#3a1d00;
+    box-shadow:0 0 0 4px rgba(255,207,58,.45),0 8px 18px rgba(0,0,0,.25);transform:scale(1.03)}
+  .lpSlot .ico{font-size:44px;display:block;margin-bottom:4px}
+  .lpSlot .lbl{font-size:14px;letter-spacing:1px}
+  .lpSlot .state{font-size:13px;font-weight:800;margin-top:6px;color:#5b3a3a;letter-spacing:1px;min-height:1.1em}
+  .lpSlot.ready .state{color:#1a8a2a}
+  .gripBar{height:8px;background:#e8e8e8;border-radius:4px;margin-top:8px;overflow:hidden}
+  .gripBar > div{height:100%;width:0;background:linear-gradient(90deg,#7CFFB2,#1a8a2a);transition:width .12s}
+  .lobbyFoot{margin-top:14px;font-size:14px;color:#666}
+
+  /* Cone warning chevron */
+  .coneWarn{position:absolute;font-size:46px;line-height:1;pointer-events:none;
+    animation:warnBlink .35s steps(2) infinite;text-shadow:0 0 12px #ff0,0 0 4px #f00;z-index:3}
+  @keyframes warnBlink{50%{opacity:.25}}
 
   /* ---------- COUNTDOWN ---------- */
   #countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:7;pointer-events:none;background:rgba(0,0,0,.35)}
@@ -215,10 +250,22 @@
   </div>
 
   <div class="speedo left">
+    <svg class="miniWheel" id="mwRed" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="26" fill="#1a1c26" stroke="#3a3f55" stroke-width="4"/>
+      <rect x="27" y="6" width="6" height="48" rx="3" fill="#2a2d3a"/>
+      <rect x="6" y="27" width="48" height="6" rx="3" fill="#2a2d3a"/>
+      <circle cx="30" cy="30" r="10" fill="#c9160c" stroke="#5a0500" stroke-width="2"/>
+    </svg>
     <div class="needle" id="needleRed"></div>
     <div class="v" id="speedRed">0</div><div class="u">KM/H</div>
   </div>
   <div class="speedo right">
+    <svg class="miniWheel" id="mwBlue" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="26" fill="#1a1c26" stroke="#3a3f55" stroke-width="4"/>
+      <rect x="27" y="6" width="6" height="48" rx="3" fill="#2a2d3a"/>
+      <rect x="6" y="27" width="48" height="6" rx="3" fill="#2a2d3a"/>
+      <circle cx="30" cy="30" r="10" fill="#0d3fb3" stroke="#04153f" stroke-width="2"/>
+    </svg>
     <div class="needle" id="needleBlue"></div>
     <div class="v" id="speedBlue">0</div><div class="u">KM/H</div>
   </div>
@@ -241,6 +288,30 @@
 </div>
 
 <div id="countdown"><div id="cdNum">3</div></div>
+
+<!-- LOBBY: detect raised hands before starting countdown -->
+<div id="lobby">
+  <div class="lobbyCard">
+    <div class="lobbyIcon">👋</div>
+    <h2>RAISE BOTH HANDS</h2>
+    <div class="sub">Pretend you're gripping a steering wheel in front of your chest</div>
+    <div class="lobbyPlayers">
+      <div class="lpSlot red" id="slotRed">
+        <span class="ico">🚗</span>
+        <div class="lbl">PLAYER 1 · RED</div>
+        <div class="state" id="stateRed">Stand on LEFT</div>
+        <div class="gripBar"><div id="gripBarRed"></div></div>
+      </div>
+      <div class="lpSlot blue" id="slotBlue">
+        <span class="ico">🚙</span>
+        <div class="lbl">PLAYER 2 · BLUE</div>
+        <div class="state" id="stateBlue">Stand on RIGHT</div>
+        <div class="gripBar"><div id="gripBarBlue"></div></div>
+      </div>
+    </div>
+    <div class="lobbyFoot">💡 Solo? Either side works — the race begins as soon as <b>one</b> player is ready.</div>
+  </div>
+</div>
 
 <!-- START SCREEN -->
 <div id="startScreen">
@@ -465,6 +536,15 @@ const ui = {
   countdown:document.getElementById('countdown'),
   cdNum:    document.getElementById('cdNum'),
   results:  document.getElementById('results'),
+  lobby:    document.getElementById('lobby'),
+  slotRed:  document.getElementById('slotRed'),
+  slotBlue: document.getElementById('slotBlue'),
+  stateRed: document.getElementById('stateRed'),
+  stateBlue:document.getElementById('stateBlue'),
+  gripBarRed: document.getElementById('gripBarRed'),
+  gripBarBlue:document.getElementById('gripBarBlue'),
+  mwRed:    document.getElementById('mwRed'),
+  mwBlue:   document.getElementById('mwBlue'),
 };
 
 function resize(){
@@ -553,44 +633,47 @@ function drawWheel(team, cx, cy, angle, gripping){
   ctx.restore();
 }
 
-// ---------- ROAD / SCROLLING WORLD ----------
+// ---------- ROAD / SCROLLING WORLD (straight top-down, senior-friendly) ----------
 function drawRoad(now){
   const W = window.innerWidth, H = window.innerHeight;
   const ctx = rctx;
   ctx.clearRect(0,0,W,H);
 
-  // two halves split by midline
+  // two halves split by midline (parallel lanes, no perspective)
   for (const half of [0, 1]) {
     const x0 = half * W/2;
     const cx = x0 + W/4;
     const t  = half === 0 ? GAME.teams.red : GAME.teams.blue;
 
-    // asphalt with perspective (top narrow, bottom wide)
-    const topY = H * 0.30;
+    // straight road — wide enough for big sprites
+    const roadHalfW = Math.min(W * 0.20, 260);
+    const topY = 0;
     const botY = H;
-    const topHalfW = W * 0.07;
-    const botHalfW = W * 0.22;
-    ctx.fillStyle = 'rgba(20,22,30,0.55)';
-    ctx.beginPath();
-    ctx.moveTo(cx - topHalfW, topY);
-    ctx.lineTo(cx + topHalfW, topY);
-    ctx.lineTo(cx + botHalfW, botY);
-    ctx.lineTo(cx - botHalfW, botY);
-    ctx.closePath();
-    ctx.fill();
 
-    // side lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 3;
+    // asphalt (lighter for contrast)
+    ctx.fillStyle = '#3a3d48';
+    ctx.fillRect(cx - roadHalfW, topY, roadHalfW * 2, botY - topY);
+
+    // shoulder gradient at edges
+    const grd = ctx.createLinearGradient(cx - roadHalfW, 0, cx + roadHalfW, 0);
+    grd.addColorStop(0, 'rgba(0,0,0,.35)');
+    grd.addColorStop(0.1, 'rgba(0,0,0,0)');
+    grd.addColorStop(0.9, 'rgba(0,0,0,0)');
+    grd.addColorStop(1, 'rgba(0,0,0,.35)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(cx - roadHalfW, topY, roadHalfW * 2, botY - topY);
+
+    // bright side lines
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(cx - topHalfW, topY); ctx.lineTo(cx - botHalfW, botY);
-    ctx.moveTo(cx + topHalfW, topY); ctx.lineTo(cx + botHalfW, botY);
+    ctx.moveTo(cx - roadHalfW, topY); ctx.lineTo(cx - roadHalfW, botY);
+    ctx.moveTo(cx + roadHalfW, topY); ctx.lineTo(cx + roadHalfW, botY);
     ctx.stroke();
 
-    // dashed center line (scrolls with time)
-    const dashCount = 8;
-    const phase = (GAME.scrollY * 0.012) % 1;
-    ctx.strokeStyle = '#f3e96b'; ctx.lineWidth = 4; ctx.setLineDash([22, 18]);
-    ctx.lineDashOffset = -phase * 40;
+    // big dashed center line (scrolls with time)
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 10;
+    ctx.setLineDash([40, 32]);
+    ctx.lineDashOffset = -(GAME.scrollY * 0.6) % 72;
     ctx.beginPath();
     ctx.moveTo(cx, topY); ctx.lineTo(cx, botY);
     ctx.stroke();
@@ -603,62 +686,85 @@ function drawRoad(now){
       t.flashHurt = Math.max(0, t.flashHurt - 0.02);
     }
 
-    // coins & cones (project from "track Y" into screen via simple perspective)
-    for (const c of t.coins) drawTrackItem(ctx, cx, x0, topY, botY, topHalfW, botHalfW, c, 'coin');
-    for (const c of t.cones) drawTrackItem(ctx, cx, x0, topY, botY, topHalfW, botHalfW, c, 'cone');
+    // coins & cones — straight, constant size, big
+    for (const c of t.coins) drawTrackItem(ctx, cx, roadHalfW, botY, c, 'coin');
+    for (const c of t.cones) drawTrackItem(ctx, cx, roadHalfW, botY, c, 'cone');
 
-    // car
-    drawCar(ctx, cx + (t.carX - 0.5) * botHalfW * 1.6, botY - H*0.10, t.color === 'red' ? '#c9160c' : '#0d3fb3', t.color === 'red' ? '#5a0500' : '#04153f');
+    // car (bigger)
+    drawCar(ctx, cx + (t.carX - 0.5) * roadHalfW * 1.7, botY - H*0.11,
+            t.color === 'red' ? '#c9160c' : '#0d3fb3',
+            t.color === 'red' ? '#5a0500' : '#04153f');
+
+    // cone-warning chevron above any cone within ~1s of car
+    for (const c of t.cones) {
+      if (c.y > 0.55 && c.y < 0.85 && Math.abs(c.lane - (t.carX*2 - 1)) < 0.35) {
+        ctx.font = '900 italic 64px Inter,sans-serif';
+        ctx.fillStyle = (Math.floor(now/180) % 2) ? '#ff3030' : '#ffea00';
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+        ctx.textAlign = 'center';
+        const wx = cx + c.lane * roadHalfW;
+        ctx.strokeText('⚠', wx, 110);
+        ctx.fillText('⚠', wx, 110);
+      }
+    }
   }
 }
 
-function drawTrackItem(ctx, cx, x0, topY, botY, topHW, botHW, item, kind){
-  // item.y goes from 0 (top of road) to 1 (bottom). lane is -1..1 horizontal within track.
-  const p = item.y;                     // progress 0..1
+function drawTrackItem(ctx, cx, halfW, botY, item, kind){
+  // item.y = 0..1 (top to bottom of road), item.lane = -1..1 horizontal in lane
+  const p = item.y;
   if (p < 0 || p > 1.05) return;
-  const y = topY + p * (botY - topY);
-  const halfW = topHW + p * (botHW - topHW);
+  const y = p * botY;
   const x = cx + item.lane * halfW;
-  const scale = 0.35 + p * 0.95;        // grow as it approaches
   if (kind === 'coin') {
-    const r = (item.big ? 18 : 14) * scale;
+    const r = item.big ? 44 : 32;
     const grd = ctx.createRadialGradient(x-r*0.3, y-r*0.3, r*0.2, x, y, r);
     grd.addColorStop(0, '#fff7c4'); grd.addColorStop(0.55, '#ffcf3a'); grd.addColorStop(1, '#c98a00');
+    // soft shadow
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    ctx.beginPath(); ctx.ellipse(x, y + r*0.6, r*0.8, r*0.25, 0, 0, Math.PI*2); ctx.fill();
+    // coin
     ctx.fillStyle = grd;
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#7a4a00'; ctx.lineWidth = 2*scale; ctx.stroke();
+    ctx.strokeStyle = '#7a4a00'; ctx.lineWidth = 4; ctx.stroke();
     ctx.fillStyle = '#7a4a00';
-    ctx.font = `900 italic ${Math.round(r*1.1)}px Inter,sans-serif`;
+    ctx.font = `900 italic ${Math.round(r*1.2)}px Inter,sans-serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText('$', x, y);
   } else {
-    const w = 28 * scale, h = 36 * scale;
+    const w = 64, h = 84;
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,.4)';
+    ctx.beginPath(); ctx.ellipse(x, y + h*0.5, w*0.55, 8, 0, 0, Math.PI*2); ctx.fill();
+    // cone
     ctx.fillStyle = '#ff7a1a';
     ctx.beginPath();
     ctx.moveTo(x, y - h/2);
     ctx.lineTo(x - w/2, y + h/2);
     ctx.lineTo(x + w/2, y + h/2);
     ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#7a3a00'; ctx.lineWidth = 2*scale; ctx.stroke();
+    ctx.strokeStyle = '#7a3a00'; ctx.lineWidth = 4; ctx.stroke();
+    // reflective stripe
     ctx.fillStyle = '#fff';
-    ctx.fillRect(x - w*0.35, y - h*0.10, w*0.7, h*0.18);
+    ctx.fillRect(x - w*0.36, y - h*0.08, w*0.72, h*0.20);
+    // base
     ctx.fillStyle = '#222';
-    ctx.fillRect(x - w*0.55, y + h/2 - 2, w*1.1, 4);
+    ctx.fillRect(x - w*0.58, y + h/2 - 4, w*1.16, 8);
   }
-  // store screen position so collision can reuse
-  item._sx = x; item._sy = y; item._sr = (kind === 'coin' ? (item.big ? 22 : 18) : 22) * scale;
+  // store screen position for collision detection
+  item._sx = x; item._sy = y; item._sr = (kind === 'coin' ? (item.big ? 48 : 36) : 36);
 }
 
 function drawCar(ctx, x, y, color, stroke){
-  const w = 110, h = 70;
+  const w = 170, h = 110;  // ~1.6× bigger than before
   ctx.save();
   ctx.translate(x, y);
   // shadow
-  ctx.fillStyle = 'rgba(0,0,0,.45)';
-  ctx.beginPath(); ctx.ellipse(0, h*0.5, w*0.5, 8, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.5)';
+  ctx.beginPath(); ctx.ellipse(0, h*0.5, w*0.5, 12, 0, 0, Math.PI*2); ctx.fill();
   // body
-  ctx.fillStyle = color; ctx.strokeStyle = stroke; ctx.lineWidth = 3;
-  const r = 12;
+  ctx.fillStyle = color; ctx.strokeStyle = stroke; ctx.lineWidth = 5;
+  const r = 18;
   roundRect(ctx, -w/2, -h/2, w, h, r);
   ctx.fill(); ctx.stroke();
   // windshield
@@ -669,17 +775,17 @@ function drawCar(ctx, x, y, color, stroke){
   ctx.closePath(); ctx.fill();
   // racing stripe
   ctx.fillStyle = '#fff';
-  ctx.fillRect(-w*0.07, -h/2 + 4, w*0.14, h - 8);
+  ctx.fillRect(-w*0.08, -h/2 + 6, w*0.16, h - 12);
   // wheels
   ctx.fillStyle = '#0a0a0a';
-  ctx.fillRect(-w*0.5 - 4, -h*0.3, 8, h*0.18);
-  ctx.fillRect(w*0.5  - 4, -h*0.3, 8, h*0.18);
-  ctx.fillRect(-w*0.5 - 4,  h*0.14, 8, h*0.18);
-  ctx.fillRect(w*0.5  - 4,  h*0.14, 8, h*0.18);
-  // headlights (since we view from above-front, paint at top)
+  ctx.fillRect(-w*0.5 - 6, -h*0.30, 12, h*0.20);
+  ctx.fillRect(w*0.5  - 6, -h*0.30, 12, h*0.20);
+  ctx.fillRect(-w*0.5 - 6,  h*0.14, 12, h*0.20);
+  ctx.fillRect(w*0.5  - 6,  h*0.14, 12, h*0.20);
+  // headlights
   ctx.fillStyle = '#fff8c8';
-  ctx.beginPath(); ctx.arc(-w*0.32, -h*0.45, 4, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc( w*0.32, -h*0.45, 4, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-w*0.32, -h*0.45, 6, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( w*0.32, -h*0.45, 6, 0, Math.PI*2); ctx.fill();
   ctx.restore();
 }
 function roundRect(ctx, x, y, w, h, r){
@@ -805,12 +911,84 @@ async function startGame(){
     startBtn.disabled = false; startBtn2.disabled = false; return;
   }
   startScreen.style.display = 'none';
+  // ---- LOBBY: wait for at least one player to grip the wheel
+  GAME.state = 'lobby';
+  GAME.teams.red  = newTeam('red');
+  GAME.teams.blue = newTeam('blue');
+  GAME._lobbyGrip = { red: 0, blue: 0 };  // ms accumulated
+  ui.lobby.classList.add('show');
+  ui.slotRed.classList.remove('ready'); ui.slotBlue.classList.remove('ready');
+  ui.stateRed.textContent  = 'Waiting…';
+  ui.stateBlue.textContent = 'Waiting…';
+  ui.gripBarRed.style.width = '0%'; ui.gripBarBlue.style.width = '0%';
+  lobbyLoop();
+}
+
+const LOBBY_GRIP_REQUIRED_MS = 1500;
+let lobbyLastTs = 0;
+function lobbyLoop(){
+  if (GAME.state !== 'lobby') return;
+  const now = performance.now();
+  const dt  = Math.min(60, now - lobbyLastTs || 16);
+  lobbyLastTs = now;
+
+  let detectedRed = null, detectedBlue = null;
+  if (pose && video.readyState >= 2) {
+    const result = pose.detectForVideo(video, now);
+    if (result.landmarks) {
+      for (const lm of result.landmarks) {
+        const data = processPose(lm);
+        if (!data) continue;
+        const team = assignTeamByX(data.cx);
+        if (team === 'red'  && !detectedRed)  detectedRed  = data;
+        if (team === 'blue' && !detectedBlue) detectedBlue = data;
+      }
+    }
+  }
+
+  // draw the big steering wheel in the lobby (helps player aim)
+  fctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+  if (detectedRed)  drawWheel('red',  detectedRed.cx  * window.innerWidth, detectedRed.cy  * window.innerHeight, detectedRed.angle,  detectedRed.gripping);
+  if (detectedBlue) drawWheel('blue', detectedBlue.cx * window.innerWidth, detectedBlue.cy * window.innerHeight, detectedBlue.angle, detectedBlue.gripping);
+
+  // accumulate grip
+  for (const [team, data, slot, stateEl, barEl] of [
+    ['red',  detectedRed,  ui.slotRed,  ui.stateRed,  ui.gripBarRed],
+    ['blue', detectedBlue, ui.slotBlue, ui.stateBlue, ui.gripBarBlue],
+  ]) {
+    if (data && data.gripping) {
+      GAME._lobbyGrip[team] = Math.min(LOBBY_GRIP_REQUIRED_MS, GAME._lobbyGrip[team] + dt);
+      stateEl.textContent = GAME._lobbyGrip[team] >= LOBBY_GRIP_REQUIRED_MS ? '✅ READY!' : 'Hold still…';
+    } else if (data) {
+      GAME._lobbyGrip[team] = Math.max(0, GAME._lobbyGrip[team] - dt * 0.5);
+      stateEl.textContent  = '🖐️ Raise both hands';
+    } else {
+      GAME._lobbyGrip[team] = Math.max(0, GAME._lobbyGrip[team] - dt);
+      stateEl.textContent  = team === 'red' ? 'Stand on LEFT' : 'Stand on RIGHT';
+    }
+    const pct = (GAME._lobbyGrip[team] / LOBBY_GRIP_REQUIRED_MS) * 100;
+    barEl.style.width = pct + '%';
+    slot.classList.toggle('ready', GAME._lobbyGrip[team] >= LOBBY_GRIP_REQUIRED_MS);
+  }
+
+  // start race when ANY player is ready
+  if (GAME._lobbyGrip.red >= LOBBY_GRIP_REQUIRED_MS || GAME._lobbyGrip.blue >= LOBBY_GRIP_REQUIRED_MS) {
+    GAME.state = 'starting';
+    ui.lobby.classList.remove('show');
+    fctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+    runCountdownThenPlay();
+    return;
+  }
+  requestAnimationFrame(lobbyLoop);
+}
+
+async function runCountdownThenPlay(){
   await countdown();
   GAME.state = 'running';
   GAME.startTs = performance.now();
-  GAME.teams.red  = newTeam('red');
-  GAME.teams.blue = newTeam('blue');
+  // refresh hearts/score UI
   updateHearts('red'); updateHearts('blue');
+  updateScore('red');  updateScore('blue');
   startBgm();
   loop();
 }
@@ -913,10 +1091,14 @@ function loop(){
 
   drawRoad(now);
 
-  // draw wheels at hand positions
+  // draw spark particles only (no big wheel during play — it blocks the road)
   fctx.clearRect(0,0,window.innerWidth, window.innerHeight);
-  if (resultRed)  drawWheel('red',  resultRed.cx  * window.innerWidth, resultRed.cy  * window.innerHeight, resultRed.angle,  resultRed.gripping);
-  if (resultBlue) drawWheel('blue', resultBlue.cx * window.innerWidth, resultBlue.cy * window.innerHeight, resultBlue.angle, resultBlue.gripping);
+
+  // mini-wheel feedback in each speedo
+  if (ui.mwRed)  ui.mwRed.style.transform  = `translateX(-50%) rotate(${(GAME.teams.red.steerAngle  * 180/Math.PI).toFixed(1)}deg)`;
+  if (ui.mwBlue) ui.mwBlue.style.transform = `translateX(-50%) rotate(${(GAME.teams.blue.steerAngle * 180/Math.PI).toFixed(1)}deg)`;
+  ui.mwRed.classList.toggle('gripping',  GAME.teams.red.gripping);
+  ui.mwBlue.classList.toggle('gripping', GAME.teams.blue.gripping);
 
   // collisions (compute after drawRoad so item._sx/_sy populated)
   for (const team of ['red','blue']) collideTeam(team);
@@ -943,26 +1125,33 @@ function updateTeam(team, posed, dt, now){
   const t = GAME.teams[team];
   // steering smoothing
   if (posed && posed.gripping) {
-    // map angle (in image-space radians) to steering input. Angle ranges ~[-1.0, 1.0].
+    // map angle (in image-space radians) to steering input.
     let steer = posed.angle; // negative = right hand up = steer right
-    const deadzone = 0.10;
+    const deadzone = 0.18;   // senior-friendly: ignore small tilts
     if (Math.abs(steer) < deadzone) steer = 0;
-    // EMA
-    t.steerAngle = t.steerAngle * 0.6 + steer * 0.4;
-    // map to lateral target in lane (-1..1 maps to 0.05..0.95)
-    const target = 0.5 + Math.max(-1, Math.min(1, t.steerAngle * 1.8)) * 0.45;
+    else steer = steer - Math.sign(steer) * deadzone;
+    // EMA (heavier smoothing)
+    t.steerAngle = t.steerAngle * 0.75 + steer * 0.25;
+    const target = 0.5 + Math.max(-1, Math.min(1, t.steerAngle * 1.6)) * 0.45;
     t.carXTarget = target;
     t.gripping = true;
     t.lastActivity = now;
     t.wheelCx = posed.cx; t.wheelCy = posed.cy;
-    // speed builds toward 120, drops without grip
     t.speed = Math.min(140, t.speed + 30 * dt);
     t.angleHistory.push(t.steerAngle);
     if (t.angleHistory.length > 600) t.angleHistory.shift();
   } else {
-    t.gripping = false;
-    t.speed = Math.max(40, t.speed - 25 * dt);
-    t.carXTarget = 0.5;
+    // 1s grace period: keep current steering after losing grip
+    const sinceGrip = now - t.lastActivity;
+    if (sinceGrip < 1000) {
+      // keep car moving, just don't accelerate
+      t.gripping = true;  // visually still ok
+    } else {
+      t.gripping = false;
+      t.speed = Math.max(40, t.speed - 25 * dt);
+      t.carXTarget = 0.5;
+      t.steerAngle *= 0.9;
+    }
   }
   // lerp car position
   t.carX += (t.carXTarget - t.carX) * Math.min(1, dt * 6);
@@ -971,16 +1160,16 @@ function updateTeam(team, posed, dt, now){
 
 function collideTeam(team){
   const t = GAME.teams[team];
-  // car screen position mirrors drawRoad math
+  // car screen position mirrors drawRoad math (straight lane)
   const W = window.innerWidth, H = window.innerHeight;
   const half = team === 'red' ? 0 : 1;
   const x0 = half * W/2;
   const cx = x0 + W/4;
   const botY = H;
-  const botHalfW = W * 0.22;
-  const carX = cx + (t.carX - 0.5) * botHalfW * 1.6;
-  const carY = botY - H*0.10;
-  const carHitR = 55;
+  const roadHalfW = Math.min(W * 0.20, 260);
+  const carX = cx + (t.carX - 0.5) * roadHalfW * 1.7;
+  const carY = botY - H*0.11;
+  const carHitR = 70;
 
   // coins
   for (let i = t.coins.length - 1; i >= 0; i--) {
