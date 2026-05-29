@@ -133,7 +133,7 @@
   .banner .big{font-size:clamp(38px,5.5vw,60px);font-weight:900;color:var(--gold);-webkit-text-stroke:3px var(--gold-stroke);text-shadow:0 6px 0 var(--gold-stroke),0 10px 0 rgba(0,0,0,.25);letter-spacing:3px;line-height:.95;font-style:italic}
   .banner .ribbon{display:inline-block;margin-top:8px;padding:6px 22px;background:linear-gradient(180deg,var(--red1),var(--red2));border:3px solid #fff;border-radius:10px;font-weight:900;letter-spacing:2px;font-size:15px;box-shadow:0 4px 0 var(--red3),0 8px 18px rgba(0,0,0,.35);transform:skewX(-5deg)}
 
-  /* ---------- COMBO STARBURST ---------- */
+  /* ---------- COMBO STARBURST (legacy, kept for backward-compat) ---------- */
   .combo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:200px;display:flex;align-items:center;justify-content:center;pointer-events:none}
   .combo .burst{position:absolute;inset:0;animation:spin 7s linear infinite;filter:drop-shadow(0 6px 0 rgba(0,0,0,.4))}
   .combo .inner{position:relative;z-index:1;text-align:center}
@@ -143,6 +143,25 @@
   .combo.hidden{opacity:0;transition:opacity .4s}
   .combo.pop{animation:comboPop .25s}
   @keyframes comboPop{0%{transform:translate(-50%,-50%) scale(.9)}50%{transform:translate(-50%,-50%) scale(1.18)}100%{transform:translate(-50%,-50%) scale(1)}}
+
+  /* ---------- PER-TEAM COMBO PANELS ---------- */
+  .teamCombo{position:absolute;top:32%;width:150px;text-align:center;pointer-events:none;
+    font-family:"Inter",system-ui,sans-serif;font-style:italic;font-weight:900;line-height:1;z-index:5;
+    transition:opacity .35s, transform .25s}
+  .teamCombo.left{left:4%}
+  .teamCombo.right{right:4%}
+  .teamCombo.hidden{opacity:0;transform:translateY(8px) scale(.96)}
+  .teamCombo .pops{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:80px;justify-content:flex-end;margin-bottom:6px}
+  .teamCombo .pop{font-size:38px;color:#ffcf3a;-webkit-text-stroke:3px var(--gold-stroke);
+    text-shadow:0 4px 0 var(--gold-stroke);animation:popUp .9s forwards}
+  .teamCombo .pop.s{font-size:30px;color:#ffe27a}
+  @keyframes popUp{0%{opacity:0;transform:translateY(20px) scale(.6)}25%{opacity:1;transform:translateY(0) scale(1.05)}100%{opacity:.95;transform:translateY(-10px) scale(1)}}
+  .teamCombo .cLbl{font-size:22px;letter-spacing:2px;color:#fff;-webkit-text-stroke:2px #1a3a8a;text-shadow:0 4px 0 #1a3a8a;display:block;margin-top:2px}
+  .teamCombo .cMult{font-size:58px;color:#fff;display:block;margin-top:-2px;
+    -webkit-text-stroke:3px #c9160c;text-shadow:0 6px 0 #c9160c}
+  .teamCombo.right .cMult{-webkit-text-stroke:3px #0d3fb3;text-shadow:0 6px 0 #0d3fb3}
+  .teamCombo.bump{animation:comboBump .25s}
+  @keyframes comboBump{0%{transform:scale(.95)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
 
   /* ---------- VS BADGE ---------- */
   .vsBadge{position:absolute;left:50%;top:78%;transform:translate(-50%,-50%);font-size:64px;font-weight:900;color:#fff;-webkit-text-stroke:4px #1a3a8a;text-shadow:0 8px 0 #0d2050,0 0 30px rgba(255,255,255,.4);pointer-events:none;font-style:italic;animation:vsPulse 1.2s infinite alternate}
@@ -381,8 +400,8 @@
     <div class="finishLine"></div>
   </div>
 
-  <!-- COMBO -->
-  <div class="combo hidden" id="combo">
+  <!-- COMBO (center starburst — hidden; superseded by per-team combo panels) -->
+  <div class="combo hidden" id="combo" style="display:none">
     <svg class="burst" viewBox="0 0 200 200">
       <defs>
         <radialGradient id="bg" cx="50%" cy="50%" r="50%">
@@ -398,6 +417,18 @@
       <div class="label">COMBO</div>
       <div class="mult" id="comboMult">x1</div>
     </div>
+  </div>
+
+  <!-- PER-TEAM COMBOS -->
+  <div class="teamCombo left hidden" id="comboRed">
+    <div class="pops" id="popsRed"></div>
+    <span class="cLbl">COMBO</span>
+    <span class="cMult" id="multRed">x1</span>
+  </div>
+  <div class="teamCombo right hidden" id="comboBlue">
+    <div class="pops" id="popsBlue"></div>
+    <span class="cLbl">COMBO</span>
+    <span class="cMult" id="multBlue">x1</span>
   </div>
 
   <div class="vsBadge">VS</div>
@@ -582,6 +613,12 @@ const ui = {
   timerBox: document.getElementById('timerBox'),
   combo: document.getElementById('combo'),
   comboMult: document.getElementById('comboMult'),
+  comboRed: document.getElementById('comboRed'),
+  comboBlue: document.getElementById('comboBlue'),
+  multRed: document.getElementById('multRed'),
+  multBlue: document.getElementById('multBlue'),
+  popsRed: document.getElementById('popsRed'),
+  popsBlue: document.getElementById('popsBlue'),
   winScreen: document.getElementById('winScreen'),
   winTitle: document.getElementById('winTitle'),
   winSub: document.getElementById('winSub'),
@@ -635,12 +672,34 @@ function updateBoatPosition(team){
     wake.style.left = Math.max(0, xPct - wakeWidth + 4).toFixed(2) + '%';
   }
 }
-function showCombo(mult){
-  ui.comboMult.textContent = 'x'+mult;
-  ui.combo.classList.remove('hidden');
-  ui.combo.classList.remove('pop'); void ui.combo.offsetWidth; ui.combo.classList.add('pop');
-  clearTimeout(showCombo._t);
-  showCombo._t = setTimeout(()=>ui.combo.classList.add('hidden'), 1600);
+function showCombo(mult, team, pts){
+  // Per-team combo display (top-left for red, top-right for blue).
+  const panel = team === 'red' ? ui.comboRed  : ui.comboBlue;
+  const mEl   = team === 'red' ? ui.multRed   : ui.multBlue;
+  const pops  = team === 'red' ? ui.popsRed   : ui.popsBlue;
+  if (!panel || !mEl) return;
+
+  mEl.textContent = 'x' + mult;
+  panel.classList.remove('hidden');
+  panel.classList.remove('bump'); void panel.offsetWidth; panel.classList.add('bump');
+
+  if (pts != null && pops){
+    // Demote previous pop to the smaller secondary style, push new big one on top.
+    const prev = pops.querySelector('.pop:not(.s)');
+    if (prev) prev.classList.add('s');
+    const el = document.createElement('div');
+    el.className = 'pop';
+    el.textContent = '+' + pts;
+    pops.appendChild(el);
+    // Cap pops so it doesn't grow forever.
+    while (pops.children.length > 2) pops.removeChild(pops.firstChild);
+    // Auto-clean after animation.
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 1500);
+  }
+
+  const key = '_t_' + team;
+  clearTimeout(showCombo[key]);
+  showCombo[key] = setTimeout(() => panel.classList.add('hidden'), 1800);
 }
 function flyText(team, text){
   const el = document.createElement('div');
@@ -998,7 +1057,7 @@ function registerStroke(team){
     ui.bluePct.textContent = Math.round(t.progress)+'%';
   }
   updateBoatPosition(team);
-  showCombo(t.combo);
+  showCombo(t.combo, team, pts);
   flyText(team, '+'+pts);
   // Big water splash from the paddle blade on every successful stroke
   const tip = t.bladeTip;
