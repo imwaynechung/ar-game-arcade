@@ -1,136 +1,672 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-    <title>Horse Race · Full Body · AR Arcade</title>
-    <link rel="stylesheet" href="../styles.css" />
-    <style>
-      /* Picture-in-picture camera (small, top-right). Race course lives on the game canvas. */
-      #app { background: linear-gradient(180deg, #0a1530 0%, #1a2c5a 55%, #1a3a2a 100%); }
-      #cam {
-        position: fixed;
-        top: 14px;
-        right: 14px;
-        width: 220px;
-        height: 160px;
-        object-fit: cover;
-        border-radius: 16px;
-        border: 3px solid #ffd23f;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-        z-index: 5;
-        transform: scaleX(-1); /* selfie mirror */
-        background: #000;
-      }
-      #bg-canvas { display: none; }
-      #pip-pose {
-        position: fixed;
-        top: 14px;
-        right: 14px;
-        width: 220px;
-        height: 160px;
-        border-radius: 16px;
-        pointer-events: none;
-        z-index: 6;
-      }
-      .zone-divider, .zone-label { display: none !important; }
-      .pip-tag {
-        position: fixed;
-        top: 168px;
-        right: 14px;
-        z-index: 6;
-        width: 220px;
-        text-align: center;
-        font: 600 11px -apple-system, system-ui, sans-serif;
-        color: #ffd23f;
-        letter-spacing: 0.12em;
-        text-shadow: 0 2px 6px rgba(0,0,0,0.7);
-      }
-      .player-picker {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        margin: 12px 0 6px;
-        flex-wrap: wrap;
-      }
-      .player-picker button {
-        background: rgba(255,255,255,0.08);
-        border: 2px solid rgba(255,255,255,0.18);
-        color: #fff;
-        font: 700 22px -apple-system, system-ui, sans-serif;
-        width: 72px;
-        height: 72px;
-        border-radius: 18px;
-        cursor: pointer;
-        transition: transform 0.15s, border-color 0.15s, background 0.15s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        line-height: 1;
-        gap: 4px;
-      }
-      .player-picker button .num { font-size: 28px; }
-      .player-picker button .lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; opacity: 0.75; }
-      .player-picker button:hover { transform: translateY(-2px); border-color: #ffd23f; }
-      .player-picker button.active { background: #ffd23f; color: #1a1a1a; border-color: #ffd23f; }
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 10px;
-        margin: 14px 0 6px;
-        max-width: 520px;
-      }
-      .stat-card {
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 12px;
-        padding: 10px 12px;
-        text-align: left;
-      }
-      .stat-card .lbl { font: 600 10px -apple-system, system-ui, sans-serif; opacity: 0.7; letter-spacing: 0.12em; text-transform: uppercase; }
-      .stat-card .val { font: 800 22px -apple-system, system-ui, sans-serif; margin-top: 2px; }
-    </style>
-  </head>
-  <body class="game-body">
-    <div id="app">
-      <canvas id="bg-canvas"></canvas>
-      <canvas id="game"></canvas>
-      <video id="cam" autoplay playsinline muted></video>
-      <canvas id="pip-pose"></canvas>
-      <div class="pip-tag">📷 LIVE · ALL PLAYERS</div>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Horse Race \u00b7 1-4P \u00b7 AR Arcade</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0a1530;color:#fff;font-family:'Inter','Helvetica Neue',Arial,sans-serif;user-select:none}
+  #app{position:fixed;inset:0;overflow:hidden}
+  #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);filter:brightness(.55) saturate(.9);z-index:1}
+  #sky{position:absolute;inset:0;background:linear-gradient(180deg,#0a1530 0%,#1f3a78 35%,#3a6ea5 55%,#5fa05f 60%,#3a7a3a 100%);z-index:0}
+  #fx{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+  #ui{position:absolute;inset:0;z-index:5;pointer-events:none}
 
-      <a class="back-btn" href="../index.html">← Menu</a>
+  /* HUD */
+  #hud{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:18px;align-items:center;pointer-events:none}
+  #timer{font-weight:900;font-size:42px;color:#ffd23f;text-shadow:0 4px 0 #0a1530,0 0 22px rgba(255,210,63,.4);letter-spacing:2px}
+  #title{font-weight:900;font-size:18px;letter-spacing:3px;opacity:.85}
+  #back{position:absolute;top:14px;left:14px;color:#fff;text-decoration:none;font-weight:800;background:rgba(0,0,0,.5);padding:8px 14px;border-radius:12px;font-size:14px;pointer-events:auto;border:2px solid rgba(255,255,255,.2)}
 
-      <div id="hud-host"></div>
+  /* Start screen */
+  #startScreen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(10,21,48,.92),rgba(31,58,120,.85));padding:20px;pointer-events:auto;z-index:8}
+  .card{max-width:780px;width:100%;background:linear-gradient(180deg,#fff8e8,#ffe7c4);border:6px solid #fff;border-radius:28px;padding:30px;color:#0a1530;text-align:center;box-shadow:0 14px 0 #0a1530,0 28px 60px rgba(0,0,0,.55)}
+  .card h1{font-size:46px;color:#b8460e;font-style:italic;letter-spacing:2px;margin-bottom:6px}
+  .card .sub{font-size:18px;color:#0a1530;font-weight:700;margin-bottom:18px;opacity:.85}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px;text-align:left}
+  .step{background:rgba(255,255,255,.5);border:2px solid #b8460e;border-radius:14px;padding:10px}
+  .step .n{display:inline-block;background:#b8460e;color:#fff;width:26px;height:26px;border-radius:50%;text-align:center;line-height:26px;font-weight:900;margin-right:6px}
+  .step h3{display:inline;font-size:14px;font-weight:900;letter-spacing:1px}
+  .step p{font-size:12px;margin-top:4px;color:#222;font-weight:600;line-height:1.35}
+  .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+  .actions a, .actions button{pointer-events:auto;border:none;font:inherit;cursor:pointer;text-decoration:none;display:inline-block;background:#ffd23f;color:#0a1530;font-weight:900;padding:14px 30px;border-radius:18px;font-size:20px;letter-spacing:2px;box-shadow:0 6px 0 #b8460e;transition:transform .08s}
+  .actions a.ghost{background:#fff;color:#0a1530;box-shadow:0 5px 0 #aaa}
+  .actions button:active, .actions a:active{transform:translateY(3px);box-shadow:0 3px 0 #b8460e}
+  #status{margin-top:14px;font-size:13px;color:#444;font-weight:700}
 
-      <div id="start" class="overlay">
-        <h1>🐎 Horse Race</h1>
-        <p class="tag">Run in place — <span class="hl">more motion = faster horse</span></p>
-        <div class="player-picker" id="picker">
-          <button data-n="1"><span class="num">1</span><span class="lbl">SOLO</span></button>
-          <button data-n="2" class="active"><span class="num">2</span><span class="lbl">VS</span></button>
-          <button data-n="3"><span class="num">3</span><span class="lbl">RACE</span></button>
-          <button data-n="4"><span class="num">4</span><span class="lbl">DERBY</span></button>
-        </div>
-        <ul class="rules">
-          <li>📷 Camera shows in the corner — line up <span class="hl">left → right</span></li>
-          <li>🏃 Lift knees, pump arms — full body motion drives speed</li>
-          <li>🏁 First past the finish wins · 90s timer</li>
-        </ul>
-        <button id="start-btn">Start Race</button>
-        <p class="hint">Stand back so all players are visible at once.</p>
-      </div>
+  /* Mode select */
+  #modeSelect{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(10,21,48,.92),rgba(31,58,120,.85));padding:20px;text-align:center;z-index:9;pointer-events:auto}
+  #modeSelect.show{display:flex}
+  .modeCard{max-width:840px;width:100%;background:linear-gradient(180deg,#fff8e8,#ffe7c4);border:6px solid #fff;border-radius:26px;padding:28px;color:#0a1530;box-shadow:0 14px 0 #0a1530,0 28px 60px rgba(0,0,0,.55)}
+  .modeCard h2{margin:0;font-size:36px;color:#b8460e;font-style:italic;letter-spacing:2px}
+  .modeCard .sub{margin:6px 0 18px;font-size:18px;font-weight:700}
+  .modeBtns{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .modeBtn{pointer-events:auto;border:5px solid #0a1530;border-radius:20px;padding:18px 10px;background:#fff;cursor:pointer;font-family:inherit;color:#0a1530;font-weight:900;letter-spacing:1px;box-shadow:0 8px 0 #0a1530;transition:transform .08s}
+  .modeBtn:active{transform:translateY(4px);box-shadow:0 4px 0 #0a1530}
+  .modeBtn .em{font-size:54px;line-height:1;display:block;margin-bottom:4px}
+  .modeBtn .ttl{font-size:22px;letter-spacing:2px;display:block}
+  .modeBtn .det{font-size:11px;color:#555;font-weight:700;margin-top:4px;letter-spacing:.5px}
+  .modeBtn[data-n='1']{background:linear-gradient(180deg,#fff7c4,#ffcf3a)}
+  .modeBtn[data-n='2']{background:linear-gradient(180deg,#c4e8ff,#74b8ff)}
+  .modeBtn[data-n='3']{background:linear-gradient(180deg,#d4ffd4,#74d674)}
+  .modeBtn[data-n='4']{background:linear-gradient(180deg,#ffd4e8,#ff74b4)}
+  @media (max-width:640px){.modeBtns{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:repeat(2,1fr)}}
 
-      <div id="end" class="overlay hidden">
-        <div id="winner" class="winner">P1 Wins!</div>
-        <div class="stats-grid" id="end-stats"></div>
-        <button id="restart-btn">Rematch</button>
-        <a class="hint" href="../index.html" style="color:#9ad;">← Back to menu</a>
+  /* Lobby */
+  #lobby{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,21,48,.55);padding:20px;z-index:7;pointer-events:auto}
+  #lobby.show{display:flex}
+  #lobby h2{font-size:30px;letter-spacing:3px;color:#ffd23f;margin-bottom:16px;text-shadow:0 3px 0 #0a1530}
+  .slots{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;max-width:920px;margin-bottom:18px}
+  .slot{background:linear-gradient(180deg,#fff,#eee);color:#0a1530;border:5px solid #b8460e;border-radius:18px;padding:14px 16px;min-width:170px;text-align:center;box-shadow:0 6px 0 #0a1530;transition:transform .15s,border-color .15s}
+  .slot.ready{border-color:#3cd06a;background:linear-gradient(180deg,#d4ffd9,#9af0a8);transform:translateY(-4px)}
+  .slot .lbl{font-weight:900;font-size:14px;letter-spacing:2px;margin-bottom:6px}
+  .slot .state{font-weight:700;font-size:12px;opacity:.75;letter-spacing:1px}
+  .slot .grip{height:8px;background:#0a153022;border-radius:4px;margin-top:8px;overflow:hidden}
+  .slot .grip > div{height:100%;width:0%;background:linear-gradient(90deg,#3cd06a,#74e688);transition:width .2s}
+  #lobbyStartBtn{pointer-events:auto;background:#ffd23f;color:#0a1530;border:none;font:inherit;cursor:pointer;font-weight:900;padding:14px 30px;border-radius:18px;font-size:20px;letter-spacing:2px;box-shadow:0 6px 0 #b8460e}
+  #lobbyStartBtn:disabled{opacity:.5;cursor:not-allowed}
+  #lobbyHint{font-size:13px;color:#ffd;margin-top:10px;font-weight:700;letter-spacing:1px;text-shadow:0 2px 0 #000}
+
+  /* Countdown */
+  #countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:10;pointer-events:none}
+  #countdown.show{display:flex}
+  #cdNum{font-weight:900;font-size:240px;color:#ffd23f;text-shadow:0 12px 0 #0a1530,0 0 60px rgba(255,210,63,.6);animation:cdPulse .9s ease-out}
+  @keyframes cdPulse{from{transform:scale(.4);opacity:0}50%{transform:scale(1.15);opacity:1}to{transform:scale(1);opacity:1}}
+
+  /* Results */
+  #results{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,21,48,.92);z-index:11;padding:20px;pointer-events:auto}
+  #results.show{display:flex}
+  .resCard{max-width:760px;width:100%;background:linear-gradient(180deg,#fff8e8,#ffe7c4);border:6px solid #fff;border-radius:26px;padding:28px;color:#0a1530;box-shadow:0 14px 0 #0a1530,0 28px 60px rgba(0,0,0,.55);text-align:center}
+  .resCard h2{font-size:36px;color:#b8460e;font-style:italic;letter-spacing:2px;margin-bottom:14px}
+  .standings{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+  .standing{display:flex;align-items:center;gap:12px;background:#fff;border:3px solid #0a1530;border-radius:14px;padding:10px 14px;font-weight:800}
+  .standing.win{background:linear-gradient(90deg,#ffe7a0,#ffd23f);border-color:#b8460e}
+  .standing .rank{font-size:22px;width:34px;text-align:center}
+  .standing .ply{flex:1;text-align:left;font-size:18px;letter-spacing:1px}
+  .standing .meta{font-size:13px;opacity:.7;font-weight:700}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sky"></div>
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="fx"></canvas>
+
+  <div id="ui">
+    <a id="back" href="../index.html">\u2190 MENU</a>
+    <div id="hud"><div id="title">HORSE RACE</div><div id="timer">60</div></div>
+  </div>
+
+  <div id="countdown"><div id="cdNum">3</div></div>
+
+  <div id="modeSelect">
+    <div class="modeCard">
+      <h2>HOW MANY PLAYERS?</h2>
+      <div class="sub">Each rider takes one lane. Choose 1 to 4.</div>
+      <div class="modeBtns">
+        <button class="modeBtn" data-n="1" type="button"><span class="em">\u{1F40E}</span><span class="ttl">1 PLAYER</span><div class="det">Solo trot</div></button>
+        <button class="modeBtn" data-n="2" type="button"><span class="em">\u{1F40E}\u{1F40E}</span><span class="ttl">2 PLAYERS</span><div class="det">Head to head</div></button>
+        <button class="modeBtn" data-n="3" type="button"><span class="em">\u{1F40E}\u{1F40E}\u{1F40E}</span><span class="ttl">3 PLAYERS</span><div class="det">Triple race</div></button>
+        <button class="modeBtn" data-n="4" type="button"><span class="em">\u{1F40E}\u{1F40E}\u{1F40E}\u{1F40E}</span><span class="ttl">4 PLAYERS</span><div class="det">Full derby</div></button>
       </div>
     </div>
+  </div>
 
-    <script type="module" src="horse-race.js"></script>
-  </body>
+  <div id="lobby">
+    <h2>STEP INTO YOUR LANE</h2>
+    <div class="slots" id="slots"></div>
+    <button id="lobbyStartBtn" disabled>WAITING...</button>
+    <div id="lobbyHint">Stand half-body in frame. When all lanes are GREEN, button unlocks.</div>
+  </div>
+
+  <div id="startScreen">
+    <div class="card">
+      <h1>\u{1F40E} HORSE RACE</h1>
+      <div class="sub">Pump both hands like a galloping rider. 60s. First past the post wins!</div>
+      <div class="steps">
+        <div class="step"><span class="n">1</span><h3>Pick Players</h3><p>1 to 4 riders, one lane each.</p></div>
+        <div class="step"><span class="n">2</span><h3>Stand Half-Body</h3><p>Shoulders and hands must be visible.</p></div>
+        <div class="step"><span class="n">3</span><h3>Gallop</h3><p>Pump both hands up &amp; down fast.</p></div>
+        <div class="step"><span class="n">4</span><h3>Win</h3><p>First to the finish line wins!</p></div>
+      </div>
+      <div class="actions"><button id="startBtn" disabled>LOADING\u2026</button><a class="ghost" href="../index.html">BACK</a></div>
+      <div id="status">Loading pose model\u2026</div>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="resCard">
+      <h2 id="resultsTitle">\u{1F3C6} FINISH!</h2>
+      <div class="standings" id="standings"></div>
+      <div class="actions"><button id="playAgainBtn">PLAY AGAIN</button><a class="ghost" href="../index.html">MENU</a></div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs"
+  }
+}
+</script>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+
+const $ = (id) => document.getElementById(id);
+const ui = {
+  timer: $('timer'),
+  countdown: $('countdown'), cdNum: $('cdNum'),
+  modeSelect: $('modeSelect'),
+  lobby: $('lobby'), slots: $('slots'), lobbyStartBtn: $('lobbyStartBtn'),
+  startScreen: $('startScreen'), startBtn: $('startBtn'), status: $('status'),
+  results: $('results'), resultsTitle: $('resultsTitle'), standings: $('standings'),
+  playAgainBtn: $('playAgainBtn'),
+  fx: $('fx'), video: $('video'),
+};
+const video = ui.video;
+const fx = ui.fx;
+const fxCtx = fx.getContext('2d');
+function resize(){ fx.width = window.innerWidth; fx.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+// --- audio ---
+let actx = null, masterGain = null;
+const audio = { bgm:new Audio('../assets/sounds/bg music.mp3'), point:new Audio('../assets/sounds/every pts.mp3'), finish:new Audio('../assets/sounds/game finished.mp3'), crowd:new Audio('../assets/sounds/crowd.mp3'), last:new Audio('../assets/sounds/last 10 sec.mp3'), splash:new Audio('../assets/sounds/paddle splash.mp3') };
+audio.bgm.loop = true; audio.bgm.volume = 0.35; audio.crowd.volume = 0.7;
+function ensureAudio(){ if (!actx){ actx = new (window.AudioContext||window.webkitAudioContext)(); masterGain = actx.createGain(); masterGain.gain.value = 0.55; masterGain.connect(actx.destination); } }
+function beep(freq, ms, type='sine', vol=0.06){ if (!actx) return; const o = actx.createOscillator(); const g = actx.createGain(); o.type = type; o.frequency.value = freq; g.gain.value = vol; o.connect(g); g.connect(masterGain); o.start(); o.stop(actx.currentTime + ms/1000); }
+function playSfx(key){ try { const a = audio[key]; if (!a) return; a.currentTime = 0; a.play().catch(()=>{}); } catch(e){} }
+
+// --- SVG art ---
+const HORSE_COLORS = [
+  { body:'#7a3b1c', mane:'#3a1c0a', hoof:'#2a1408', sock:'#f4e5c8', label:'BROWN'  }, // P1
+  { body:'#1a1a1a', mane:'#000000', hoof:'#111111', sock:'#ffffff', label:'BLACK'  }, // P2
+  { body:'#d6b870', mane:'#7a5828', hoof:'#3a280f', sock:'#fff3d6', label:'GOLD'   }, // P3
+  { body:'#e9e6df', mane:'#bdbab2', hoof:'#888577', sock:'#ffffff', label:'WHITE'  }, // P4
+];
+const SADDLE_COLORS = ['#ff3030', '#1e7cff', '#ffcf3a', '#a020ff'];
+
+// Cute side-view galloping horse SVG (~viewBox 0 0 200 130). Two leg poses for run cycle.
+function horseSvgString(c, sad, pose){
+  // pose: 0 or 1 — alternate leg positions
+  const leg = (pose === 0)
+    ? `<path d='M70 100 q-4 14 -10 22' stroke='${c.body}' stroke-width='10' fill='none' stroke-linecap='round'/>
+       <path d='M140 100 q4 14 10 22' stroke='${c.body}' stroke-width='10' fill='none' stroke-linecap='round'/>
+       <path d='M90 100 q-2 -6 -2 -14' stroke='${c.body}' stroke-width='10' fill='none' stroke-linecap='round'/>
+       <path d='M125 100 q2 -6 2 -14' stroke='${c.body}' stroke-width='10' fill='none' stroke-linecap='round'/>
+       <circle cx='60' cy='124' r='4' fill='${c.hoof}'/><circle cx='150' cy='124' r='4' fill='${c.hoof}'/>
+       <circle cx='88' cy='86' r='4' fill='${c.hoof}'/><circle cx='127' cy='86' r='4' fill='${c.hoof}'/>`
+    : `<path d='M70 100 q2 -4 4 -16' stroke='${c.body}' stroke-width='10' fill='none' stroke-linecap='round'/>
+       <path d='M140 100 q-2 -4 -4 -16' stroke='${c.body}' stroke-width='10' fill='none' stroke-linecap='round'/>
+       <path d='M90 100 q-4 14 -10 22' stroke='${c.body}' stroke-width='10' fill='none' stroke-linecap='round'/>
+       <path d='M125 100 q4 14 10 22' stroke='${c.body}' stroke-width='10' fill='none' stroke-linecap='round'/>
+       <circle cx='80' cy='124' r='4' fill='${c.hoof}'/><circle cx='130' cy='124' r='4' fill='${c.hoof}'/>
+       <circle cx='74' cy='86' r='4' fill='${c.hoof}'/><circle cx='136' cy='86' r='4' fill='${c.hoof}'/>`;
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 140'>
+    <!-- body -->
+    <ellipse cx='105' cy='80' rx='52' ry='26' fill='${c.body}' stroke='#0a1530' stroke-width='3'/>
+    <!-- saddle blanket -->
+    <rect x='80' y='62' width='50' height='14' rx='3' fill='${sad}' stroke='#0a1530' stroke-width='2'/>
+    <!-- legs -->
+    ${leg}
+    <!-- neck -->
+    <path d='M150 78 q24 -10 28 -36' stroke='${c.body}' stroke-width='22' fill='none' stroke-linecap='round'/>
+    <!-- head -->
+    <ellipse cx='180' cy='40' rx='14' ry='10' fill='${c.body}' stroke='#0a1530' stroke-width='3' transform='rotate(-12 180 40)'/>
+    <!-- snout -->
+    <ellipse cx='192' cy='46' rx='7' ry='5' fill='${c.body}' stroke='#0a1530' stroke-width='2' transform='rotate(-12 192 46)'/>
+    <!-- nostril & eye -->
+    <circle cx='194' cy='46' r='1.4' fill='#0a1530'/>
+    <circle cx='180' cy='36' r='1.8' fill='#0a1530'/>
+    <!-- ear -->
+    <path d='M174 30 l-2 -10 l8 4 z' fill='${c.body}' stroke='#0a1530' stroke-width='2'/>
+    <!-- mane -->
+    <path d='M168 36 q-4 14 -16 24 q-6 -10 -2 -22 q4 -10 12 -10 z' fill='${c.mane}' stroke='#0a1530' stroke-width='2'/>
+    <path d='M155 60 q-8 8 -14 18 q-4 -6 0 -16' fill='${c.mane}' stroke='#0a1530' stroke-width='2'/>
+    <!-- tail -->
+    <path d='M53 76 q-22 4 -32 22 q-2 -16 8 -28 q12 -10 24 -6 z' fill='${c.mane}' stroke='#0a1530' stroke-width='2'/>
+    <!-- jockey -->
+    <ellipse cx='105' cy='48' rx='10' ry='12' fill='${sad}' stroke='#0a1530' stroke-width='2'/>
+    <circle cx='105' cy='34' r='7' fill='#f4d2a4' stroke='#0a1530' stroke-width='2'/>
+    <path d='M99 27 q6 -6 14 -2 q-2 4 -7 5 z' fill='${sad}' stroke='#0a1530' stroke-width='1.5'/>
+  </svg>`;
+}
+const grassTuftSvgString = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 24'>
+  <path d='M4 24 q1 -12 4 -18 q1 4 2 18' fill='#2c8a3a' stroke='#1c5a24' stroke-width='1'/>
+  <path d='M10 24 q1 -16 6 -22 q1 6 2 22' fill='#3cb04a' stroke='#1c5a24' stroke-width='1'/>
+  <path d='M18 24 q0 -10 5 -16 q1 4 2 16' fill='#2c8a3a' stroke='#1c5a24' stroke-width='1'/>
+</svg>`;
+const finishFlagSvgString = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 90'>
+  <line x1='10' y1='0' x2='10' y2='90' stroke='#222' stroke-width='4'/>
+  <g>
+    ${[0,1,2,3,4,5,6,7].map(r => [0,1,2,3,4].map(c => `<rect x='${12 + c*9}' y='${r*9}' width='9' height='9' fill='${(r+c)%2===0?'#000':'#fff'}' stroke='#222' stroke-width='.5'/>`).join('')).join('')}
+  </g>
+</svg>`;
+const SVG_IMAGES = {};
+function loadSvgImage(key, str){ return new Promise((res) => { const img = new Image(); img.onload = () => { SVG_IMAGES[key] = img; res(); }; img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(str); }); }
+async function preloadArt(){
+  const tasks = [loadSvgImage('grass', grassTuftSvgString), loadSvgImage('flag', finishFlagSvgString)];
+  HORSE_COLORS.forEach((c, i) => {
+    tasks.push(loadSvgImage('h'+i+'a', horseSvgString(c, SADDLE_COLORS[i], 0)));
+    tasks.push(loadSvgImage('h'+i+'b', horseSvgString(c, SADDLE_COLORS[i], 1)));
+  });
+  await Promise.all(tasks);
+}
+
+// --- game state ---
+const GAME = {
+  state: 'idle', // idle | modeSelect | lobby | starting | running | over
+  numPlayers: 2,
+  startTs: 0,
+  durationMs: 60000,
+  finishProgress: 1.0,
+  players: [], // {idx, label, progress, velocity, lastWristY, lastDirection, lastReverseTs, galloping, color, saddle, posed:false, finishMs:null, stepCount:0}
+};
+
+const PLAYER_LABELS = ['PLAYER 1','PLAYER 2','PLAYER 3','PLAYER 4'];
+const PLAYER_SHORT  = ['P1','P2','P3','P4'];
+
+function initPlayers(n){
+  GAME.players = [];
+  for (let i = 0; i < n; i++) {
+    GAME.players.push({
+      idx: i,
+      label: PLAYER_LABELS[i],
+      progress: 0,
+      velocity: 0,
+      lastWristY: null,
+      lastDirection: 0,
+      lastReverseTs: 0,
+      galloping: false,
+      color: HORSE_COLORS[i],
+      saddle: SADDLE_COLORS[i],
+      posed: false,
+      finishMs: null,
+      stepCount: 0,
+    });
+  }
+}
+
+// --- gallop detection ---
+// Approach: each frame, take the average wrist Y (normalized 0..1) for the player. Compare to
+// their previous frame's wrist Y. When direction reverses (up->down or down->up) AND the swing
+// amplitude since the last reversal exceeds a threshold, register a "step" -> add velocity boost.
+const GALLOP_AMP_THRESHOLD = 0.04;   // ~4% of frame height between reversals
+const STEP_VELOCITY_BOOST = 0.018;   // each step adds this much velocity
+const VELOCITY_DECAY = 0.965;        // per frame multiplier (~30fps target)
+const MAX_VELOCITY = 0.42;           // progress units per second cap
+const MIN_REVERSAL_INTERVAL_MS = 100;
+
+function registerWristSample(p, wristY, now){
+  if (wristY == null) { p.lastWristY = null; return; }
+  if (p.lastWristY == null) { p.lastWristY = wristY; p.swingStartY = wristY; return; }
+  const dy = wristY - p.lastWristY;
+  const dir = dy > 0.002 ? 1 : (dy < -0.002 ? -1 : p.lastDirection);
+  if (dir !== 0 && p.lastDirection !== 0 && dir !== p.lastDirection) {
+    // direction reversal
+    const amp = Math.abs(wristY - (p.swingStartY ?? wristY));
+    if (amp >= GALLOP_AMP_THRESHOLD && (now - p.lastReverseTs) > MIN_REVERSAL_INTERVAL_MS) {
+      p.velocity = Math.min(MAX_VELOCITY, p.velocity + STEP_VELOCITY_BOOST);
+      p.stepCount += 1;
+      p.lastReverseTs = now;
+      p.galloping = true;
+      if (Math.random() < 0.35) beep(420 + Math.random()*120, 50, 'square', 0.04);
+    }
+    p.swingStartY = wristY;
+  }
+  if (dir !== 0) p.lastDirection = dir;
+  p.lastWristY = wristY;
+}
+
+// --- pose -> per-player slot assignment ---
+function readPose(lm){
+  const ls = lm[11], rs = lm[12];
+  const lw = lm[15], rw = lm[16];
+  if (!ls || !rs) return null;
+  const mir = (p) => 1 - p.x;
+  const Ls = { x:mir(ls), y:ls.y, v:ls.visibility };
+  const Rs = { x:mir(rs), y:rs.y, v:rs.visibility };
+  if (Ls.v < 0.3 || Rs.v < 0.3) return null;
+  const cx = (Ls.x + Rs.x) / 2;
+  const hands = {};
+  if (lw && lw.visibility > 0.25) hands.L = { x: mir(lw), y: lw.y };
+  if (rw && rw.visibility > 0.25) hands.R = { x: mir(rw), y: rw.y };
+  return { cx, hands };
+}
+function assignSlot(cx, n){
+  // split frame width into n equal horizontal slots
+  const slot = Math.floor(cx * n);
+  return Math.max(0, Math.min(n - 1, slot));
+}
+
+let pose = null;
+async function loadModel(){
+  ui.status.textContent = 'Loading pose model\u2026';
+  const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  pose = await PoseLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task', delegate:'GPU' },
+    runningMode: 'VIDEO',
+    numPoses: 4,
+  });
+  await preloadArt();
+  ui.status.textContent = 'Ready. Click START.';
+  ui.startBtn.disabled = false;
+  ui.startBtn.textContent = 'START';
+}
+loadModel().catch(e => ui.status.textContent = 'Failed to load: ' + e.message);
+
+// --- countdown ---
+async function countdown(){
+  ui.countdown.classList.add('show');
+  for (const n of [3,2,1]) { ui.cdNum.textContent = n; beep(440,180,'sine',0.06); await new Promise(r => setTimeout(r, 700)); }
+  ui.cdNum.textContent = 'GO!'; beep(660,300,'square',0.08); await new Promise(r => setTimeout(r, 600));
+  ui.countdown.classList.remove('show');
+}
+
+// --- main game flow ---
+async function startGame(){
+  ensureAudio();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} }, audio:false });
+    video.srcObject = stream;
+    await new Promise(r => video.onloadedmetadata = r);
+    await video.play();
+  } catch(e) { ui.status.textContent = 'Camera error: ' + e.message; ui.startBtn.disabled = false; return; }
+  ui.startScreen.style.display = 'none';
+  ui.modeSelect.classList.add('show');
+  GAME.state = 'modeSelect';
+}
+
+function pickMode(n){
+  GAME.numPlayers = n;
+  initPlayers(n);
+  ui.modeSelect.classList.remove('show');
+  // build lobby slots
+  ui.slots.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const div = document.createElement('div');
+    div.className = 'slot';
+    div.id = 'slot-' + i;
+    div.innerHTML = `<div class="lbl">${PLAYER_LABELS[i]}</div><div class="state">Step in front of camera</div><div class="grip"><div></div></div>`;
+    ui.slots.appendChild(div);
+  }
+  ui.lobbyStartBtn.disabled = true;
+  ui.lobbyStartBtn.textContent = 'WAITING...';
+  GAME.state = 'lobby';
+  ui.lobby.classList.add('show');
+  lobbyLoop();
+}
+
+function lobbyLoop(){
+  if (GAME.state !== 'lobby') return;
+  const now = performance.now();
+  // mark all unposed
+  for (const p of GAME.players) p.posed = false;
+  if (pose && video.readyState >= 2) {
+    const res = pose.detectForVideo(video, now);
+    if (res.landmarks) {
+      const claimed = new Array(GAME.numPlayers).fill(false);
+      for (const lm of res.landmarks) {
+        const data = readPose(lm);
+        if (!data) continue;
+        const slot = assignSlot(data.cx, GAME.numPlayers);
+        if (claimed[slot]) continue;
+        claimed[slot] = true;
+        GAME.players[slot].posed = true;
+      }
+    }
+  }
+  let allReady = true;
+  for (const p of GAME.players) {
+    const slotEl = document.getElementById('slot-' + p.idx);
+    if (!slotEl) continue;
+    const stateEl = slotEl.querySelector('.state');
+    const barEl = slotEl.querySelector('.grip > div');
+    if (p.posed) { stateEl.textContent = 'DETECTED \u2705'; barEl.style.width = '100%'; slotEl.classList.add('ready'); }
+    else { stateEl.textContent = 'Step in front of camera'; barEl.style.width = '0%'; slotEl.classList.remove('ready'); allReady = false; }
+  }
+  if (allReady) { ui.lobbyStartBtn.disabled = false; ui.lobbyStartBtn.textContent = 'START RACE'; }
+  else { ui.lobbyStartBtn.disabled = true; ui.lobbyStartBtn.textContent = 'WAITING...'; }
+  requestAnimationFrame(lobbyLoop);
+}
+
+async function runCountdownThenPlay(){
+  await countdown();
+  GAME.state = 'running';
+  GAME.startTs = performance.now();
+  for (const p of GAME.players) { p.progress = 0; p.velocity = 0; p.lastWristY = null; p.swingStartY = null; p.lastDirection = 0; p.lastReverseTs = 0; p.finishMs = null; p.stepCount = 0; }
+  try { audio.bgm.currentTime = 0; audio.bgm.play().catch(()=>{}); } catch(e){}
+  lastTs = 0;
+  requestAnimationFrame(loop);
+}
+
+let lastTs = 0;
+let lastLastSec = -1;
+function loop(ts){
+  if (GAME.state !== 'running') return;
+  if (!lastTs) lastTs = ts;
+  const dt = Math.min(48, ts - lastTs); lastTs = ts;
+  const now = performance.now();
+
+  // timer
+  const elapsed = now - GAME.startTs;
+  const remaining = Math.max(0, GAME.durationMs - elapsed);
+  ui.timer.textContent = Math.ceil(remaining/1000);
+  if (Math.ceil(remaining/1000) === 10 && lastLastSec !== 10) { lastLastSec = 10; playSfx('last'); }
+
+  // pose detection -> samples
+  if (pose && video.readyState >= 2) {
+    const res = pose.detectForVideo(video, now);
+    if (res.landmarks) {
+      const claimed = new Array(GAME.numPlayers).fill(false);
+      const wristYs = new Array(GAME.numPlayers).fill(null);
+      for (const lm of res.landmarks) {
+        const data = readPose(lm);
+        if (!data) continue;
+        const slot = assignSlot(data.cx, GAME.numPlayers);
+        if (claimed[slot]) continue;
+        claimed[slot] = true;
+        const L = data.hands.L ? data.hands.L.y : null;
+        const R = data.hands.R ? data.hands.R.y : null;
+        let y = null;
+        if (L != null && R != null) y = (L + R) / 2;
+        else if (L != null) y = L;
+        else if (R != null) y = R;
+        wristYs[slot] = y;
+      }
+      for (let i = 0; i < GAME.numPlayers; i++) {
+        registerWristSample(GAME.players[i], wristYs[i], now);
+      }
+    }
+  }
+
+  // physics
+  for (const p of GAME.players) {
+    if (p.finishMs != null) continue;
+    // decay velocity (frame-rate adjusted)
+    p.velocity *= Math.pow(VELOCITY_DECAY, dt / (1000/60));
+    p.progress += p.velocity * (dt / 1000);
+    if (p.progress >= GAME.finishProgress) {
+      p.progress = GAME.finishProgress;
+      p.finishMs = elapsed;
+      playSfx('point');
+    }
+    // mark galloping false if idle for >700ms
+    if (now - p.lastReverseTs > 700) p.galloping = false;
+  }
+
+  draw(ts);
+
+  // end conditions
+  const allFinished = GAME.players.every(p => p.finishMs != null);
+  if (allFinished || remaining <= 0) { endGame(); return; }
+  requestAnimationFrame(loop);
+}
+
+// --- drawing ---
+function draw(ts){
+  const W = fx.width, H = fx.height;
+  fxCtx.clearRect(0, 0, W, H);
+
+  // track area: bottom 70%, divided into N lanes
+  const trackTop = H * 0.18;
+  const trackBot = H * 0.96;
+  const trackH = trackBot - trackTop;
+  const laneH = trackH / GAME.numPlayers;
+  const startX = W * 0.06;
+  const finishX = W * 0.92;
+  const runW = finishX - startX;
+
+  // lane stripes background
+  for (let i = 0; i < GAME.numPlayers; i++) {
+    const y = trackTop + i * laneH;
+    // grass band
+    fxCtx.fillStyle = (i % 2 === 0) ? 'rgba(74,150,68,0.55)' : 'rgba(58,130,52,0.55)';
+    fxCtx.fillRect(0, y, W, laneH);
+    // lane separator
+    fxCtx.strokeStyle = 'rgba(255,255,255,0.35)';
+    fxCtx.setLineDash([14, 12]);
+    fxCtx.lineWidth = 2;
+    fxCtx.beginPath(); fxCtx.moveTo(0, y); fxCtx.lineTo(W, y); fxCtx.stroke();
+    fxCtx.setLineDash([]);
+    // lane label
+    fxCtx.save();
+    fxCtx.font = '900 16px Inter, system-ui, sans-serif';
+    fxCtx.fillStyle = 'rgba(0,0,0,0.6)';
+    fxCtx.fillText(PLAYER_SHORT[i], 10, y + 22);
+    fxCtx.fillStyle = '#fff';
+    fxCtx.fillText(PLAYER_SHORT[i], 9, y + 21);
+    fxCtx.restore();
+  }
+  // bottom edge
+  fxCtx.strokeStyle = 'rgba(255,255,255,0.35)';
+  fxCtx.beginPath(); fxCtx.moveTo(0, trackBot); fxCtx.lineTo(W, trackBot); fxCtx.stroke();
+
+  // start line
+  fxCtx.fillStyle = 'rgba(255,255,255,0.7)';
+  fxCtx.fillRect(startX - 3, trackTop, 4, trackH);
+
+  // grass tufts scattered
+  const grassImg = SVG_IMAGES['grass'];
+  if (grassImg) {
+    for (let i = 0; i < GAME.numPlayers; i++) {
+      const y = trackTop + i * laneH;
+      for (let g = 0; g < 14; g++) {
+        const gx = (g * 97 + i * 31 + ts * 0.02) % W;
+        const gy = y + laneH - 18 - ((g * 13 + i * 7) % 12);
+        fxCtx.drawImage(grassImg, gx, gy, 26, 20);
+      }
+    }
+  }
+
+  // finish flag
+  const flagImg = SVG_IMAGES['flag'];
+  if (flagImg) {
+    const flagW = 36, flagH = 54;
+    for (let i = 0; i < GAME.numPlayers; i++) {
+      const y = trackTop + i * laneH;
+      fxCtx.drawImage(flagImg, finishX - flagW * 0.4, y + (laneH - flagH) / 2, flagW, flagH);
+    }
+    // finish line strip
+    fxCtx.fillStyle = '#fff';
+    fxCtx.fillRect(finishX - 2, trackTop, 3, trackH);
+  }
+
+  // horses
+  const horseW = Math.min(180, laneH * 1.6);
+  const horseH = horseW * 0.7;
+  for (const p of GAME.players) {
+    const y = trackTop + p.idx * laneH + (laneH - horseH) / 2;
+    const x = startX + p.progress * runW - horseW * 0.5;
+    // bob when galloping
+    const bob = p.galloping ? Math.sin(ts * 0.025) * 5 : 0;
+    const poseFrame = Math.floor(ts / 110) % 2;
+    const key = 'h' + p.idx + (poseFrame === 0 ? 'a' : 'b');
+    const img = SVG_IMAGES[key];
+    if (img) fxCtx.drawImage(img, x, y + bob, horseW, horseH);
+    // speed dust
+    if (p.galloping) {
+      fxCtx.save();
+      fxCtx.fillStyle = 'rgba(255,255,255,0.55)';
+      for (let k = 0; k < 3; k++) {
+        const dx = x - 10 - k * 12 + Math.random() * 4;
+        const dy = y + horseH * 0.85 + Math.random() * 8;
+        fxCtx.beginPath(); fxCtx.arc(dx, dy, 4 + Math.random() * 3, 0, Math.PI*2); fxCtx.fill();
+      }
+      fxCtx.restore();
+    }
+    // jockey name tag
+    fxCtx.save();
+    fxCtx.font = '900 13px Inter, system-ui, sans-serif';
+    fxCtx.fillStyle = p.saddle;
+    fxCtx.strokeStyle = '#0a1530';
+    fxCtx.lineWidth = 4;
+    fxCtx.textAlign = 'center';
+    const tagX = x + horseW * 0.5;
+    const tagY = y + bob - 4;
+    fxCtx.strokeText(PLAYER_SHORT[p.idx], tagX, tagY);
+    fxCtx.fillText(PLAYER_SHORT[p.idx], tagX, tagY);
+    fxCtx.restore();
+
+    // progress bar (top of screen, one per player)
+    const barY = 78 + p.idx * 14;
+    fxCtx.fillStyle = 'rgba(0,0,0,0.4)';
+    fxCtx.fillRect(W * 0.18, barY, W * 0.64, 10);
+    fxCtx.fillStyle = p.saddle;
+    fxCtx.fillRect(W * 0.18, barY, W * 0.64 * p.progress, 10);
+    fxCtx.save();
+    fxCtx.font = '800 11px Inter, system-ui, sans-serif';
+    fxCtx.fillStyle = '#fff';
+    fxCtx.fillText(PLAYER_SHORT[p.idx], W * 0.16, barY + 9);
+    fxCtx.restore();
+  }
+}
+
+function endGame(){
+  GAME.state = 'over';
+  try { audio.bgm.pause(); } catch(e){}
+  playSfx('finish');
+  setTimeout(() => playSfx('crowd'), 500);
+  // build standings: finished sorted by finishMs ASC, then unfinished by progress DESC
+  const finishers = GAME.players.filter(p => p.finishMs != null).sort((a,b) => a.finishMs - b.finishMs);
+  const remaining = GAME.players.filter(p => p.finishMs == null).sort((a,b) => b.progress - a.progress);
+  const ordered = [...finishers, ...remaining];
+  ui.standings.innerHTML = '';
+  ordered.forEach((p, idx) => {
+    const row = document.createElement('div');
+    row.className = 'standing' + (idx === 0 ? ' win' : '');
+    const medal = ['\u{1F947}','\u{1F948}','\u{1F949}','\u{1F3C1}'][idx] || '\u{1F3C1}';
+    const meta = p.finishMs != null
+      ? `Finished in ${(p.finishMs/1000).toFixed(1)}s \u00b7 ${p.stepCount} steps`
+      : `${Math.round(p.progress*100)}% \u00b7 ${p.stepCount} steps`;
+    row.innerHTML = `<span class="rank">${medal}</span><span class="ply">${p.label}</span><span class="meta">${meta}</span>`;
+    ui.standings.appendChild(row);
+  });
+  ui.resultsTitle.textContent = ordered[0]
+    ? `\u{1F3C6} ${ordered[0].label} WINS!`
+    : '\u{1F3C1} RACE OVER';
+  ui.results.classList.add('show');
+}
+
+// --- wiring ---
+ui.startBtn.addEventListener('click', () => { ui.startBtn.disabled = true; startGame(); });
+document.querySelectorAll('.modeBtn').forEach(btn => {
+  btn.addEventListener('click', () => pickMode(parseInt(btn.dataset.n, 10)));
+});
+ui.lobbyStartBtn.addEventListener('click', () => {
+  if (ui.lobbyStartBtn.disabled) return;
+  GAME.state = 'starting';
+  ui.lobby.classList.remove('show');
+  runCountdownThenPlay();
+});
+ui.playAgainBtn.addEventListener('click', () => {
+  ui.results.classList.remove('show');
+  ui.modeSelect.classList.add('show');
+  GAME.state = 'modeSelect';
+});
+</script>
+</body>
 </html>
-
