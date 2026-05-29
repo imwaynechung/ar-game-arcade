@@ -327,6 +327,102 @@ const FRUITS = [
   { id:'orange',     name:'ORANGE',     emoji:'\u{1F34A}' },
   { id:'watermelon', name:'WATERMELON', emoji:'\u{1F349}' },
 ];
+
+// --- SVG assets (hand-rolled, free to use) ---
+const SVG_FRUITS = {
+  apple: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 22 Q45 12 35 14 Q42 18 48 24 Z" fill="#2a8a2a"/>
+    <rect x="48" y="14" width="4" height="10" rx="2" fill="#5a3a1a"/>
+    <ellipse cx="50" cy="58" rx="34" ry="34" fill="#e63946"/>
+    <ellipse cx="40" cy="46" rx="8" ry="6" fill="#ff8e8e" opacity="0.7"/>
+  </svg>`,
+  banana: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 30 Q15 65 50 82 Q82 86 86 58 Q72 76 50 70 Q30 60 30 35 Z" fill="#ffd54a" stroke="#a07a00" stroke-width="2"/>
+    <rect x="24" y="22" width="6" height="14" rx="2" fill="#7a5a1a"/>
+  </svg>`,
+  grapes: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M40 20 Q50 25 60 22" stroke="#5a3a1a" stroke-width="3" fill="none"/>
+    <path d="M50 24 L48 36" stroke="#2a8a2a" stroke-width="3" fill="none"/>
+    <path d="M48 28 Q56 24 64 26" stroke="#2a8a2a" stroke-width="2" fill="none"/>
+    <g fill="#8a3aff" stroke="#5a1a8a" stroke-width="1">
+      <circle cx="40" cy="44" r="9"/>
+      <circle cx="55" cy="44" r="9"/>
+      <circle cx="32" cy="56" r="9"/>
+      <circle cx="47" cy="56" r="9"/>
+      <circle cx="62" cy="56" r="9"/>
+      <circle cx="40" cy="68" r="9"/>
+      <circle cx="54" cy="68" r="9"/>
+      <circle cx="47" cy="80" r="9"/>
+    </g>
+  </svg>`,
+  strawberry: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 32 Q22 38 26 56 Q34 86 50 90 Q66 86 74 56 Q78 38 50 32 Z" fill="#e63946"/>
+    <g fill="#fff8a0">
+      <circle cx="40" cy="52" r="2.5"/>
+      <circle cx="55" cy="50" r="2.5"/>
+      <circle cx="48" cy="62" r="2.5"/>
+      <circle cx="62" cy="64" r="2.5"/>
+      <circle cx="38" cy="70" r="2.5"/>
+      <circle cx="55" cy="76" r="2.5"/>
+    </g>
+    <path d="M28 32 L38 22 L46 32 L54 22 L62 32 L72 26 L66 40 L34 40 Z" fill="#2a8a2a"/>
+  </svg>`,
+  orange: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 20 L46 12 L54 12 Z" fill="#2a8a2a"/>
+    <rect x="48" y="14" width="4" height="6" fill="#5a3a1a"/>
+    <circle cx="50" cy="58" r="34" fill="#ff8e3a"/>
+    <circle cx="40" cy="48" r="8" fill="#ffb074" opacity="0.7"/>
+    <g stroke="#cc6610" stroke-width="1" fill="none" opacity="0.45">
+      <path d="M50 28 L50 88"/>
+      <path d="M22 58 L78 58"/>
+      <path d="M30 36 L70 80"/>
+      <path d="M70 36 L30 80"/>
+    </g>
+  </svg>`,
+  watermelon: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M8 72 A42 42 0 0 1 92 72 Z" fill="#2a8a2a"/>
+    <path d="M14 72 A36 36 0 0 1 86 72 Z" fill="#fff"/>
+    <path d="M20 72 A30 30 0 0 1 80 72 Z" fill="#ff5577"/>
+    <g fill="#1a1a1a">
+      <ellipse cx="38" cy="60" rx="2" ry="3"/>
+      <ellipse cx="50" cy="56" rx="2" ry="3"/>
+      <ellipse cx="62" cy="60" rx="2" ry="3"/>
+      <ellipse cx="44" cy="68" rx="2" ry="3"/>
+      <ellipse cx="56" cy="68" rx="2" ry="3"/>
+    </g>
+  </svg>`,
+};
+const SVG_BASKET = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <path d="M14 42 Q50 12 86 42" stroke="#7a4a1a" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M10 42 Q14 38 24 38 L76 38 Q86 38 90 42 L80 86 Q78 90 73 90 L27 90 Q22 90 20 86 Z" fill="#d49860" stroke="#7a4a1a" stroke-width="3"/>
+  <g stroke="#7a4a1a" stroke-width="2" fill="none" opacity="0.85">
+    <path d="M14 52 L86 52"/>
+    <path d="M17 65 L83 65"/>
+    <path d="M21 78 L79 78"/>
+    <path d="M30 42 L34 90"/>
+    <path d="M50 42 L50 90"/>
+    <path d="M70 42 L66 90"/>
+  </g>
+</svg>`;
+const SVG_IMAGES = {};
+function loadSvgImage(key, svg){
+  return new Promise((res) => {
+    const img = new Image();
+    img.onload = () => { SVG_IMAGES[key] = img; res(); };
+    img.onerror = () => res();
+    img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  });
+}
+(function preloadSvgs(){
+  for (const [id, svg] of Object.entries(SVG_FRUITS)) loadSvgImage(id, svg);
+  loadSvgImage('basket', SVG_BASKET);
+})();
+function svgInline(fruit, size){
+  const svg = SVG_FRUITS[fruit.id];
+  if (!svg) return fruit.emoji;
+  return svg.replace('<svg ', `<svg width="${size}" height="${size}" style="display:block" `);
+}
+
 function pickRandom(arr, n){
   const copy = arr.slice(), out = [];
   for (let i=0;i<n && copy.length;i++) out.push(copy.splice(Math.floor(Math.random()*copy.length),1)[0]);
@@ -348,12 +444,47 @@ const GAME = {
   scores:{ red: 0, blue: 0 },
   caughtThisRound:{ red: 0, blue: 0 },
 };
-const PHASE_DURATIONS = { show: 1400, wait: 1900, catch: 5500, reveal: 1100 };
-const BASKET_DIST = 0.18;   // normalized wrist distance to activate
-const BASKET_RADIUS_FACTOR = 0.55; // basket radius = wristDist * factor (in normalized x)
-const FRUIT_FALL_SPEED = 0.00040; // normalized y per ms (per side fall)
-const FRUIT_RADIUS_NORM_X = 0.045; // visual radius for collision (normalized x of side half)
-const SPAWN_INTERVAL_MS = 650;
+const PHASE_DURATIONS = { show: 1600, wait: 2000, catch: 7500, reveal: 1100 };
+// hysteresis: easy to activate, hard to drop -> no flicker
+const BASKET_ACTIVATE_DIST   = 0.24;   // hands within ~24% of frame width -> form basket
+const BASKET_DEACTIVATE_DIST = 0.42;   // must spread well beyond to drop
+const BASKET_STICKY_MS       = 450;    // min time to stay in current state once toggled
+const BASKET_GRACE_MS        = 700;    // keep showing last basket if wrists briefly lost
+const BASKET_RADIUS_FACTOR   = 0.55;
+const BASKET_RADIUS_MIN      = 0.10;   // generous minimum radius for collisions
+const BASKET_RADIUS_MAX      = 0.22;
+const FRUIT_FALL_SPEED = 0.00022;      // slower for seniors (was 0.00040)
+const SPAWN_INTERVAL_MS = 720;
+
+// per-side hysteresis state
+const basketState = {
+  red:  { active:false, lastChange:0, lastValid:null },
+  blue: { active:false, lastChange:0, lastValid:null },
+};
+function resolveBasket(side, raw, now){
+  const st = basketState[side];
+  if (raw) {
+    st.lastValid = { x:raw.x, y:raw.y, dist:raw.dist, ts:now };
+    if (!st.active && raw.dist < BASKET_ACTIVATE_DIST) {
+      st.active = true; st.lastChange = now;
+    } else if (st.active && raw.dist > BASKET_DEACTIVATE_DIST && (now - st.lastChange) > BASKET_STICKY_MS) {
+      st.active = false; st.lastChange = now;
+    }
+    const r = Math.max(BASKET_RADIUS_MIN, Math.min(BASKET_RADIUS_MAX, raw.dist * BASKET_RADIUS_FACTOR + 0.05));
+    return { x:raw.x, y:raw.y, r, active: st.active };
+  }
+  // no fresh detection — extend the last known basket for a short grace period so it doesn't flicker
+  if (st.lastValid && (now - st.lastValid.ts) < BASKET_GRACE_MS) {
+    const v = st.lastValid;
+    const r = Math.max(BASKET_RADIUS_MIN, Math.min(BASKET_RADIUS_MAX, v.dist * BASKET_RADIUS_FACTOR + 0.05));
+    return { x:v.x, y:v.y, r, active: st.active };
+  }
+  return null;
+}
+function resetBasketState(){
+  basketState.red  = { active:false, lastChange:0, lastValid:null };
+  basketState.blue = { active:false, lastChange:0, lastValid:null };
+}
 
 let pose = null;
 async function loadModel(){
@@ -381,7 +512,7 @@ function processPose(lm){
   if (Ls.v < 0.3 || Rs.v < 0.3) return null;
   const cx = (Ls.x + Rs.x) / 2;
   const cy = (Ls.y + Rs.y) / 2;
-  let basket = null;
+  let basketRaw = null;
   if (lw && rw && lw.visibility > 0.3 && rw.visibility > 0.3) {
     const Lw = { x:mir(lw), y:lw.y };
     const Rw = { x:mir(rw), y:rw.y };
@@ -389,30 +520,28 @@ function processPose(lm){
     const dist = Math.hypot(dx, dy);
     const bx = (Lw.x + Rw.x) / 2;
     const by = (Lw.y + Rw.y) / 2;
-    const active = dist < BASKET_DIST;
-    const r = Math.max(0.06, dist * BASKET_RADIUS_FACTOR);
-    basket = { x: bx, y: by, r, active, dist };
+    basketRaw = { x:bx, y:by, dist };
   }
-  return { cx, cy, basket };
+  return { cx, cy, basketRaw };
 }
 function assignTeamByX(cx){ return cx < 0.5 ? 'red' : 'blue'; }
 
 function spawnFruit(side){
-  const isTarget = Math.random() < 0.45; // ~45% are the target
+  const isTarget = Math.random() < 0.5; // ~50% are the target
   const fruit = isTarget ? GAME.target : (function(){
     const others = FRUITS.filter(f => f.id !== GAME.target.id);
     return others[Math.floor(Math.random() * others.length)];
   })();
   // normalized x within side half (red: 0..0.5, blue: 0.5..1)
-  const halfStart = side === 'red' ? 0.06 : 0.54;
-  const halfEnd   = side === 'red' ? 0.46 : 0.94;
+  const halfStart = side === 'red' ? 0.08 : 0.56;
+  const halfEnd   = side === 'red' ? 0.44 : 0.92;
   const x = halfStart + Math.random() * (halfEnd - halfStart);
   GAME.fruits[side].push({
     fruit,
-    x, y: -0.08,
-    vy: FRUIT_FALL_SPEED * (0.85 + Math.random() * 0.5),
-    spin: (Math.random() - 0.5) * 0.004,
-    rot: Math.random() * Math.PI * 2,
+    x, y: -0.10,
+    vy: FRUIT_FALL_SPEED * (0.95 + Math.random() * 0.10), // tight variance, consistent fall
+    spin: (Math.random() - 0.5) * 0.0015,
+    rot: (Math.random() - 0.5) * 0.4,
     state: 'fall',
   });
 }
@@ -424,11 +553,11 @@ function startRound(){
   GAME.fruits.red = []; GAME.fruits.blue = [];
   GAME.caughtThisRound.red = 0; GAME.caughtThisRound.blue = 0;
   GAME.phase = 'show'; GAME.phaseStart = performance.now();
-  ui.tBox.textContent = GAME.target.emoji;
+  ui.tBox.innerHTML = svgInline(GAME.target, '170px');
   ui.tName.textContent = GAME.target.name;
   ui.target.classList.add('show');
-  ui.miniEmRed.textContent = GAME.target.emoji; ui.miniNmRed.textContent = GAME.target.name;
-  ui.miniEmBlue.textContent = GAME.target.emoji; ui.miniNmBlue.textContent = GAME.target.name;
+  ui.miniEmRed.innerHTML  = svgInline(GAME.target, '60px'); ui.miniNmRed.textContent = GAME.target.name;
+  ui.miniEmBlue.innerHTML = svgInline(GAME.target, '60px'); ui.miniNmBlue.textContent = GAME.target.name;
   beep(660, 200, 'sine', 0.06);
 }
 function startWait(){
@@ -525,24 +654,33 @@ function drawScene(){
     const cx = b.x * W, cy = b.y * H;
     const r = b.r * Math.min(W,H);
     fxCtx.save();
+    const basketImg = SVG_IMAGES.basket;
     if (b.active) {
-      // basket outline
-      fxCtx.strokeStyle = side === 'red' ? '#ff8e85' : '#a7c4ff';
-      fxCtx.lineWidth = 8;
-      fxCtx.beginPath(); fxCtx.arc(cx, cy, r, 0, Math.PI*2); fxCtx.stroke();
-      fxCtx.fillStyle = 'rgba(255,255,255,0.08)';
-      fxCtx.beginPath(); fxCtx.arc(cx, cy, r, 0, Math.PI*2); fxCtx.fill();
-      // basket emoji
-      fxCtx.font = `${Math.floor(r*1.4)}px serif`;
-      fxCtx.textAlign = 'center'; fxCtx.textBaseline = 'middle';
-      fxCtx.fillText('\u{1F9FA}', cx, cy);
+      // glow ring
+      fxCtx.strokeStyle = side === 'red' ? 'rgba(255,142,133,0.9)' : 'rgba(167,196,255,0.9)';
+      fxCtx.lineWidth = 6;
+      fxCtx.shadowColor = side === 'red' ? '#ff8e85' : '#a7c4ff';
+      fxCtx.shadowBlur = 22;
+      fxCtx.beginPath(); fxCtx.arc(cx, cy, r * 1.05, 0, Math.PI*2); fxCtx.stroke();
+      fxCtx.shadowBlur = 0;
+      // basket image
+      if (basketImg) {
+        const bs = r * 2.4;
+        fxCtx.drawImage(basketImg, cx - bs/2, cy - bs/2 + r*0.1, bs, bs);
+      }
     } else {
-      // just two faint dots indicating hands
-      fxCtx.strokeStyle = side === 'red' ? 'rgba(255,142,133,.5)' : 'rgba(167,196,255,.5)';
+      // faint dashed ring as 'almost there' guide
+      fxCtx.strokeStyle = side === 'red' ? 'rgba(255,142,133,.45)' : 'rgba(167,196,255,.45)';
       fxCtx.lineWidth = 4;
-      fxCtx.setLineDash([8,8]);
+      fxCtx.setLineDash([10,10]);
       fxCtx.beginPath(); fxCtx.arc(cx, cy, r, 0, Math.PI*2); fxCtx.stroke();
       fxCtx.setLineDash([]);
+      if (basketImg) {
+        fxCtx.globalAlpha = 0.35;
+        const bs = r * 2.2;
+        fxCtx.drawImage(basketImg, cx - bs/2, cy - bs/2 + r*0.1, bs, bs);
+        fxCtx.globalAlpha = 1;
+      }
     }
     fxCtx.restore();
   }
@@ -552,18 +690,23 @@ function drawScene(){
     for (const f of GAME.fruits[side]) {
       if (f.state !== 'fall') continue;
       const x = f.x * W, y = f.y * H;
+      const size = Math.min(W,H) * 0.11;
       fxCtx.save();
       fxCtx.translate(x, y);
       fxCtx.rotate(f.rot);
-      const size = Math.min(W,H) * 0.08;
       // soft glow if target
       if (f.fruit.id === GAME.target.id) {
         fxCtx.shadowColor = '#ffea00';
-        fxCtx.shadowBlur = 20;
+        fxCtx.shadowBlur = 22;
       }
-      fxCtx.font = `${Math.floor(size)}px serif`;
-      fxCtx.textAlign = 'center'; fxCtx.textBaseline = 'middle';
-      fxCtx.fillText(f.fruit.emoji, 0, 0);
+      const img = SVG_IMAGES[f.fruit.id];
+      if (img) {
+        fxCtx.drawImage(img, -size/2, -size/2, size, size);
+      } else {
+        fxCtx.font = `${Math.floor(size)}px serif`;
+        fxCtx.textAlign = 'center'; fxCtx.textBaseline = 'middle';
+        fxCtx.fillText(f.fruit.emoji, 0, 0);
+      }
       fxCtx.restore();
     }
   }
@@ -608,8 +751,8 @@ function loop(){
       }
     }
   }
-  GAME.basket.red  = posedRed  ? posedRed.basket  : null;
-  GAME.basket.blue = posedBlue ? posedBlue.basket : null;
+  GAME.basket.red  = resolveBasket('red',  posedRed  ? posedRed.basketRaw  : null, now);
+  GAME.basket.blue = resolveBasket('blue', posedBlue ? posedBlue.basketRaw : null, now);
 
   const phaseElapsed = now - GAME.phaseStart;
   if (GAME.phase === 'show' && phaseElapsed >= PHASE_DURATIONS.show) {
@@ -717,6 +860,7 @@ async function runCountdownThenPlay(){
   GAME.round = 0;
   GAME.scores = { red: 0, blue: 0 };
   GAME.fruits.red = []; GAME.fruits.blue = [];
+  resetBasketState();
   ui.scoreRed.textContent = '0'; ui.scoreBlue.textContent = '0';
   ui.timer.classList.remove('low');
   try { audio.bgm.currentTime = 0; audio.bgm.play().catch(()=>{}); } catch(e){}
