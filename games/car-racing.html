@@ -178,6 +178,19 @@
   .gripBar{height:8px;background:#e8e8e8;border-radius:4px;margin-top:8px;overflow:hidden}
   .gripBar > div{height:100%;width:0;background:linear-gradient(90deg,#7CFFB2,#1a8a2a);transition:width .12s}
   .lobbyFoot{margin-top:14px;font-size:14px;color:#666}
+  /* mode toggle */
+  .modeRow{margin:4px 0 14px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .modeLbl{font-size:13px;letter-spacing:2px;color:#5b3a3a;font-weight:900}
+  .modeToggle{display:flex;gap:10px}
+  .modeBtn{background:#fff;border:4px solid #ddd;border-radius:18px;padding:10px 16px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:2px;min-width:140px;
+    font-family:inherit;color:#3a1d2a;transition:transform .08s, border-color .15s, background .15s}
+  .modeBtn .ico{font-size:34px;line-height:1}
+  .modeBtn .t{font-weight:900;font-size:15px;letter-spacing:1px}
+  .modeBtn .sub{font-size:11px;color:#888;letter-spacing:1px}
+  .modeBtn.active{border-color:#1a8a2a;background:linear-gradient(180deg,#f0fff0,#cdf2cd);transform:translateY(-2px);box-shadow:0 4px 0 #0d4a17}
+  .modeBtn.active .sub{color:#1a8a2a;font-weight:900}
+  .modeBtn:active{transform:translateY(0)}
 
   /* Cone warning chevron */
   .coneWarn{position:absolute;font-size:46px;line-height:1;pointer-events:none;
@@ -292,9 +305,20 @@
 <!-- LOBBY: detect raised hands before starting countdown -->
 <div id="lobby">
   <div class="lobbyCard">
-    <div class="lobbyIcon">👋</div>
-    <h2>RAISE BOTH HANDS</h2>
-    <div class="sub">Pretend you're gripping a steering wheel in front of your chest</div>
+    <div class="lobbyIcon" id="lobbyIcon">🧍</div>
+    <h2 id="lobbyTitle">LEAN TO STEER</h2>
+    <div class="sub" id="lobbySub">Stand tall, then lean your body left or right to steer your car</div>
+    <div class="modeRow">
+      <div class="modeLbl">CHOOSE CONTROL MODE</div>
+      <div class="modeToggle">
+        <button class="modeBtn active" id="modeBody" type="button">
+          <span class="ico">🧍</span><span class="t">BODY LEAN</span><span class="sub">Easier</span>
+        </button>
+        <button class="modeBtn" id="modeHand" type="button">
+          <span class="ico">🖐️</span><span class="t">HAND WHEEL</span><span class="sub">Classic</span>
+        </button>
+      </div>
+    </div>
     <div class="lobbyPlayers">
       <div class="lpSlot red" id="slotRed">
         <span class="ico">🚗</span>
@@ -545,6 +569,11 @@ const ui = {
   gripBarBlue:document.getElementById('gripBarBlue'),
   mwRed:    document.getElementById('mwRed'),
   mwBlue:   document.getElementById('mwBlue'),
+  lobbyIcon:document.getElementById('lobbyIcon'),
+  lobbyTitle:document.getElementById('lobbyTitle'),
+  lobbySub: document.getElementById('lobbySub'),
+  modeBody: document.getElementById('modeBody'),
+  modeHand: document.getElementById('modeHand'),
 };
 
 function resize(){
@@ -561,6 +590,7 @@ resize();
 // ---------- GAME STATE ----------
 const GAME = {
   state: 'idle',     // idle | running | over
+  controlMode: 'body', // 'body' (lean) | 'hand' (steering wheel)
   startTs: 0,
   durationMs: 60000,
   scrollY: 0,
@@ -695,6 +725,17 @@ function drawRoad(now){
             t.color === 'red' ? '#c9160c' : '#0d3fb3',
             t.color === 'red' ? '#5a0500' : '#04153f');
 
+    // HAND mode: half steering wheel anchored below the car as a constant hint
+    if (GAME.controlMode === 'hand') {
+      const hwX = cx + (t.carX - 0.5) * roadHalfW * 1.7;
+      const hwY = botY - 6;          // sits at the bottom edge
+      const hwR = Math.min(110, W * 0.06);
+      drawHalfWheel(ctx, hwX, hwY, hwR,
+                    t.gripping ? t.steerAngle : 0,
+                    t.color === 'red' ? '#c9160c' : '#0d3fb3',
+                    t.gripping, now);
+    }
+
     // cone-warning chevron above any cone within ~1s of car
     for (const c of t.cones) {
       if (c.y > 0.55 && c.y < 0.85 && Math.abs(c.lane - (t.carX*2 - 1)) < 0.35) {
@@ -796,6 +837,55 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.arcTo(x, y+h, x, y, r);
   ctx.arcTo(x, y, x+w, y, r);
   ctx.closePath();
+}
+
+// Half steering-wheel HUD anchored below the car (HAND mode hint).
+// The wheel "peeks up" from the bottom edge; when the player isn't gripping,
+// a pulsing "RAISE HAND" cue appears above it.
+function drawHalfWheel(ctx, cx, cy, R, angle, gripping, now){
+  ctx.save();
+  ctx.translate(cx, cy);
+  // clip to upper half so only the top half of the wheel is visible above the bottom edge
+  ctx.beginPath();
+  ctx.rect(-R - 20, -R - 20, (R + 20) * 2, R + 20);
+  ctx.clip();
+  ctx.rotate(angle);
+  // outer rim
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+  // colored inner ring
+  ctx.fillStyle = gripping ? '#7CFFB2' : '#5b5b5b';
+  ctx.beginPath(); ctx.arc(0, 0, R - 10, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath(); ctx.arc(0, 0, R - 18, 0, Math.PI * 2); ctx.fill();
+  // spokes
+  ctx.strokeStyle = gripping ? '#7CFFB2' : '#9a9a9a';
+  ctx.lineWidth = 10; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-R + 18, 0); ctx.lineTo(R - 18, 0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -R + 18); ctx.lineTo(0, R - 18); ctx.stroke();
+  // hub
+  ctx.fillStyle = gripping ? '#7CFFB2' : '#bbb';
+  ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // "RAISE HAND" pulsing cue when no grip detected
+  if (!gripping) {
+    const t = (Math.sin(now / 220) + 1) / 2; // 0..1
+    ctx.save();
+    ctx.globalAlpha = 0.5 + 0.5 * t;
+    ctx.font = '900 italic 30px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#000';
+    ctx.fillStyle = '#ffea00';
+    const label = '🖐️ RAISE HANDS ↑';
+    const ty = cy - R - 14;
+    ctx.strokeText(label, cx, ty);
+    ctx.fillText(label, cx, ty);
+    ctx.restore();
+  }
 }
 
 // ---------- COMBO / SCORE UI ----------
@@ -946,10 +1036,12 @@ function lobbyLoop(){
     }
   }
 
-  // draw the big steering wheel in the lobby (helps player aim)
+  // draw the big steering wheel in the lobby (helps player aim) — only in HAND mode
   fctx.clearRect(0,0,window.innerWidth, window.innerHeight);
-  if (detectedRed)  drawWheel('red',  detectedRed.cx  * window.innerWidth, detectedRed.cy  * window.innerHeight, detectedRed.angle,  detectedRed.gripping);
-  if (detectedBlue) drawWheel('blue', detectedBlue.cx * window.innerWidth, detectedBlue.cy * window.innerHeight, detectedBlue.angle, detectedBlue.gripping);
+  if (GAME.controlMode === 'hand') {
+    if (detectedRed)  drawWheel('red',  detectedRed.cx  * window.innerWidth, detectedRed.cy  * window.innerHeight, detectedRed.angle,  detectedRed.gripping);
+    if (detectedBlue) drawWheel('blue', detectedBlue.cx * window.innerWidth, detectedBlue.cy * window.innerHeight, detectedBlue.angle, detectedBlue.gripping);
+  }
 
   // accumulate grip
   for (const [team, data, slot, stateEl, barEl] of [
@@ -961,7 +1053,7 @@ function lobbyLoop(){
       stateEl.textContent = GAME._lobbyGrip[team] >= LOBBY_GRIP_REQUIRED_MS ? '✅ READY!' : 'Hold still…';
     } else if (data) {
       GAME._lobbyGrip[team] = Math.max(0, GAME._lobbyGrip[team] - dt * 0.5);
-      stateEl.textContent  = '🖐️ Raise both hands';
+      stateEl.textContent  = GAME.controlMode === 'body' ? '🧍 Stand up tall' : '🖐️ Raise both hands';
     } else {
       GAME._lobbyGrip[team] = Math.max(0, GAME._lobbyGrip[team] - dt);
       stateEl.textContent  = team === 'red' ? 'Stand on LEFT' : 'Stand on RIGHT';
@@ -1007,6 +1099,26 @@ async function countdown(){
 startBtn.addEventListener('click', () => { startBtn.disabled = true; startGame(); });
 startBtn2.addEventListener('click', () => { startBtn2.disabled = true; startGame(); });
 
+// ---------- CONTROL MODE TOGGLE ----------
+function setControlMode(mode){
+  GAME.controlMode = mode;
+  ui.modeBody.classList.toggle('active', mode === 'body');
+  ui.modeHand.classList.toggle('active', mode === 'hand');
+  if (mode === 'body') {
+    ui.lobbyIcon.textContent  = '🧍';
+    ui.lobbyTitle.textContent = 'LEAN TO STEER';
+    ui.lobbySub.textContent   = 'Stand tall, then lean your body left or right to steer your car';
+  } else {
+    ui.lobbyIcon.textContent  = '👋';
+    ui.lobbyTitle.textContent = 'RAISE BOTH HANDS';
+    ui.lobbySub.textContent   = "Pretend you're gripping a steering wheel in front of your chest";
+  }
+  // reset grip accumulators when mode changes mid-lobby
+  if (GAME._lobbyGrip) { GAME._lobbyGrip.red = 0; GAME._lobbyGrip.blue = 0; }
+}
+ui.modeBody.addEventListener('click', () => setControlMode('body'));
+ui.modeHand.addEventListener('click', () => setControlMode('hand'));
+
 // ---------- POSE → STEERING ----------
 // Use LEFT_WRIST(15), RIGHT_WRIST(16), and shoulders for grip detection
 function processPose(lm, screenHalf){
@@ -1014,22 +1126,40 @@ function processPose(lm, screenHalf){
   const lw = lm[15], rw = lm[16];
   const ls = lm[11], rs = lm[12];
   const lh = lm[23], rh = lm[24];
-  if (!lw || !rw || !ls || !rs) return null;
+  if (!ls || !rs) return null;
   // mirror x to match flipped video
   const fx = (p) => 1 - p.x;
+  const Ls = { x:fx(ls), y:ls.y, v:ls.visibility };
+  const Rs = { x:fx(rs), y:rs.y, v:rs.visibility };
+  if (Ls.v < 0.3 || Rs.v < 0.3) return null;
+  const hipY = (lh && rh) ? (lh.y + rh.y) / 2 : 0.85;
+
+  if (GAME.controlMode === 'body') {
+    // BODY-LEAN mode: torso center vs hip center -> lean offset
+    const torsoX = (Ls.x + Rs.x) / 2;
+    const torsoY = (Ls.y + Rs.y) / 2;
+    const Lh = lh ? { x:fx(lh), y:lh.y, v:lh.visibility } : null;
+    const Rh = rh ? { x:fx(rh), y:rh.y, v:rh.visibility } : null;
+    const hipX = (Lh && Rh && Lh.v > 0.3 && Rh.v > 0.3) ? (Lh.x + Rh.x) / 2 : torsoX;
+    // lean > 0 when torso right of hips (leaning right); we want negative => steer right
+    const lean = (torsoX - hipX) * 6; // amplify (~±0.05 → ~±0.3)
+    const angle = -lean; // same convention as hand mode
+    // "gripping" = standing visible with shoulders above hips
+    const gripping = torsoY < hipY - 0.05;
+    return { cx: torsoX, cy: torsoY, angle, gripping };
+  }
+
+  // HAND-WHEEL mode (original)
+  if (!lw || !rw) return null;
   const Lw = { x:fx(lw), y:lw.y, v:lw.visibility };
   const Rw = { x:fx(rw), y:rw.y, v:rw.visibility };
-  if (Lw.v < 0.3 || Rw.v < 0.3) return null;
+  if (Lw.v < 0.3 || Rw.v < 0.3) return { cx:(Ls.x+Rs.x)/2, cy:(Ls.y+Rs.y)/2, angle:0, gripping:false };
   const cx = (Lw.x + Rw.x) / 2;
   const cy = (Lw.y + Rw.y) / 2;
-  // dx/dy in normalized image space — for steering use horizontal:
-  // when right hand is HIGHER (smaller y) than left -> turning right.
   const dx = Rw.x - Lw.x;
   const dy = Rw.y - Lw.y;
   const angle = Math.atan2(dy, dx); // 0 when level, negative when right hand up
   const grip = Math.hypot(dx, dy);
-  // grip valid when hands ~shoulder width AND above hips
-  const hipY = (lh && rh) ? (lh.y + rh.y) / 2 : 0.85;
   const gripping = grip > 0.10 && grip < 0.55 && cy < hipY - 0.02;
   return { cx, cy, angle, gripping };
 }
@@ -1106,6 +1236,9 @@ function loop(){
   // grip hints
   ui.hintRed.classList.toggle('hidden',  !!(resultRed  && resultRed.gripping));
   ui.hintBlue.classList.toggle('hidden', !!(resultBlue && resultBlue.gripping));
+  const hintTxt = GAME.controlMode === 'body' ? '🧍 STAND UP TALL' : '🖐️ HOLD THE WHEEL';
+  if (ui.hintRed.textContent  !== hintTxt) ui.hintRed.textContent  = hintTxt;
+  if (ui.hintBlue.textContent !== hintTxt) ui.hintBlue.textContent = hintTxt;
 
   // timer
   const elapsed = now - GAME.startTs;
