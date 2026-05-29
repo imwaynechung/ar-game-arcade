@@ -736,6 +736,13 @@ function drawRoad(now){
                     t.gripping, now);
     }
 
+    // Direction arrow above the car — shows which way the body/wheel is steering
+    if (t.gripping && Math.abs(t.steerAngle) > 0.05) {
+      const arrowX = cx + (t.carX - 0.5) * roadHalfW * 1.7;
+      const arrowY = botY - H*0.11 - 95;
+      drawDirectionArrow(ctx, arrowX, arrowY, t.steerAngle, now);
+    }
+
     // cone-warning chevron above any cone within ~1s of car
     for (const c of t.cones) {
       if (c.y > 0.55 && c.y < 0.85 && Math.abs(c.lane - (t.carX*2 - 1)) < 0.35) {
@@ -837,6 +844,46 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.arcTo(x, y+h, x, y, r);
   ctx.arcTo(x, y, x+w, y, r);
   ctx.closePath();
+}
+
+// Big direction arrow above the car so players see which way they're steering.
+function drawDirectionArrow(ctx, cx, cy, steer, now){
+  const dir = steer > 0 ? 1 : -1; // +1 = right, -1 = left
+  const mag = Math.min(1, Math.abs(steer) * 2.2); // 0..1
+  const size = 38 + mag * 28; // 38..66
+  const offset = 28 + mag * 36; // shift in the direction of steering for emphasis
+  const pulse = 0.7 + 0.3 * Math.sin(now / 140);
+  ctx.save();
+  ctx.translate(cx + dir * offset, cy);
+  ctx.scale(dir, 1); // flip horizontally for left
+  ctx.globalAlpha = 0.85 + 0.15 * Math.sin(now / 200);
+  // arrow shape (pointing right when dir=1)
+  ctx.beginPath();
+  ctx.moveTo(-size*0.6, -size*0.35);
+  ctx.lineTo( size*0.15, -size*0.35);
+  ctx.lineTo( size*0.15, -size*0.6);
+  ctx.lineTo( size*0.7,  0);
+  ctx.lineTo( size*0.15,  size*0.6);
+  ctx.lineTo( size*0.15,  size*0.35);
+  ctx.lineTo(-size*0.6,  size*0.35);
+  ctx.closePath();
+  // glow
+  ctx.fillStyle = '#000';
+  ctx.shadowColor = '#000'; ctx.shadowBlur = 12;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  // fill with bright yellow scaled by pulse
+  const grd = ctx.createLinearGradient(-size*0.6, 0, size*0.7, 0);
+  grd.addColorStop(0, '#fff7c4');
+  grd.addColorStop(1, '#ffcf00');
+  ctx.fillStyle = grd;
+  ctx.globalAlpha = pulse;
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#3a1d00';
+  ctx.globalAlpha = 1;
+  ctx.stroke();
+  ctx.restore();
 }
 
 // Half steering-wheel HUD anchored below the car (HAND mode hint).
@@ -1141,9 +1188,10 @@ function processPose(lm, screenHalf){
     const Lh = lh ? { x:fx(lh), y:lh.y, v:lh.visibility } : null;
     const Rh = rh ? { x:fx(rh), y:rh.y, v:rh.visibility } : null;
     const hipX = (Lh && Rh && Lh.v > 0.3 && Rh.v > 0.3) ? (Lh.x + Rh.x) / 2 : torsoX;
-    // lean > 0 when torso right of hips (leaning right); we want negative => steer right
+    // lean > 0 when torso right of hips (leaning right); positive angle steers the
+    // car to the right (carXTarget > 0.5), matching the player's POV in the mirrored video.
     const lean = (torsoX - hipX) * 6; // amplify (~±0.05 → ~±0.3)
-    const angle = -lean; // same convention as hand mode
+    const angle = lean;
     // "gripping" = standing visible with shoulders above hips
     const gripping = torsoY < hipY - 0.05;
     return { cx: torsoX, cy: torsoY, angle, gripping };
