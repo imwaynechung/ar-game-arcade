@@ -188,12 +188,52 @@ const audio = {
   crowd:  new Audio('../assets/sounds/crowd.mp3'),
   last:   new Audio('../assets/sounds/last 10 sec.mp3'),
   combo:  new Audio('../assets/sounds/10 combo sound.mp3'),
+  scream1:new Audio('../assets/sounds/zombine scream1.mp3'),
+  scream2:new Audio('../assets/sounds/zombie scream 2.mp3'),
+  zdead:  new Audio('../assets/sounds/zombie dead sound.mp3'),
+  punch1: new Audio('../assets/sounds/punch 1.mp3'),
+  punch2: new Audio('../assets/sounds/punch 2.mp3'),
 };
 audio.bgm.loop = true; audio.bgm.volume = 0.32; audio.crowd.volume = 0.6;
+audio.scream1.volume = 0.85; audio.scream2.volume = 0.85;
+audio.zdead.volume = 0.95;
+// punches we'll clone per-hit so rapid fires don't cut each other off
+const PUNCH_POOL = [];
+function getPunchSfx(){
+  // pick random punch1/punch2 each call, use cloned node so they overlap
+  const src = Math.random() < 0.5 ? audio.punch1 : audio.punch2;
+  const node = src.cloneNode();
+  node.volume = 0.9;
+  return node;
+}
+// continuous zombie scream loop — alternate scream1 / scream2
+let screamIdx = 0;
+let screamPlaying = false;
+function startScreamLoop(){
+  if (screamPlaying) return;
+  screamPlaying = true;
+  const playNext = () => {
+    if (!screamPlaying) return;
+    const a = (screamIdx++ % 2 === 0) ? audio.scream1 : audio.scream2;
+    try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
+    a.onended = () => { if (screamPlaying) playNext(); };
+  };
+  playNext();
+}
+function stopScreamLoop(){
+  screamPlaying = false;
+  try { audio.scream1.pause(); audio.scream1.onended = null; } catch(e){}
+  try { audio.scream2.pause(); audio.scream2.onended = null; } catch(e){}
+}
 function ensureAudio(){ if (!actx){ actx = new (window.AudioContext||window.webkitAudioContext)(); masterGain = actx.createGain(); masterGain.gain.value = 0.55; masterGain.connect(actx.destination); } }
 function beep(freq, ms, type='sine', vol=0.06){ if (!actx) return; const o = actx.createOscillator(); const g = actx.createGain(); o.type = type; o.frequency.value = freq; g.gain.value = vol; o.connect(g); g.connect(masterGain); o.start(); o.stop(actx.currentTime + ms/1000); }
 function noiseBurst(ms=120, vol=0.08){ if (!actx) return; const buf = actx.createBuffer(1, actx.sampleRate * ms/1000, actx.sampleRate); const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length); const src = actx.createBufferSource(); src.buffer = buf; const g = actx.createGain(); g.gain.value = vol; src.connect(g); g.connect(masterGain); src.start(); }
-function punchSfx(){ noiseBurst(80, 0.12); beep(120, 70, 'square', 0.08); }
+function punchSfx(){
+  // play a real recorded punch (random 1 or 2)
+  try { const n = getPunchSfx(); n.play().catch(()=>{}); } catch(e){}
+  // tiny synth thump for low-end
+  noiseBurst(40, 0.05); beep(110, 50, 'square', 0.04);
+}
 function bigHitSfx(){ noiseBurst(180, 0.18); beep(80, 220, 'square', 0.12); beep(60, 260, 'sawtooth', 0.08); }
 function playSfx(key){ try { const a = audio[key]; if (!a) return; a.currentTime = 0; a.play().catch(()=>{}); } catch(e){} }
 
@@ -402,6 +442,9 @@ function killZombie(z, killer){
   z.deadVy = -18 - Math.random()*6;
   z.deadSpin = (Math.random() < 0.5 ? -1 : 1) * 0.18;
   bigHitSfx();
+  // stop scream when no zombies remain alive, play zombie-dead sound
+  try { audio.zdead.currentTime = 0; audio.zdead.play().catch(()=>{}); } catch(e){}
+  if (GAME.zombies.every(zz => zz.dead)) stopScreamLoop();
   playSfx('finish');
   GAME.shakeMs = 500; GAME.shakeAmp = 28;
   floatText('K.O.!', fx.width/2, fx.height*0.4, '#ff3a6a', 90);
@@ -527,6 +570,7 @@ async function runCountdownThenPlay(){
   initZombies();
   GAME.particles = []; GAME.floats = [];
   try { audio.bgm.currentTime = 0; audio.bgm.play().catch(()=>{}); } catch(e){}
+  startScreamLoop();
   lastTs = 0;
   lastLastSec = -1;
   requestAnimationFrame(loop);
@@ -836,6 +880,7 @@ function drawHUD(){
 function endGame(){
   GAME.state = 'over';
   try { audio.bgm.pause(); } catch(e){}
+  stopScreamLoop();
   playSfx('finish');
   setTimeout(() => playSfx('crowd'), 500);
 
