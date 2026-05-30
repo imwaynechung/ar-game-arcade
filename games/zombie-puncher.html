@@ -328,7 +328,30 @@ ZOMBIE_IMG.onload = () => {
       else if (d < SOFT) px[i+3] = Math.round(px[i+3] * ((d - TOL) / (SOFT - TOL)));
     }
     cx.putImageData(data, 0, 0);
-    ZOMBIE_RENDERED = c;
+    // Find tight bounding box of opaque pixels so fit-to-screen scales the
+    // zombie figure itself, not the (now mostly-transparent) source canvas.
+    let minX = c.width, minY = c.height, maxX = -1, maxY = -1;
+    for (let y = 0; y < c.height; y++) {
+      for (let x = 0; x < c.width; x++) {
+        if (px[(y * c.width + x) * 4 + 3] > 16) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX > minX && maxY > minY) {
+      const bw = maxX - minX + 1;
+      const bh = maxY - minY + 1;
+      const cropped = document.createElement('canvas');
+      cropped.width = bw;
+      cropped.height = bh;
+      cropped.getContext('2d').drawImage(c, minX, minY, bw, bh, 0, 0, bw, bh);
+      ZOMBIE_RENDERED = cropped;
+    } else {
+      ZOMBIE_RENDERED = c;
+    }
   } catch(e){
     // CORS or other failure — fall back to original image
     ZOMBIE_RENDERED = ZOMBIE_IMG;
@@ -777,23 +800,14 @@ function zombieScreenPos(z){
   return { x: xCenter, y: H * 0.5 };
 }
 function zombieScale(z){
-  // Fit-to-screen scale so the full zombie fits with comfortable headroom,
-  // regardless of distance. Uses the rendered (chroma-keyed) canvas aspect.
+  // Fit the cropped zombie figure to screen with comfortable margins.
   const W = fx.width, H = fx.height;
   const src = ZOMBIE_RENDERED || ZOMBIE_IMG;
-  if (!src || !src.width) return 1;
-  const aspect = src.height / src.width; // ~1.4 for our boss
-  // Target image height = 88% of screen height, but cap by width too.
-  const baseW = 1280;
-  const targetH = H * 0.88;
-  const targetW = W * (GAME.mode === 'vs' ? 0.45 : 0.78);
-  const sByH = targetH / (aspect * baseW);
-  const sByW = targetW / baseW;
-  let s = Math.min(sByH, sByW);
-  // Subtle pulse on hit / when alive — drives the menacing breathing effect
-  // without changing position. Distance remains the gameplay clock under the
-  // hood (when it hits 0, the player loses).
-  return s;
+  const sw = src.width || src.naturalWidth || 1;
+  const sh = src.height || src.naturalHeight || 1;
+  const targetH = H * 0.92;
+  const targetW = W * (GAME.mode === 'vs' ? 0.45 : 0.85);
+  return Math.min(targetH / sh, targetW / sw);
 }
 
 function draw(ts){
@@ -934,8 +948,12 @@ function drawZombie(z, ts){
   const W = fx.width, H = fx.height;
   const pos = zombieScreenPos(z);
   const s = zombieScale(z);
-  const baseW = 1280 * s; // enlarged 4× the original (2× the previous 2×)
-  const baseH = (ZOMBIE_IMG.height / ZOMBIE_IMG.width) * baseW;
+  // Use the cropped (chroma-keyed) canvas so size matches the visible figure.
+  const src = ZOMBIE_RENDERED || ZOMBIE_IMG;
+  const srcW = src.width || src.naturalWidth || 1;
+  const srcH = src.height || src.naturalHeight || 1;
+  const baseW = srcW * s;
+  const baseH = srcH * s;
   // walk bob
   const bob = Math.sin(z.walkPhase) * 6 * s;
   // knockback shake
@@ -985,7 +1003,7 @@ function drawZombie(z, ts){
     fxCtx.shadowBlur = 30;
     fxCtx.filter = 'brightness(1.6) saturate(2)';
   }
-  fxCtx.drawImage(ZOMBIE_RENDERED || ZOMBIE_IMG, -baseW/2, -baseH/2, baseW, baseH);
+  fxCtx.drawImage(src, -baseW/2, -baseH/2, baseW, baseH);
   fxCtx.restore();
 
   // proximity warning ring
