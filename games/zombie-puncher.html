@@ -767,20 +767,33 @@ function loop(ts){
 // map zombie distance/lane to screen position
 function zombieScreenPos(z){
   const W = fx.width, H = fx.height;
-  // lane horizontal split
+  // Lane horizontal split (only VS uses two lanes; solo & coop center).
   let xCenter;
   if (GAME.mode === 'vs') xCenter = (z.laneIdx === 0) ? W * 0.27 : W * 0.73;
   else xCenter = W * 0.5;
-  // perspective: distance 1 = far (top-back), 0 = at camera (full screen)
-  const yTop = H * 0.18, yBot = H * 0.82;
-  const y = yTop + (1 - z.distance) * (yBot - yTop);
-  return { x: xCenter, y };
+  // Lock vertically to screen middle. Zombie no longer "walks" across the screen,
+  // it stays planted center; the distance value is still tracked internally for
+  // the danger / lose-condition timing.
+  return { x: xCenter, y: H * 0.5 };
 }
 function zombieScale(z){
-  // far = small, close = big
-  const minS = (GAME.mode === 'vs') ? 0.35 : 0.55;
-  const maxS = (GAME.mode === 'coop') ? 1.7 : 1.35;
-  return minS + (1 - z.distance) * (maxS - minS);
+  // Fit-to-screen scale so the full zombie fits with comfortable headroom,
+  // regardless of distance. Uses the rendered (chroma-keyed) canvas aspect.
+  const W = fx.width, H = fx.height;
+  const src = ZOMBIE_RENDERED || ZOMBIE_IMG;
+  if (!src || !src.width) return 1;
+  const aspect = src.height / src.width; // ~1.4 for our boss
+  // Target image height = 88% of screen height, but cap by width too.
+  const baseW = 1280;
+  const targetH = H * 0.88;
+  const targetW = W * (GAME.mode === 'vs' ? 0.45 : 0.78);
+  const sByH = targetH / (aspect * baseW);
+  const sByW = targetW / baseW;
+  let s = Math.min(sByH, sByW);
+  // Subtle pulse on hit / when alive — drives the menacing breathing effect
+  // without changing position. Distance remains the gameplay clock under the
+  // hood (when it hits 0, the player loses).
+  return s;
 }
 
 function draw(ts){
