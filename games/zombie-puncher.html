@@ -1056,11 +1056,13 @@ function endGame(){
   playSfx('finish');
   setTimeout(() => playSfx('crowd'), 500);
 
-  // Did the player(s) lose because a zombie reached them (HP not depleted to 0)?
-  const reached = GAME.zombies.some(z => !z.dead && z.distance <= 0);
-  const anyKill = GAME.zombies.some(z => z.dead);
-  if (reached && !(GAME.mode === 'vs' && anyKill)) {
-    // Show bloody death screen instead of standings.
+  // Lose condition: in solo/coop, if the zombie isn't fully KO'd (HP > 0) by
+  // the time the round ends, the player(s) die. In VS, only show the death
+  // screen if BOTH players failed to KO their zombie.
+  const anyAlive = GAME.zombies.some(z => !z.dead);
+  const allAlive = GAME.zombies.every(z => !z.dead);
+  const lose = (GAME.mode === 'vs') ? allAlive : anyAlive;
+  if (lose) {
     ui.bloodOverlay.style.opacity = '1';
     ui.bloodOverlay.classList.add('pulse');
     ui.comboBanner.style.display = 'none';
