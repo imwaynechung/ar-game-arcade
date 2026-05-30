@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Zombie Puncher · Solo / VS / Co-op · AR Arcade</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0a0510;color:#fff;font-family:'Inter','Helvetica Neue',Arial,sans-serif;user-select:none}
+  #app{position:fixed;inset:0;overflow:hidden}
+  #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);filter:brightness(.45) saturate(1.2) hue-rotate(-10deg);z-index:1}
+  #sky{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,#3a0a2a 0%,#1a0420 45%,#070210 100%);z-index:0}
+  #fx{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+  #ui{position:absolute;inset:0;z-index:5;pointer-events:none}
+
+  /* HUD */
+  #hud{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:18px;align-items:center;pointer-events:none}
+  #timer{font-weight:900;font-size:42px;color:#ff3a6a;text-shadow:0 4px 0 #1a0010,0 0 22px rgba(255,58,106,.55);letter-spacing:2px}
+  #title{font-weight:900;font-size:18px;letter-spacing:3px;opacity:.85;color:#ffd23f}
+  #back{position:absolute;top:14px;left:14px;color:#fff;text-decoration:none;font-weight:800;background:rgba(0,0,0,.55);padding:8px 14px;border-radius:12px;font-size:14px;pointer-events:auto;border:2px solid rgba(255,255,255,.2)}
+
+  /* Combo / hits floating banner */
+  #comboBanner{position:absolute;top:78px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;z-index:6}
+  .combo-num{font-weight:900;font-size:88px;color:#ffd23f;text-shadow:0 6px 0 #6a0010,0 0 30px rgba(255,210,63,.6);letter-spacing:3px;line-height:1;transition:transform .08s}
+  .combo-lbl{font-weight:900;font-size:14px;letter-spacing:4px;color:#fff;text-shadow:0 2px 0 #000}
+  .combo-num.pop{transform:scale(1.18)}
+
+  /* Start screen */
+  #startScreen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(20,4,16,.92),rgba(58,10,42,.85));padding:20px;pointer-events:auto;z-index:8}
+  .card{max-width:780px;width:100%;background:linear-gradient(180deg,#1a0420,#3a0a2a);border:6px solid #ff3a6a;border-radius:28px;padding:30px;color:#fff;text-align:center;box-shadow:0 14px 0 #6a0010,0 28px 60px rgba(0,0,0,.75)}
+  .card h1{font-size:46px;color:#ffd23f;font-style:italic;letter-spacing:2px;margin-bottom:6px;text-shadow:0 4px 0 #6a0010}
+  .card .sub{font-size:18px;color:#fff;font-weight:700;margin-bottom:18px;opacity:.9}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px;text-align:left}
+  .step{background:rgba(255,255,255,.08);border:2px solid #ff3a6a;border-radius:14px;padding:10px}
+  .step .n{display:inline-block;background:#ff3a6a;color:#fff;width:26px;height:26px;border-radius:50%;text-align:center;line-height:26px;font-weight:900;margin-right:6px}
+  .step h3{display:inline;font-size:14px;font-weight:900;letter-spacing:1px;color:#ffd23f}
+  .step p{font-size:12px;margin-top:4px;color:#eee;font-weight:600;line-height:1.35}
+  .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+  .actions a, .actions button{pointer-events:auto;border:none;font:inherit;cursor:pointer;text-decoration:none;display:inline-block;background:#ffd23f;color:#1a0420;font-weight:900;padding:14px 30px;border-radius:18px;font-size:20px;letter-spacing:2px;box-shadow:0 6px 0 #6a0010;transition:transform .08s}
+  .actions a.ghost{background:#fff;color:#1a0420;box-shadow:0 5px 0 #888}
+  .actions button:active, .actions a:active{transform:translateY(3px);box-shadow:0 3px 0 #6a0010}
+  #status{margin-top:14px;font-size:13px;color:#eee;font-weight:700}
+
+  /* Mode select */
+  #modeSelect{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(20,4,16,.92),rgba(58,10,42,.85));padding:20px;text-align:center;z-index:9;pointer-events:auto}
+  #modeSelect.show{display:flex}
+  .modeCard{max-width:840px;width:100%;background:linear-gradient(180deg,#1a0420,#3a0a2a);border:6px solid #ff3a6a;border-radius:26px;padding:28px;color:#fff;box-shadow:0 14px 0 #6a0010,0 28px 60px rgba(0,0,0,.75)}
+  .modeCard h2{margin:0;font-size:36px;color:#ffd23f;font-style:italic;letter-spacing:2px}
+  .modeCard .sub{margin:6px 0 18px;font-size:18px;font-weight:700;opacity:.9}
+  .modeBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .modeBtn{pointer-events:auto;border:5px solid #1a0420;border-radius:20px;padding:18px 10px;background:#fff;cursor:pointer;font-family:inherit;color:#1a0420;font-weight:900;letter-spacing:1px;box-shadow:0 8px 0 #1a0420;transition:transform .08s}
+  .modeBtn:active{transform:translateY(4px);box-shadow:0 4px 0 #1a0420}
+  .modeBtn .em{font-size:54px;line-height:1;display:block;margin-bottom:4px}
+  .modeBtn .ttl{font-size:22px;letter-spacing:2px;display:block}
+  .modeBtn .det{font-size:11px;color:#555;font-weight:700;margin-top:4px;letter-spacing:.5px}
+  .modeBtn[data-mode='solo']{background:linear-gradient(180deg,#fff7c4,#ffcf3a)}
+  .modeBtn[data-mode='vs']{background:linear-gradient(180deg,#ffc4c4,#ff5a5a)}
+  .modeBtn[data-mode='coop']{background:linear-gradient(180deg,#c4e8ff,#5aaaff)}
+  @media (max-width:640px){.modeBtns{grid-template-columns:1fr}.steps{grid-template-columns:repeat(2,1fr)}}
+
+  /* Lobby */
+  #lobby{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,4,16,.65);padding:20px;z-index:7;pointer-events:auto}
+  #lobby.show{display:flex}
+  #lobby h2{font-size:30px;letter-spacing:3px;color:#ffd23f;margin-bottom:16px;text-shadow:0 3px 0 #6a0010}
+  .slots{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;max-width:920px;margin-bottom:18px}
+  .slot{background:linear-gradient(180deg,#fff,#eee);color:#1a0420;border:5px solid #6a0010;border-radius:18px;padding:14px 16px;min-width:200px;text-align:center;box-shadow:0 6px 0 #1a0420}
+  .slot.ready{border-color:#3cd06a;background:linear-gradient(180deg,#d4ffd9,#9af0a8);transform:translateY(-4px)}
+  .slot .lbl{font-weight:900;font-size:14px;letter-spacing:2px;margin-bottom:6px}
+  .slot .state{font-weight:700;font-size:12px;opacity:.75;letter-spacing:1px}
+  #lobbyStartBtn{pointer-events:auto;background:#ffd23f;color:#1a0420;border:none;font:inherit;cursor:pointer;font-weight:900;padding:14px 30px;border-radius:18px;font-size:20px;letter-spacing:2px;box-shadow:0 6px 0 #6a0010}
+  #lobbyStartBtn:disabled{opacity:.5;cursor:not-allowed}
+  #lobbyHint{font-size:13px;color:#ffd;margin-top:10px;font-weight:700;letter-spacing:1px;text-shadow:0 2px 0 #000}
+
+  /* Countdown */
+  #countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:10;pointer-events:none}
+  #countdown.show{display:flex}
+  #cdNum{font-weight:900;font-size:240px;color:#ffd23f;text-shadow:0 12px 0 #6a0010,0 0 60px rgba(255,210,63,.6);animation:cdPulse .9s ease-out}
+  @keyframes cdPulse{from{transform:scale(.4);opacity:0}50%{transform:scale(1.15);opacity:1}to{transform:scale(1);opacity:1}}
+
+  /* Results */
+  #results{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,4,16,.94);z-index:11;padding:20px;pointer-events:auto}
+  #results.show{display:flex}
+  .resCard{max-width:760px;width:100%;background:linear-gradient(180deg,#1a0420,#3a0a2a);border:6px solid #ffd23f;border-radius:26px;padding:28px;color:#fff;box-shadow:0 14px 0 #6a0010,0 28px 60px rgba(0,0,0,.75);text-align:center}
+  .resCard h2{font-size:36px;color:#ffd23f;font-style:italic;letter-spacing:2px;margin-bottom:14px}
+  .standings{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+  .standing{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.08);border:3px solid #ff3a6a;border-radius:14px;padding:10px 14px;font-weight:800}
+  .standing.win{background:linear-gradient(90deg,#ffe7a0,#ffd23f);border-color:#ffd23f;color:#1a0420}
+  .standing .rank{font-size:22px;width:34px;text-align:center}
+  .standing .ply{flex:1;text-align:left;font-size:18px;letter-spacing:1px}
+  .standing .meta{font-size:13px;opacity:.85;font-weight:700}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sky"></div>
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="fx"></canvas>
+
+  <div id="ui">
+    <a id="back" href="../index.html">← MENU</a>
+    <div id="hud"><div id="title">ZOMBIE PUNCHER</div><div id="timer">90</div></div>
+    <div id="comboBanner" style="display:none">
+      <div class="combo-num" id="comboNum">0</div>
+      <div class="combo-lbl">COMBO</div>
+    </div>
+  </div>
+
+  <div id="countdown"><div id="cdNum">3</div></div>
+
+  <div id="modeSelect">
+    <div class="modeCard">
+      <h2>CHOOSE MODE</h2>
+      <div class="sub">Punch the zombie boss back. 100 hits = KO.</div>
+      <div class="modeBtns">
+        <button class="modeBtn" data-mode="solo" type="button"><span class="em">🥊</span><span class="ttl">SOLO</span><div class="det">1 player · 1 zombie · KO it before it reaches you</div></button>
+        <button class="modeBtn" data-mode="vs" type="button"><span class="em">⚔️</span><span class="ttl">VS</span><div class="det">2 players · race to 100 punches</div></button>
+        <button class="modeBtn" data-mode="coop" type="button"><span class="em">🤝</span><span class="ttl">CO-OP</span><div class="det">2 players · share 1 mega zombie</div></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lobby">
+    <h2>STEP INTO YOUR LANE</h2>
+    <div class="slots" id="slots"></div>
+    <button id="lobbyStartBtn" disabled>WAITING...</button>
+    <div id="lobbyHint">Stand half-body in frame, fists up. When all lanes are GREEN, button unlocks.</div>
+  </div>
+
+  <div id="startScreen">
+    <div class="card">
+      <h1>🧟 ZOMBIE PUNCHER</h1>
+      <div class="sub">Solo · VS · Co-op. Throw 100 punches to send the boss flying.</div>
+      <div class="steps">
+        <div class="step"><span class="n">1</span><h3>Pick Mode</h3><p>Solo, head-to-head VS, or shared Co-op zombie.</p></div>
+        <div class="step"><span class="n">2</span><h3>Stand Half-Body</h3><p>Shoulders + both fists must be visible.</p></div>
+        <div class="step"><span class="n">3</span><h3>Punch</h3><p>Extend either arm fully — chamber, then THRUST.</p></div>
+        <div class="step"><span class="n">4</span><h3>KO</h3><p>100 punches → zombie flies away. Combos = bonus damage.</p></div>
+      </div>
+      <div class="actions"><button id="startBtn" disabled>LOADING…</button><a class="ghost" href="../index.html">BACK</a></div>
+      <div id="status">Loading pose model…</div>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="resCard">
+      <h2 id="resultsTitle">🏆 KO!</h2>
+      <div class="standings" id="standings"></div>
+      <div class="actions"><button id="playAgainBtn">PLAY AGAIN</button><a class="ghost" href="../index.html">MENU</a></div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs"
+  }
+}
+</script>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+
+const $ = (id) => document.getElementById(id);
+const ui = {
+  timer: $('timer'),
+  countdown: $('countdown'), cdNum: $('cdNum'),
+  modeSelect: $('modeSelect'),
+  lobby: $('lobby'), slots: $('slots'), lobbyStartBtn: $('lobbyStartBtn'),
+  startScreen: $('startScreen'), startBtn: $('startBtn'), status: $('status'),
+  results: $('results'), resultsTitle: $('resultsTitle'), standings: $('standings'),
+  playAgainBtn: $('playAgainBtn'),
+  comboBanner: $('comboBanner'), comboNum: $('comboNum'),
+  fx: $('fx'), video: $('video'),
+};
+const video = ui.video;
+const fx = ui.fx;
+const fxCtx = fx.getContext('2d');
+function resize(){ fx.width = window.innerWidth; fx.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+// --- audio ---
+let actx = null, masterGain = null;
+const audio = {
+  bgm:    new Audio('../assets/sounds/bg music.mp3'),
+  point:  new Audio('../assets/sounds/every pts.mp3'),
+  finish: new Audio('../assets/sounds/game finished.mp3'),
+  crowd:  new Audio('../assets/sounds/crowd.mp3'),
+  last:   new Audio('../assets/sounds/last 10 sec.mp3'),
+  combo:  new Audio('../assets/sounds/10 combo sound.mp3'),
+};
+audio.bgm.loop = true; audio.bgm.volume = 0.32; audio.crowd.volume = 0.6;
+function ensureAudio(){ if (!actx){ actx = new (window.AudioContext||window.webkitAudioContext)(); masterGain = actx.createGain(); masterGain.gain.value = 0.55; masterGain.connect(actx.destination); } }
+function beep(freq, ms, type='sine', vol=0.06){ if (!actx) return; const o = actx.createOscillator(); const g = actx.createGain(); o.type = type; o.frequency.value = freq; g.gain.value = vol; o.connect(g); g.connect(masterGain); o.start(); o.stop(actx.currentTime + ms/1000); }
+function noiseBurst(ms=120, vol=0.08){ if (!actx) return; const buf = actx.createBuffer(1, actx.sampleRate * ms/1000, actx.sampleRate); const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length); const src = actx.createBufferSource(); src.buffer = buf; const g = actx.createGain(); g.gain.value = vol; src.connect(g); g.connect(masterGain); src.start(); }
+function punchSfx(){ noiseBurst(80, 0.12); beep(120, 70, 'square', 0.08); }
+function bigHitSfx(){ noiseBurst(180, 0.18); beep(80, 220, 'square', 0.12); beep(60, 260, 'sawtooth', 0.08); }
+function playSfx(key){ try { const a = audio[key]; if (!a) return; a.currentTime = 0; a.play().catch(()=>{}); } catch(e){} }
+
+// --- assets ---
+const ZOMBIE_IMG = new Image();
+ZOMBIE_IMG.src = '../assets/bg/zombie boss.webp';
+let zombieReady = false;
+ZOMBIE_IMG.onload = () => { zombieReady = true; };
+
+// --- game state ---
+const HP_MAX = 100;
+const GAME = {
+  state: 'idle', // idle | modeSelect | lobby | starting | running | over
+  mode: 'solo',
+  numPlayers: 1,
+  startTs: 0,
+  durationMs: 90000,
+  zombies: [], // per zombie: { laneIdx, distance(0..1, 0=at user, 1=far), hp, hitFlashMs, knockbackMs, dead, deadTs, deadVx, deadVy, deadAngle }
+  players: [],
+  // floating texts
+  floats: [],
+  // particle effects
+  particles: [],
+  shakeMs: 0, shakeAmp: 0,
+};
+
+const PLAYER_LABELS = ['PLAYER 1','PLAYER 2'];
+const PLAYER_SHORT  = ['P1','P2'];
+const PLAYER_COLORS = ['#ffd23f','#3aa6ff'];
+
+function makePlayer(i){
+  return {
+    idx: i,
+    label: PLAYER_LABELS[i],
+    color: PLAYER_COLORS[i],
+    posed: false,
+    punches: 0,
+    combo: 0,
+    bestCombo: 0,
+    lastPunchTs: 0,
+    hands: { L: makeHand(), R: makeHand() },
+  };
+}
+function makeHand(){
+  return {
+    chambered: false,    // recently in close position
+    chamberedTs: 0,
+    lastDist: null,      // last wrist-shoulder distance
+    lastPunchTs: 0,
+    extending: false,
+  };
+}
+
+function initPlayers(n){
+  GAME.players = [];
+  for (let i = 0; i < n; i++) GAME.players.push(makePlayer(i));
+}
+function initZombies(){
+  GAME.zombies = [];
+  if (GAME.mode === 'solo') {
+    GAME.zombies.push(makeZombie(0, 0));
+  } else if (GAME.mode === 'vs') {
+    GAME.zombies.push(makeZombie(0, 0));
+    GAME.zombies.push(makeZombie(1, 1));
+  } else { // coop
+    const z = makeZombie(0, -1); // shared, lane index -1 = center
+    z.coop = true;
+    GAME.zombies.push(z);
+  }
+}
+function makeZombie(idx, laneIdx){
+  return {
+    idx,
+    laneIdx,
+    distance: 1.0,
+    hp: HP_MAX,
+    hitFlashMs: 0,
+    knockbackMs: 0,
+    dead: false,
+    deadTs: 0,
+    deadVx: 0, deadVy: 0, deadAngle: 0, deadSpin: 0,
+    walkPhase: Math.random() * Math.PI * 2,
+  };
+}
+
+// --- punch detection ---
+// For each visible person we get shoulders + wrists. Compute normalized wrist-to-shoulder
+// distance per hand. If distance crosses upward through HIGH_THRESH after being below
+// LOW_THRESH within CHAMBER_WINDOW ms => one punch (with cooldown per hand).
+const LOW_THRESH = 0.13;
+const HIGH_THRESH = 0.22;
+const CHAMBER_WINDOW = 700;
+const HAND_COOLDOWN_MS = 280;
+
+function readPersons(landmarksArr){
+  // Returns array of { cx, hands:{L:{distNorm}, R:{distNorm}}, visible }
+  const out = [];
+  for (const lm of landmarksArr) {
+    const ls = lm[11], rs = lm[12];
+    const lw = lm[15], rw = lm[16];
+    if (!ls || !rs) continue;
+    if (ls.visibility < 0.3 || rs.visibility < 0.3) continue;
+    // shoulder width as scale baseline
+    const sdx = (1-rs.x) - (1-ls.x);
+    const sdy = rs.y - ls.y;
+    const shoulderW = Math.hypot(sdx, sdy) || 0.001;
+    const cx = ((1-ls.x) + (1-rs.x)) / 2;
+    function handDist(w, s){
+      if (!w || w.visibility < 0.25) return null;
+      const dx = (1 - w.x) - (1 - s.x);
+      const dy = w.y - s.y;
+      return Math.hypot(dx, dy) / shoulderW; // normalized by shoulder width
+    }
+    out.push({
+      cx,
+      hands: { L: handDist(lw, ls), R: handDist(rw, rs) },
+    });
+  }
+  return out;
+}
+
+function assignPlayerSlot(cx){
+  if (GAME.numPlayers === 1) return 0;
+  return cx < 0.5 ? 0 : 1;
+}
+
+function registerHand(player, hand, distNorm, now){
+  if (distNorm == null) { hand.lastDist = null; return; }
+  if (hand.lastDist == null) { hand.lastDist = distNorm; return; }
+  // chamber: drop below LOW_THRESH
+  if (distNorm < LOW_THRESH) { hand.chambered = true; hand.chamberedTs = now; }
+  // punch detection: cross upward through HIGH_THRESH, having been chambered recently
+  if (hand.lastDist < HIGH_THRESH && distNorm >= HIGH_THRESH) {
+    const since = now - hand.chamberedTs;
+    if (hand.chambered && since <= CHAMBER_WINDOW && (now - hand.lastPunchTs) > HAND_COOLDOWN_MS) {
+      hand.lastPunchTs = now;
+      hand.chambered = false;
+      onPunch(player, now);
+    }
+  }
+  hand.lastDist = distNorm;
+}
+
+function onPunch(player, now){
+  // combo logic
+  if (now - player.lastPunchTs < 1500) player.combo += 1;
+  else player.combo = 1;
+  player.lastPunchTs = now;
+  if (player.combo > player.bestCombo) player.bestCombo = player.combo;
+  player.punches += 1;
+
+  // damage scales with combo
+  let dmg = 1;
+  if (player.combo >= 50) dmg = 4;
+  else if (player.combo >= 25) dmg = 3;
+  else if (player.combo >= 10) dmg = 2;
+
+  // route punch to a zombie
+  const target = pickTargetZombieForPlayer(player.idx);
+  if (target && !target.dead) {
+    target.hp = Math.max(0, target.hp - dmg);
+    target.hitFlashMs = 220;
+    target.knockbackMs = 260;
+    // push back a bit, more on combo
+    const pushAmount = 0.018 + Math.min(0.045, player.combo * 0.0008);
+    target.distance = Math.min(1.0, target.distance + pushAmount);
+    spawnHitFx(target, dmg, player);
+    GAME.shakeMs = 140; GAME.shakeAmp = 6 + Math.min(14, player.combo * 0.25);
+    punchSfx();
+    if (target.hp <= 0) killZombie(target, player);
+  }
+
+  // combo milestone effects
+  if (player.combo === 10 || player.combo === 25 || player.combo === 50) {
+    playSfx('combo');
+    floatText(`${player.combo} COMBO!`, fx.width/2, fx.height*0.32, '#ffd23f', 36);
+    GAME.shakeMs = 280; GAME.shakeAmp = 18;
+  }
+
+  updateComboBanner();
+}
+
+function updateComboBanner(){
+  // show top combo across players
+  const top = GAME.players.reduce((m, p) => p.combo > m ? p.combo : m, 0);
+  if (top >= 2) {
+    ui.comboBanner.style.display = 'flex';
+    ui.comboNum.textContent = top + 'x';
+    ui.comboNum.classList.add('pop');
+    setTimeout(() => ui.comboNum.classList.remove('pop'), 90);
+  } else {
+    ui.comboBanner.style.display = 'none';
+  }
+}
+
+function pickTargetZombieForPlayer(playerIdx){
+  if (GAME.mode === 'solo') return GAME.zombies[0];
+  if (GAME.mode === 'vs')   return GAME.zombies[playerIdx];
+  return GAME.zombies[0]; // coop: shared
+}
+
+function killZombie(z, killer){
+  z.dead = true;
+  z.deadTs = performance.now();
+  z.deadVx = (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random()*4);
+  z.deadVy = -18 - Math.random()*6;
+  z.deadSpin = (Math.random() < 0.5 ? -1 : 1) * 0.18;
+  bigHitSfx();
+  playSfx('finish');
+  GAME.shakeMs = 500; GAME.shakeAmp = 28;
+  floatText('K.O.!', fx.width/2, fx.height*0.4, '#ff3a6a', 90);
+  for (let i = 0; i < 60; i++) {
+    GAME.particles.push(makeParticle(fx.width*0.5, fx.height*0.55, '#ffd23f', 'star'));
+  }
+}
+
+function spawnHitFx(z, dmg, player){
+  // impact star at zombie position
+  const pos = zombieScreenPos(z);
+  for (let i = 0; i < 10 + dmg*4; i++) {
+    GAME.particles.push(makeParticle(pos.x, pos.y, i % 2 ? '#fff' : '#ffd23f', 'spark'));
+  }
+  floatText('-' + dmg, pos.x + (Math.random()*40-20), pos.y - 30, dmg >= 3 ? '#ff3a6a' : '#fff', 18 + dmg*4);
+}
+
+function makeParticle(x, y, color, kind){
+  const a = Math.random() * Math.PI * 2;
+  const sp = 2 + Math.random() * 7;
+  return { x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 2, life: 600 + Math.random()*300, born: performance.now(), color, kind, size: kind === 'star' ? 6+Math.random()*6 : 3+Math.random()*4 };
+}
+function floatText(text, x, y, color, size){
+  GAME.floats.push({ text, x, y, color, size, born: performance.now(), life: 900 });
+}
+
+// --- model load ---
+let pose = null;
+async function loadModel(){
+  ui.status.textContent = 'Loading pose model…';
+  const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  pose = await PoseLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task', delegate:'GPU' },
+    runningMode: 'VIDEO',
+    numPoses: 2,
+  });
+  ui.status.textContent = 'Ready. Click START.';
+  ui.startBtn.disabled = false;
+  ui.startBtn.textContent = 'START';
+}
+loadModel().catch(e => ui.status.textContent = 'Failed to load: ' + e.message);
+
+// --- countdown ---
+async function countdown(){
+  ui.countdown.classList.add('show');
+  for (const n of [3,2,1]) { ui.cdNum.textContent = n; beep(440,180,'sine',0.06); await new Promise(r => setTimeout(r, 700)); }
+  ui.cdNum.textContent = 'FIGHT!'; beep(660,300,'square',0.08); await new Promise(r => setTimeout(r, 600));
+  ui.countdown.classList.remove('show');
+}
+
+// --- flow ---
+async function startGame(){
+  ensureAudio();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} }, audio:false });
+    video.srcObject = stream;
+    await new Promise(r => video.onloadedmetadata = r);
+    await video.play();
+  } catch(e) { ui.status.textContent = 'Camera error: ' + e.message; ui.startBtn.disabled = false; return; }
+  ui.startScreen.style.display = 'none';
+  ui.modeSelect.classList.add('show');
+  GAME.state = 'modeSelect';
+}
+
+function pickMode(mode){
+  GAME.mode = mode;
+  GAME.numPlayers = (mode === 'solo') ? 1 : 2;
+  initPlayers(GAME.numPlayers);
+  initZombies();
+  ui.modeSelect.classList.remove('show');
+  ui.slots.innerHTML = '';
+  for (let i = 0; i < GAME.numPlayers; i++) {
+    const div = document.createElement('div');
+    div.className = 'slot';
+    div.id = 'slot-' + i;
+    const role = (mode === 'coop') ? 'TAG-TEAM SIDE' : (mode === 'vs' ? 'YOUR LANE' : 'CENTER');
+    div.innerHTML = `<div class="lbl">${PLAYER_LABELS[i]} · ${role}</div><div class="state">Step in front of camera</div>`;
+    ui.slots.appendChild(div);
+  }
+  ui.lobbyStartBtn.disabled = true;
+  ui.lobbyStartBtn.textContent = 'WAITING...';
+  GAME.state = 'lobby';
+  ui.lobby.classList.add('show');
+  lobbyLoop();
+}
+
+function lobbyLoop(){
+  if (GAME.state !== 'lobby') return;
+  const now = performance.now();
+  for (const p of GAME.players) p.posed = false;
+  if (pose && video.readyState >= 2) {
+    const res = pose.detectForVideo(video, now);
+    if (res.landmarks) {
+      const persons = readPersons(res.landmarks);
+      const claimed = new Array(GAME.numPlayers).fill(false);
+      for (const person of persons) {
+        const slot = assignPlayerSlot(person.cx);
+        if (claimed[slot]) continue;
+        claimed[slot] = true;
+        GAME.players[slot].posed = true;
+      }
+    }
+  }
+  let allReady = true;
+  for (const p of GAME.players) {
+    const slotEl = document.getElementById('slot-' + p.idx);
+    if (!slotEl) continue;
+    const stateEl = slotEl.querySelector('.state');
+    if (p.posed) { stateEl.textContent = 'DETECTED ✅'; slotEl.classList.add('ready'); }
+    else { stateEl.textContent = 'Step in front of camera'; slotEl.classList.remove('ready'); allReady = false; }
+  }
+  if (allReady) { ui.lobbyStartBtn.disabled = false; ui.lobbyStartBtn.textContent = 'FIGHT!'; }
+  else { ui.lobbyStartBtn.disabled = true; ui.lobbyStartBtn.textContent = 'WAITING...'; }
+  requestAnimationFrame(lobbyLoop);
+}
+
+async function runCountdownThenPlay(){
+  await countdown();
+  GAME.state = 'running';
+  GAME.startTs = performance.now();
+  // reset state
+  for (const p of GAME.players) { p.punches = 0; p.combo = 0; p.bestCombo = 0; p.lastPunchTs = 0; p.hands = { L: makeHand(), R: makeHand() }; }
+  initZombies();
+  GAME.particles = []; GAME.floats = [];
+  try { audio.bgm.currentTime = 0; audio.bgm.play().catch(()=>{}); } catch(e){}
+  lastTs = 0;
+  lastLastSec = -1;
+  requestAnimationFrame(loop);
+}
+
+let lastTs = 0;
+let lastLastSec = -1;
+function loop(ts){
+  if (GAME.state !== 'running') return;
+  if (!lastTs) lastTs = ts;
+  const dt = Math.min(48, ts - lastTs); lastTs = ts;
+  const now = performance.now();
+
+  // timer
+  const elapsed = now - GAME.startTs;
+  const remaining = Math.max(0, GAME.durationMs - elapsed);
+  ui.timer.textContent = Math.ceil(remaining/1000);
+  if (Math.ceil(remaining/1000) === 10 && lastLastSec !== 10) { lastLastSec = 10; playSfx('last'); }
+
+  // pose -> samples
+  if (pose && video.readyState >= 2) {
+    const res = pose.detectForVideo(video, now);
+    if (res.landmarks) {
+      const persons = readPersons(res.landmarks);
+      const claimed = new Array(GAME.numPlayers).fill(false);
+      for (const person of persons) {
+        const slot = assignPlayerSlot(person.cx);
+        if (claimed[slot]) continue;
+        claimed[slot] = true;
+        const p = GAME.players[slot];
+        registerHand(p, p.hands.L, person.hands.L, now);
+        registerHand(p, p.hands.R, person.hands.R, now);
+      }
+    }
+  }
+
+  // zombies physics
+  for (const z of GAME.zombies) {
+    if (z.dead) {
+      z.deadVx *= 0.99;
+      z.deadVy += 0.5; // gravity for fly-away after peak? we want it to keep going up, invert
+      // actually we want it to fly UP and away. apply slight upward acceleration for first 600ms
+      const sinceDead = now - z.deadTs;
+      if (sinceDead < 600) z.deadVy -= 1.2;
+      z.deadAngle += z.deadSpin;
+      continue;
+    }
+    if (z.hitFlashMs > 0) z.hitFlashMs = Math.max(0, z.hitFlashMs - dt);
+    if (z.knockbackMs > 0) z.knockbackMs = Math.max(0, z.knockbackMs - dt);
+    z.walkPhase += dt * 0.006;
+    // approach speed: faster as time passes; coop zombie much slower (chunky boss)
+    let baseSpeed = 0.0000110; // distance units per ms
+    if (GAME.mode === 'coop') baseSpeed = 0.0000080;
+    if (GAME.mode === 'vs')   baseSpeed = 0.0000115;
+    // ramp up over time
+    const ramp = 1 + (elapsed / 60000) * 0.6;
+    if (z.knockbackMs <= 0) z.distance = Math.max(0, z.distance - baseSpeed * dt * ramp);
+  }
+
+  // floats / particles
+  GAME.floats = GAME.floats.filter(f => (now - f.born) < f.life);
+  GAME.particles = GAME.particles.filter(pt => (now - pt.born) < pt.life);
+  for (const pt of GAME.particles) {
+    pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.3; pt.vx *= 0.99;
+  }
+  // shake decay
+  if (GAME.shakeMs > 0) GAME.shakeMs = Math.max(0, GAME.shakeMs - dt);
+
+  draw(ts);
+
+  // end conditions
+  const allDead = GAME.zombies.every(z => z.dead);
+  // any zombie reached 0 distance (touched player)
+  const aReached = GAME.zombies.some(z => !z.dead && z.distance <= 0);
+  if (allDead || aReached || remaining <= 0) {
+    setTimeout(endGame, allDead ? 1400 : 200);
+    GAME.state = 'ending';
+    return;
+  }
+  requestAnimationFrame(loop);
+}
+
+// map zombie distance/lane to screen position
+function zombieScreenPos(z){
+  const W = fx.width, H = fx.height;
+  // lane horizontal split
+  let xCenter;
+  if (GAME.mode === 'vs') xCenter = (z.laneIdx === 0) ? W * 0.27 : W * 0.73;
+  else xCenter = W * 0.5;
+  // perspective: distance 1 = far (top-back), 0 = at camera (full screen)
+  const yTop = H * 0.18, yBot = H * 0.82;
+  const y = yTop + (1 - z.distance) * (yBot - yTop);
+  return { x: xCenter, y };
+}
+function zombieScale(z){
+  // far = small, close = big
+  const minS = (GAME.mode === 'vs') ? 0.35 : 0.55;
+  const maxS = (GAME.mode === 'coop') ? 1.7 : 1.35;
+  return minS + (1 - z.distance) * (maxS - minS);
+}
+
+function draw(ts){
+  const W = fx.width, H = fx.height;
+  // shake offset
+  let ox = 0, oy = 0;
+  if (GAME.shakeMs > 0) {
+    const a = GAME.shakeAmp * (GAME.shakeMs / 280);
+    ox = (Math.random()*2-1) * a;
+    oy = (Math.random()*2-1) * a;
+  }
+  fxCtx.save();
+  fxCtx.clearRect(0, 0, W, H);
+  fxCtx.translate(ox, oy);
+
+  // ground gradient
+  const g = fxCtx.createLinearGradient(0, H*0.5, 0, H);
+  g.addColorStop(0, 'rgba(40,10,30,0)');
+  g.addColorStop(1, 'rgba(120,20,30,0.55)');
+  fxCtx.fillStyle = g;
+  fxCtx.fillRect(0, H*0.5, W, H*0.5);
+
+  // VS divider
+  if (GAME.mode === 'vs') {
+    fxCtx.strokeStyle = 'rgba(255,210,63,0.35)';
+    fxCtx.lineWidth = 3;
+    fxCtx.setLineDash([16,14]);
+    fxCtx.beginPath(); fxCtx.moveTo(W*0.5, H*0.18); fxCtx.lineTo(W*0.5, H*0.95); fxCtx.stroke();
+    fxCtx.setLineDash([]);
+    fxCtx.font = '900 26px Inter, system-ui, sans-serif';
+    fxCtx.fillStyle = '#ffd23f'; fxCtx.textAlign = 'center';
+    fxCtx.fillText('VS', W*0.5, H*0.16);
+  }
+
+  // zombies (back-to-front by distance)
+  const sorted = [...GAME.zombies].sort((a,b) => b.distance - a.distance);
+  for (const z of sorted) drawZombie(z, ts);
+
+  // particles
+  for (const pt of GAME.particles) {
+    const t = (performance.now() - pt.born) / pt.life;
+    fxCtx.globalAlpha = 1 - t;
+    fxCtx.fillStyle = pt.color;
+    if (pt.kind === 'star') {
+      drawStar(pt.x, pt.y, pt.size, pt.color);
+    } else {
+      fxCtx.beginPath(); fxCtx.arc(pt.x, pt.y, pt.size * (1 - t*0.5), 0, Math.PI*2); fxCtx.fill();
+    }
+    fxCtx.globalAlpha = 1;
+  }
+
+  // floats
+  for (const f of GAME.floats) {
+    const t = (performance.now() - f.born) / f.life;
+    fxCtx.globalAlpha = 1 - t;
+    fxCtx.font = `900 ${f.size}px Inter, system-ui, sans-serif`;
+    fxCtx.textAlign = 'center';
+    fxCtx.lineWidth = 5;
+    fxCtx.strokeStyle = '#1a0420';
+    fxCtx.strokeText(f.text, f.x, f.y - t * 50);
+    fxCtx.fillStyle = f.color;
+    fxCtx.fillText(f.text, f.x, f.y - t * 50);
+    fxCtx.globalAlpha = 1;
+  }
+
+  // HUD bars per zombie
+  drawHUD();
+
+  fxCtx.restore();
+}
+
+function drawStar(cx, cy, r, color){
+  fxCtx.save();
+  fxCtx.translate(cx, cy);
+  fxCtx.fillStyle = color;
+  fxCtx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const ang = (Math.PI / 5) * i - Math.PI/2;
+    const rr = (i % 2 === 0) ? r : r * 0.45;
+    const x = Math.cos(ang) * rr, y = Math.sin(ang) * rr;
+    if (i === 0) fxCtx.moveTo(x, y); else fxCtx.lineTo(x, y);
+  }
+  fxCtx.closePath();
+  fxCtx.fill();
+  fxCtx.restore();
+}
+
+function drawZombie(z, ts){
+  if (!zombieReady) return;
+  const W = fx.width, H = fx.height;
+  const pos = zombieScreenPos(z);
+  const s = zombieScale(z);
+  const baseW = 320 * s;
+  const baseH = (ZOMBIE_IMG.height / ZOMBIE_IMG.width) * baseW;
+  // walk bob
+  const bob = Math.sin(z.walkPhase) * 6 * s;
+  // knockback shake
+  let kbx = 0, kby = 0;
+  if (z.knockbackMs > 0) {
+    const k = z.knockbackMs / 260;
+    kbx = (Math.random()*2-1) * 10 * k;
+    kby = (Math.random()*2-1) * 6 * k;
+  }
+  let drawX = pos.x - baseW / 2 + kbx;
+  let drawY = pos.y - baseH * 0.92 + bob + kby;
+  let angle = 0;
+
+  if (z.dead) {
+    const sinceDead = performance.now() - z.deadTs;
+    drawX += z.deadVx * (sinceDead / 16);
+    drawY += z.deadVy * (sinceDead / 16);
+    angle = z.deadAngle;
+    // motion trail
+    fxCtx.save();
+    fxCtx.globalAlpha = 0.35;
+    fxCtx.fillStyle = '#ffd23f';
+    for (let i = 1; i <= 3; i++) {
+      const tx = drawX - z.deadVx * i * 4 + baseW/2;
+      const ty = drawY - z.deadVy * i * 4 + baseH/2;
+      fxCtx.beginPath(); fxCtx.arc(tx, ty, 30 * s / i, 0, Math.PI*2); fxCtx.fill();
+    }
+    fxCtx.restore();
+  }
+
+  // shadow
+  if (!z.dead) {
+    fxCtx.save();
+    fxCtx.fillStyle = 'rgba(0,0,0,0.4)';
+    fxCtx.beginPath();
+    fxCtx.ellipse(pos.x, pos.y, baseW*0.32, baseH*0.06, 0, 0, Math.PI*2);
+    fxCtx.fill();
+    fxCtx.restore();
+  }
+
+  // body draw (with hit flash)
+  fxCtx.save();
+  fxCtx.translate(drawX + baseW/2, drawY + baseH/2);
+  fxCtx.rotate(angle);
+  if (z.hitFlashMs > 0) {
+    fxCtx.shadowColor = '#fff';
+    fxCtx.shadowBlur = 30;
+    fxCtx.filter = 'brightness(1.6) saturate(2)';
+  }
+  fxCtx.drawImage(ZOMBIE_IMG, -baseW/2, -baseH/2, baseW, baseH);
+  fxCtx.restore();
+
+  // proximity warning ring
+  if (!z.dead && z.distance < 0.25) {
+    const pulse = 1 + Math.sin(ts * 0.012) * 0.15;
+    fxCtx.save();
+    fxCtx.strokeStyle = 'rgba(255,58,106,0.7)';
+    fxCtx.lineWidth = 5;
+    fxCtx.beginPath();
+    fxCtx.ellipse(pos.x, pos.y + 4, baseW * 0.4 * pulse, baseW * 0.12 * pulse, 0, 0, Math.PI*2);
+    fxCtx.stroke();
+    fxCtx.restore();
+  }
+}
+
+function drawHUD(){
+  const W = fx.width, H = fx.height;
+  // per-zombie HP
+  for (let i = 0; i < GAME.zombies.length; i++) {
+    const z = GAME.zombies[i];
+    let bx, bw;
+    if (GAME.mode === 'vs') {
+      bw = W * 0.42;
+      bx = (z.laneIdx === 0) ? W * 0.04 : W * 0.54;
+    } else {
+      bw = W * 0.7;
+      bx = W * 0.15;
+    }
+    const by = H - 52;
+    const bh = 22;
+    fxCtx.save();
+    fxCtx.fillStyle = 'rgba(0,0,0,0.55)';
+    fxCtx.fillRect(bx, by, bw, bh);
+    const pct = z.hp / HP_MAX;
+    const fillColor = pct > 0.5 ? '#ff3a6a' : (pct > 0.25 ? '#ffa83a' : '#ffd23f');
+    fxCtx.fillStyle = fillColor;
+    fxCtx.fillRect(bx, by, bw * pct, bh);
+    fxCtx.strokeStyle = '#ffd23f';
+    fxCtx.lineWidth = 2;
+    fxCtx.strokeRect(bx, by, bw, bh);
+    fxCtx.font = '900 13px Inter, system-ui, sans-serif';
+    fxCtx.fillStyle = '#fff';
+    fxCtx.textAlign = 'left';
+    fxCtx.fillText(`🧟 ZOMBIE BOSS HP ${z.hp}/${HP_MAX}`, bx + 8, by - 6);
+    fxCtx.restore();
+  }
+  // per-player punch tally
+  for (const p of GAME.players) {
+    let px, py, align;
+    if (GAME.numPlayers === 1) { px = W*0.5; py = 60; align = 'center'; }
+    else { px = (p.idx === 0) ? 20 : W - 20; py = 60; align = (p.idx === 0) ? 'left' : 'right'; }
+    fxCtx.save();
+    fxCtx.font = '900 22px Inter, system-ui, sans-serif';
+    fxCtx.textAlign = align;
+    fxCtx.lineWidth = 5;
+    fxCtx.strokeStyle = '#1a0420';
+    fxCtx.strokeText(`${p.label}  👊 ${p.punches}`, px, py);
+    fxCtx.fillStyle = p.color;
+    fxCtx.fillText(`${p.label}  👊 ${p.punches}`, px, py);
+    fxCtx.restore();
+  }
+}
+
+function endGame(){
+  GAME.state = 'over';
+  try { audio.bgm.pause(); } catch(e){}
+  playSfx('finish');
+  setTimeout(() => playSfx('crowd'), 500);
+
+  let title = '';
+  let rows = [];
+  if (GAME.mode === 'solo') {
+    const z = GAME.zombies[0];
+    const p = GAME.players[0];
+    title = z.dead ? '🏆 K.O.! ZOMBIE DEFEATED' : (z.distance <= 0 ? '💀 ZOMBIE GOT YOU!' : '⏰ TIME UP');
+    rows = [{ medal: z.dead ? '🥇' : '⚠️', label: p.label, meta: `${p.punches} punches · best ${p.bestCombo}× combo` }];
+  } else if (GAME.mode === 'vs') {
+    const a = GAME.players[0], b = GAME.players[1];
+    let winner = null;
+    if (GAME.zombies[0].dead && !GAME.zombies[1].dead) winner = a;
+    else if (GAME.zombies[1].dead && !GAME.zombies[0].dead) winner = b;
+    else if (GAME.zombies[0].dead && GAME.zombies[1].dead) winner = (a.punches >= b.punches) ? a : b;
+    else winner = (a.punches > b.punches) ? a : (b.punches > a.punches ? b : null);
+    title = winner ? `🏆 ${winner.label} WINS!` : '🤝 TIE';
+    const ordered = (winner === b) ? [b, a] : [a, b];
+    rows = ordered.map((p, i) => ({ medal: i === 0 ? '🥇' : '🥈', label: p.label, meta: `${p.punches} punches · best ${p.bestCombo}× combo` }));
+  } else { // coop
+    const z = GAME.zombies[0];
+    const total = GAME.players.reduce((s,p) => s + p.punches, 0);
+    title = z.dead ? '🏆 CO-OP K.O.!' : (z.distance <= 0 ? '💀 ZOMBIE GOT THROUGH!' : '⏰ TIME UP');
+    rows = GAME.players.map(p => ({ medal: '🤝', label: p.label, meta: `${p.punches} punches · best ${p.bestCombo}× combo` }));
+    rows.push({ medal: '➕', label: 'TEAM TOTAL', meta: `${total} / ${HP_MAX} hits delivered` });
+  }
+  ui.standings.innerHTML = '';
+  rows.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'standing' + (i === 0 ? ' win' : '');
+    div.innerHTML = `<span class="rank">${r.medal}</span><span class="ply">${r.label}</span><span class="meta">${r.meta}</span>`;
+    ui.standings.appendChild(div);
+  });
+  ui.resultsTitle.textContent = title;
+  ui.results.classList.add('show');
+}
+
+// --- wiring ---
+ui.startBtn.addEventListener('click', () => { ui.startBtn.disabled = true; startGame(); });
+document.querySelectorAll('.modeBtn').forEach(btn => {
+  btn.addEventListener('click', () => pickMode(btn.dataset.mode));
+});
+ui.lobbyStartBtn.addEventListener('click', () => {
+  if (ui.lobbyStartBtn.disabled) return;
+  GAME.state = 'starting';
+  ui.lobby.classList.remove('show');
+  runCountdownThenPlay();
+});
+ui.playAgainBtn.addEventListener('click', () => {
+  ui.results.classList.remove('show');
+  ui.modeSelect.classList.add('show');
+  ui.comboBanner.style.display = 'none';
+  GAME.state = 'modeSelect';
+});
+</script>
+</body>
+</html>
