@@ -1,111 +1,834 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-    <title>Color-Match Catcher · 配對快手 · AR Arcade</title>
-    <link rel="stylesheet" href="../styles.css" />
-    <style>
-      .cm-banner {
-        display: flex; align-items: center; justify-content: center;
-        gap: 14px; padding: 10px 18px; border-radius: 18px;
-        background: rgba(0,0,0,0.55); color: #fff;
-        font-weight: 800; letter-spacing: 1px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-      }
-      .cm-banner .label { font-size: 14px; opacity: 0.85; }
-      .cm-swatch {
-        width: 38px; height: 38px; border-radius: 50%;
-        border: 4px solid #fff;
-        box-shadow: 0 0 0 2px rgba(0,0,0,0.25), 0 0 18px currentColor;
-      }
-      .cm-swatch-name { font-size: 22px; }
-      .cm-tempo {
-        position: absolute; left: 50%; transform: translateX(-50%);
-        bottom: 90px; width: 280px; height: 14px;
-        background: rgba(0,0,0,0.45); border-radius: 8px; overflow: hidden;
-        border: 2px solid rgba(255,255,255,0.3);
-      }
-      .cm-tempo .fill {
-        height: 100%; width: 50%;
-        background: linear-gradient(90deg,#3cd06a,#ffd23f,#ff4d4d);
-        transition: width 0.25s ease;
-      }
-      .cm-tempo .label {
-        position: absolute; top: -22px; left: 0; right: 0;
-        text-align: center; font-size: 12px; font-weight: 800;
-        letter-spacing: 2px; color: #fff;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.6);
-      }
-      .cm-stats {
-        display: flex; gap: 22px;
-        font-weight: 800; color: #fff;
-        text-shadow: 0 2px 6px rgba(0,0,0,0.55);
-      }
-      .cm-stats .num { font-size: 28px; color: #ffd23f; }
-      .cm-stats .lbl { font-size: 11px; letter-spacing: 2px; opacity: 0.85; }
-      .cm-combo {
-        position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
-        font-weight: 900; color: #ffd23f; font-size: 32px;
-        text-shadow: 0 3px 0 #0a1530, 0 0 18px rgba(255,210,63,0.6);
-        opacity: 0; transition: opacity 0.2s, transform 0.2s;
-        pointer-events: none;
-      }
-      .cm-combo.show { opacity: 1; transform: translateX(-50%) translateY(-8px); }
-      .rules .pt { color: #3cd06a; font-weight: 900; }
-      .rules .neg { color: #ff5252; font-weight: 900; }
-    </style>
-  </head>
-  <body class="game-body">
-    <div id="app">
-      <video id="cam" autoplay playsinline muted></video>
-      <canvas id="bg-canvas"></canvas>
-      <canvas id="game"></canvas>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Color-Match Catcher · VS · AR Arcade</title>
+<script type="importmap">
+{ "imports": { "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs" } }
+</script>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#06101e;color:#fff;font-family:"Inter","Segoe UI",system-ui,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+  #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);filter:saturate(1.05) brightness(.55);background:#000;z-index:0}
+  #fx{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+  #ui{position:absolute;inset:0;z-index:4;pointer-events:none}
+  .divider{position:absolute;left:50%;top:8%;bottom:8%;width:4px;background:linear-gradient(180deg,transparent,#ffd23f,transparent);opacity:.5;transform:translateX(-50%)}
 
-      <a class="back-btn" href="../index.html">← Menu</a>
+  /* HUD */
+  .scorePill{position:absolute;top:18px;display:flex;align-items:center;gap:10px;
+    padding:10px 22px;border-radius:999px;font-weight:900;font-size:44px;letter-spacing:1px;
+    background:rgba(0,0,0,.55);border:4px solid #fff;color:#fff;text-shadow:0 2px 0 #000}
+  .scorePill.red{left:24px;border-color:#ff8e85}
+  .scorePill.blue{right:24px;border-color:#a7c4ff}
+  .scorePill .lbl{font-size:14px;letter-spacing:2px;opacity:.85}
+  .timer{position:absolute;top:18px;left:50%;transform:translateX(-50%);
+    background:rgba(0,0,0,.65);border:5px solid #ffd23f;border-radius:24px;
+    padding:8px 28px;font-size:54px;font-weight:900;letter-spacing:3px;color:#ffd23f;text-shadow:0 2px 0 #000}
+  .timer.low{color:#ff5b50;border-color:#ff5b50;animation:pulse 1s infinite}
+  @keyframes pulse{50%{transform:translateX(-50%) scale(1.07)}}
 
-      <div id="hud" class="hidden">
-        <div class="hud-row top">
-          <div class="cm-stats">
-            <div><div class="num" id="cm-time">60</div><div class="lbl">SEC</div></div>
-            <div><div class="num" id="cm-score">0</div><div class="lbl">SCORE</div></div>
-            <div><div class="num" id="cm-lives">❤❤❤</div><div class="lbl">LIVES</div></div>
-          </div>
-          <div class="cm-banner">
-            <span class="label">TARGET</span>
-            <span class="cm-swatch" id="cm-swatch"></span>
-            <span class="cm-swatch-name" id="cm-color-name">RED</span>
-          </div>
-        </div>
-        <div class="cm-combo" id="cm-combo">×2 COMBO</div>
-        <div class="cm-tempo">
-          <div class="label" id="cm-tempo-label">TEMPO 1.0×</div>
-          <div class="fill" id="cm-tempo-fill"></div>
+  /* target banner — shared color shown center top */
+  #targetBanner{position:absolute;top:96px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:14px;background:rgba(0,0,0,.55);
+    border:4px solid #ffd23f;border-radius:999px;padding:8px 22px;z-index:5}
+  #targetBanner .lbl{font-size:14px;font-weight:900;letter-spacing:3px;color:#ffd23f}
+  #targetBanner .swatch{width:54px;height:54px;border-radius:14px;border:4px solid #fff;
+    box-shadow:0 0 24px currentColor}
+  #targetBanner .nm{font-size:24px;font-weight:900;letter-spacing:2px}
+
+  /* cadence meters per side */
+  .cadenceMeter{position:absolute;top:158px;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:5}
+  .cadenceMeter.red{left:24px}
+  .cadenceMeter.blue{right:24px}
+  .cadenceMeter .lbl{font-size:11px;font-weight:900;letter-spacing:2px;color:#fff;
+    background:rgba(0,0,0,.55);padding:4px 10px;border-radius:999px}
+  .cadenceMeter .bar{width:200px;height:14px;background:rgba(0,0,0,.55);border:3px solid #fff;border-radius:8px;overflow:hidden}
+  .cadenceMeter .bar > div{height:100%;width:0%;background:linear-gradient(90deg,#3cd06a,#ffd23f,#ff5b50);transition:width .15s}
+
+  /* march hint per side */
+  .marchHint{position:absolute;bottom:14px;font-size:18px;font-weight:900;letter-spacing:2px;color:#ffea00;
+    text-shadow:0 3px 0 #000,0 0 16px rgba(255,234,0,.5);background:rgba(0,0,0,.55);
+    padding:8px 16px;border-radius:999px;border:3px solid #ffea00;animation:bob 1.2s ease-in-out infinite alternate;text-align:center}
+  .marchHint.left{left:8%}
+  .marchHint.right{right:8%}
+  .marchHint.hidden{display:none}
+  @keyframes bob{to{transform:translateY(-6px)}}
+
+  /* big 3-2-1-GO countdown */
+  #countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:10;
+    background:rgba(0,0,0,.5);backdrop-filter:blur(6px)}
+  #countdown.show{display:flex}
+  #cdNum{font-size:280px;font-weight:900;font-style:italic;color:#fff;
+    text-shadow:0 14px 0 #000,0 0 60px rgba(255,255,255,.6);animation:cdPop .85s ease-out}
+  @keyframes cdPop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+
+  /* lobby */
+  #lobby{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,rgba(11,12,40,.85),rgba(11,12,40,.6));z-index:9;padding:20px}
+  #lobby.show{display:flex}
+  .lobbyCard{text-align:center;padding:30px 36px;border-radius:26px;max-width:680px;width:100%;
+    background:linear-gradient(180deg,#fff8e8,#ffe7c4);color:#1a2a3a;
+    box-shadow:0 14px 0 #0a1530,0 28px 60px rgba(0,0,0,.55);border:6px solid #fff}
+  .lobbyCard h2{margin:0;font-size:38px;color:#0d3fb3;font-style:italic;letter-spacing:1px}
+  .lobbyCard .sub{margin:6px 0 14px;font-size:18px;color:#1a2a3a;font-weight:700}
+  .lobbyIcon{font-size:90px;line-height:1}
+  .lobbyPlayers{display:flex;gap:16px;justify-content:center;margin-top:8px}
+  .lpSlot{flex:1;max-width:260px;padding:14px;border-radius:16px;border:4px dashed #bbb;
+    background:#fff;color:#1a2a3a;font-weight:900;letter-spacing:1px}
+  .lpSlot.red{border-color:#c9160c} .lpSlot.blue{border-color:#0d3fb3}
+  .lpSlot.ready{border-style:solid;background:linear-gradient(180deg,#d6ffd6,#74e688);color:#0a3a14;box-shadow:0 6px 0 #0d4a17}
+  .lpSlot .ico{font-size:44px;display:block;margin-bottom:4px}
+  .lpSlot .lbl{font-size:14px;letter-spacing:1px}
+  .lpSlot .state{font-size:13px;font-weight:800;margin-top:6px;color:#5b3a3a;letter-spacing:1px;min-height:1.1em}
+  .lpSlot.ready .state{color:#0d4a17}
+  .checkRow{display:flex;justify-content:space-around;margin-top:8px;font-size:11px;letter-spacing:1px;font-weight:800;color:#5b3a3a}
+  .lpSlot.ready .checkRow{color:#0d4a17}
+  .checkRow span{display:flex;align-items:center;gap:4px}
+  .checkRow span .dot{width:8px;height:8px;border-radius:50%;background:#bbb;display:inline-block}
+  .checkRow span.ok .dot{background:#1a8a2a}
+  .lobbyFoot{margin-top:14px;font-size:14px;color:#666}
+  .lobbyStart{margin-top:18px;pointer-events:auto;background:linear-gradient(180deg,#7CFFB2,#1a8a2a);
+    color:#06240f;border:0;padding:18px 42px;border-radius:999px;font-size:22px;font-weight:900;letter-spacing:2px;
+    cursor:pointer;font-family:inherit;box-shadow:0 6px 0 #0d4a17,0 14px 28px rgba(0,0,0,.35);transition:transform .08s}
+  .lobbyStart:disabled{opacity:.55;cursor:not-allowed}
+  .lobbyStart:active:not(:disabled){transform:translateY(3px);box-shadow:0 3px 0 #0d4a17,0 8px 18px rgba(0,0,0,.35)}
+
+  /* start screen */
+  #startScreen{position:absolute;inset:0;background:linear-gradient(180deg,#0d3fb3,#3aa6ff,#3cd06a);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:6;padding:24px;text-align:center;gap:18px}
+  .back-btn{position:absolute;top:14px;left:14px;color:#fff;text-decoration:none;font-weight:800;
+    background:rgba(0,0,0,.4);padding:8px 14px;border-radius:999px;border:2px solid #fff;font-size:14px;letter-spacing:1px;z-index:10}
+  .hero h1{margin:0;font-size:clamp(40px,7vw,80px);color:#fff;-webkit-text-stroke:3px #06101e;
+    text-shadow:0 6px 0 #06101e;letter-spacing:2px;font-style:italic;font-weight:900}
+  .hero p{font-size:18px;color:#eaffff;max-width:680px;line-height:1.5;font-weight:700}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:920px}
+  .step{background:#fff;color:#06101e;border-radius:18px;padding:16px;border:4px solid #06101e;box-shadow:0 6px 0 #06101e}
+  .step .n{display:inline-block;width:36px;height:36px;border-radius:50%;background:#ffd23f;color:#3a1d00;
+    font-weight:900;line-height:36px;margin-bottom:8px;border:3px solid #fff;box-shadow:0 3px 0 #7a4a00}
+  .step h3{margin:0 0 4px;font-size:18px;letter-spacing:.5px}
+  .step p{margin:0;font-size:14px;color:#06101e}
+  #startBtn{pointer-events:auto;background:linear-gradient(180deg,#ffd23f,#f29b1a);color:#3a1d00;border:0;
+    padding:18px 46px;border-radius:999px;font-size:24px;font-weight:900;letter-spacing:2px;cursor:pointer;
+    font-family:inherit;box-shadow:0 8px 0 #7a4a00,0 16px 30px rgba(0,0,0,.4);transition:transform .08s}
+  #startBtn:active{transform:translateY(4px);box-shadow:0 4px 0 #7a4a00,0 10px 20px rgba(0,0,0,.4)}
+  #startBtn[disabled]{opacity:.6;cursor:not-allowed}
+  #status{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:14px;color:#eaffff}
+
+  /* results */
+  #results{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:10;
+    background:rgba(11,12,40,.92);padding:20px}
+  #results.show{display:flex}
+  .resultsCard{max-width:760px;width:100%;background:linear-gradient(180deg,#fff8e8,#ffe7c4);
+    border:6px solid #fff;border-radius:26px;padding:28px;color:#1a2a3a;text-align:center;
+    box-shadow:0 14px 0 #06101e,0 28px 60px rgba(0,0,0,.55)}
+  .resultsCard h2{margin:0;font-size:44px;color:#1a8a2a;font-style:italic;letter-spacing:2px}
+  .winnerRow{display:flex;justify-content:center;gap:20px;margin:20px 0}
+  .winnerCol{flex:1;max-width:280px;padding:18px;border-radius:18px;background:#fff;border:4px solid #ddd;
+    display:flex;flex-direction:column;align-items:center;gap:6px}
+  .winnerCol.red{border-color:#c9160c} .winnerCol.blue{border-color:#0d3fb3}
+  .winnerCol.win{background:linear-gradient(180deg,#fff7c4,#ffd23f);border-color:#7a4a00;
+    box-shadow:0 6px 0 #7a4a00;transform:scale(1.05)}
+  .winnerCol .nm{font-size:18px;font-weight:900;letter-spacing:2px}
+  .winnerCol .sc{font-size:64px;font-weight:900;line-height:1}
+  .winnerCol .sub{font-size:13px;color:#555;line-height:1.4}
+  .winnerCol.win .sub{color:#7a4a00;font-weight:900}
+  .actions{display:flex;gap:12px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .actions button,.actions a{pointer-events:auto;background:#ffd23f;color:#3a1d00;border:0;
+    padding:14px 28px;border-radius:999px;font-size:16px;font-weight:900;letter-spacing:1px;cursor:pointer;
+    font-family:inherit;box-shadow:0 5px 0 #7a4a00;text-decoration:none}
+  .actions a.ghost{background:#fff;color:#1a2a3a;box-shadow:0 5px 0 #aaa}
+</style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline muted></video>
+<canvas id="fx"></canvas>
+
+<div id="ui">
+  <div class="divider"></div>
+  <div class="scorePill red"><span class="lbl">P1</span><span id="scoreRed">0</span></div>
+  <div class="scorePill blue"><span id="scoreBlue">0</span><span class="lbl">P2</span></div>
+  <div class="timer" id="timer">60</div>
+
+  <div id="targetBanner">
+    <span class="lbl">CATCH</span>
+    <span class="swatch" id="tSwatch"></span>
+    <span class="nm" id="tName">RED</span>
+  </div>
+
+  <div class="cadenceMeter red"><div class="lbl">P1 MARCH</div><div class="bar"><div id="cadenceRed"></div></div></div>
+  <div class="cadenceMeter blue"><div class="lbl">P2 MARCH</div><div class="bar"><div id="cadenceBlue"></div></div></div>
+
+  <div class="marchHint left hidden" id="hintRed">MARCH IN PLACE<br>TO DROP THE BALLS</div>
+  <div class="marchHint right hidden" id="hintBlue">MARCH IN PLACE<br>TO DROP THE BALLS</div>
+</div>
+
+<div id="countdown"><div id="cdNum">3</div></div>
+
+<div id="lobby">
+  <div class="lobbyCard">
+    <div class="lobbyIcon">🎨</div>
+    <h2>STEP INTO YOUR LANE</h2>
+    <div class="sub">Stand so we can see your <b>shoulders, hips and knees</b>. P1 on the LEFT, P2 on the RIGHT. The faster you march in place, the faster the colour balls fall on your side.</div>
+    <div class="lobbyPlayers">
+      <div class="lpSlot red" id="slotRed">
+        <span class="ico">🟥</span>
+        <div class="lbl">PLAYER 1 — LEFT</div>
+        <div class="state" id="stateRed">Stand on LEFT</div>
+        <div class="checkRow" id="checkRed">
+          <span data-k="shoulders"><span class="dot"></span>Shoulders</span>
+          <span data-k="hips"><span class="dot"></span>Hips</span>
+          <span data-k="knees"><span class="dot"></span>Knees</span>
         </div>
       </div>
-
-      <div id="start" class="overlay">
-        <h1>🎨 配對快手 · Color-Match Catcher</h1>
-        <p class="tag">Catch only the <span class="hl">matching colour</span>. The faster you catch, the faster they fall — and the more points you score.</p>
-        <ul class="rules">
-          <li>🟡 Target colour shown at the top — catch <span class="hl">only that colour</span></li>
-          <li><span class="pt">+10 × tempo × combo</span> for each correct catch</li>
-          <li><span class="neg">−1 life</span> if you catch the wrong colour</li>
-          <li>⚡ Adaptive tempo — game speeds up when you're hot, slows when you miss</li>
-          <li>⏱️ 60 seconds. 3 lives. Beat your high score!</li>
-        </ul>
-        <button id="start-btn">Start Game</button>
-        <p class="hint">Allow camera access. Stand back so both hands are visible.</p>
-      </div>
-
-      <div id="end" class="overlay hidden">
-        <h1 id="end-title">Time's up!</h1>
-        <p id="end-score" class="tag"></p>
-        <button id="restart-btn">Play Again</button>
-        <a class="hint" href="../index.html" style="color:#9ad;">← Back to menu</a>
+      <div class="lpSlot blue" id="slotBlue">
+        <span class="ico">🟦</span>
+        <div class="lbl">PLAYER 2 — RIGHT</div>
+        <div class="state" id="stateBlue">Stand on RIGHT</div>
+        <div class="checkRow" id="checkBlue">
+          <span data-k="shoulders"><span class="dot"></span>Shoulders</span>
+          <span data-k="hips"><span class="dot"></span>Hips</span>
+          <span data-k="knees"><span class="dot"></span>Knees</span>
+        </div>
       </div>
     </div>
+    <div class="lobbyFoot">Both lanes must be GREEN to start.</div>
+    <button class="lobbyStart" id="lobbyStartBtn" type="button" disabled>WAITING…</button>
+  </div>
+</div>
 
-    <script type="module" src="color-match-catcher.js"></script>
-  </body>
+<div id="startScreen">
+  <a class="back-btn" href="../index.html">← Back</a>
+  <div class="hero">
+    <h1>Color-Match Catcher</h1>
+    <p>1 vs 1. A target colour appears at the top. <b>March in place</b> to drop balls on your side. Catch only the matching colour with your hands. The faster you march, the faster they fall — and the more chances to score!</p>
+  </div>
+  <div class="steps">
+    <div class="step"><span class="n">1</span><h3>Stand</h3><p>Full body in frame: shoulders, hips, knees.</p></div>
+    <div class="step"><span class="n">2</span><h3>March</h3><p>Lift your knees in place. Cadence drives the drop speed.</p></div>
+    <div class="step"><span class="n">3</span><h3>Catch</h3><p>Touch the matching colour with either hand.</p></div>
+    <div class="step"><span class="n">4</span><h3>Win</h3><p>Most catches in 60 seconds wins!</p></div>
+  </div>
+  <button id="startBtn" disabled>LOADING…</button>
+  <div id="status">Loading pose model...</div>
+</div>
+
+<div id="results">
+  <div class="resultsCard">
+    <h2 id="resultsTitle">GAME OVER</h2>
+    <div class="winnerRow">
+      <div class="winnerCol red" id="resRed">
+        <div class="nm">PLAYER 1</div>
+        <div class="sc" id="resScRed">0</div>
+        <div class="sub" id="resSubRed">0 caught</div>
+      </div>
+      <div class="winnerCol blue" id="resBlue">
+        <div class="nm">PLAYER 2</div>
+        <div class="sc" id="resScBlue">0</div>
+        <div class="sub" id="resSubBlue">0 caught</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="playAgainBtn">PLAY AGAIN</button>
+      <a class="ghost" href="../index.html">BACK TO LIBRARY</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+
+const $ = (id) => document.getElementById(id);
+const video = $('video');
+const fx = $('fx');
+const fxCtx = fx.getContext('2d');
+
+function resizeCanvas(){
+  fx.width = window.innerWidth * devicePixelRatio;
+  fx.height = window.innerHeight * devicePixelRatio;
+  fx.style.width = window.innerWidth + 'px';
+  fx.style.height = window.innerHeight + 'px';
+  fxCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const ui = {
+  scoreRed: $('scoreRed'), scoreBlue: $('scoreBlue'),
+  timer: $('timer'),
+  tSwatch: $('tSwatch'), tName: $('tName'),
+  cadenceRed: $('cadenceRed'), cadenceBlue: $('cadenceBlue'),
+  hintRed: $('hintRed'), hintBlue: $('hintBlue'),
+  countdown: $('countdown'), cdNum: $('cdNum'),
+  lobby: $('lobby'),
+  slotRed: $('slotRed'), slotBlue: $('slotBlue'),
+  stateRed: $('stateRed'), stateBlue: $('stateBlue'),
+  checkRed: $('checkRed'), checkBlue: $('checkBlue'),
+  lobbyStartBtn: $('lobbyStartBtn'),
+  startScreen: $('startScreen'), startBtn: $('startBtn'), status: $('status'),
+  results: $('results'), resultsTitle: $('resultsTitle'),
+  resRed: $('resRed'), resBlue: $('resBlue'),
+  resScRed: $('resScRed'), resScBlue: $('resScBlue'),
+  resSubRed: $('resSubRed'), resSubBlue: $('resSubBlue'),
+  playAgainBtn: $('playAgainBtn'),
+};
+
+// audio
+let audioCtx;
+function ensureAudio(){ if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
+function beep(freq=440, dur=180, type='sine', vol=0.07){
+  if (!audioCtx) return;
+  const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+  o.frequency.value = freq; o.type = type;
+  g.gain.value = vol;
+  o.connect(g).connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + dur/1000);
+  g.gain.setValueAtTime(vol, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur/1000);
+}
+const audio = {
+  bgm: new Audio('../assets/sounds/bg music.mp3'),
+  point: new Audio('../assets/sounds/every pts.mp3'),
+  finish: new Audio('../assets/sounds/game finished.mp3'),
+  last10: new Audio('../assets/sounds/last 10 sec.mp3'),
+  crowd: new Audio('../assets/sounds/crowd.mp3'),
+};
+audio.bgm.loop = true; audio.bgm.volume = 0.35;
+audio.point.volume = 0.6; audio.finish.volume = 0.7; audio.last10.volume = 0.6; audio.crowd.volume = 0.5;
+function playSfx(name){ try { audio[name].currentTime = 0; audio[name].play().catch(()=>{}); } catch(e){} }
+
+// --- colors ---
+const COLORS = [
+  { id:'red',    name:'RED',    hex:'#ff4d4d', glow:'#ff8e85' },
+  { id:'yellow', name:'YELLOW', hex:'#ffd23f', glow:'#fff08a' },
+  { id:'blue',   name:'BLUE',   hex:'#3aa6ff', glow:'#a7c4ff' },
+  { id:'green',  name:'GREEN',  hex:'#3cd06a', glow:'#9af0a8' },
+];
+function pickColor(){ return COLORS[Math.floor(Math.random()*COLORS.length)]; }
+function pickColorExcept(c){
+  const others = COLORS.filter(k => k.id !== c.id);
+  return others[Math.floor(Math.random()*others.length)];
+}
+
+// --- game state ---
+const GAME = {
+  state: 'idle',          // idle | lobby | starting | running | over
+  startTs: 0,
+  durationMs: 60000,
+  target: COLORS[0],
+  targetSwapMs: 0,
+  scores: { red: 0, blue: 0 },
+  caught: { red: 0, blue: 0 },
+  wrong:  { red: 0, blue: 0 },
+  missed: { red: 0, blue: 0 },
+  steps:  { red: 0, blue: 0 },
+  balls: { red: [], blue: [] },
+};
+
+const SIDES = ['red', 'blue'];
+
+// cadence tracking per side
+const cadence = {
+  red:  { lastKneeY: null, lastDir: 0, lastReverseTs: 0, swingStartY: null, recentSteps: [], cps: 0, lastSpawnTs: 0, fullBody: false },
+  blue: { lastKneeY: null, lastDir: 0, lastReverseTs: 0, swingStartY: null, recentSteps: [], cps: 0, lastSpawnTs: 0, fullBody: false },
+};
+function resetCadence(){
+  for (const s of SIDES) {
+    cadence[s] = { lastKneeY: null, lastDir: 0, lastReverseTs: 0, swingStartY: null, recentSteps: [], cps: 0, lastSpawnTs: 0, fullBody: false };
+  }
+}
+
+const STEP_AMP = 0.025;       // 2.5% of frame between reversals counts as step
+const MIN_REVERSAL_INTERVAL_MS = 180;
+const CADENCE_WINDOW_MS = 3000;
+const CADENCE_MAX_CPS = 2.5;  // cap (steps/s = 2 strides)
+const FALL_SPEED_MIN = 0;     // px/s when not marching at all
+const FALL_SPEED_MAX = 520;   // px/s at full cadence
+const SPAWN_BASE_MS = 1200;   // when barely marching
+const SPAWN_MIN_MS  = 320;    // when fully marching
+const TARGET_DENSITY = 0.55;
+const CATCH_RADIUS_PX = 70;
+const TARGET_HOLD_MS = 4500;
+const TARGET_SWAP_JITTER = 2500;
+
+function registerKneeSample(side, kneeY, hipY, now){
+  const c = cadence[side];
+  if (kneeY == null || hipY == null) { c.lastKneeY = null; return; }
+  // y is normalized 0..1 ; lower y = higher on screen. Use kneeY relative to hipY so it's lift-based.
+  const v = kneeY - hipY; // negative if knee above hip
+  if (c.lastKneeY == null) { c.lastKneeY = v; c.swingStartY = v; return; }
+  const dy = v - c.lastKneeY;
+  const dir = dy > 0.0015 ? 1 : (dy < -0.0015 ? -1 : c.lastDir);
+  if (dir !== 0 && c.lastDir !== 0 && dir !== c.lastDir) {
+    const amp = Math.abs(v - (c.swingStartY ?? v));
+    if (amp >= STEP_AMP && (now - c.lastReverseTs) > MIN_REVERSAL_INTERVAL_MS) {
+      c.recentSteps.push(now);
+      c.lastReverseTs = now;
+      GAME.steps[side] += 1;
+    }
+    c.swingStartY = v;
+  }
+  if (dir !== 0) c.lastDir = dir;
+  c.lastKneeY = v;
+  // prune window
+  const cutoff = now - CADENCE_WINDOW_MS;
+  while (c.recentSteps.length && c.recentSteps[0] < cutoff) c.recentSteps.shift();
+  c.cps = c.recentSteps.length / (CADENCE_WINDOW_MS / 1000);
+}
+
+function cadenceFraction(side){
+  // 0..1 — only counts if full body visible
+  const c = cadence[side];
+  if (!c.fullBody) return 0;
+  return Math.max(0, Math.min(1, c.cps / CADENCE_MAX_CPS));
+}
+function fallSpeedPxPs(side){
+  const f = cadenceFraction(side);
+  return FALL_SPEED_MIN + (FALL_SPEED_MAX - FALL_SPEED_MIN) * f;
+}
+function spawnIntervalMs(side){
+  const f = cadenceFraction(side);
+  return SPAWN_BASE_MS - (SPAWN_BASE_MS - SPAWN_MIN_MS) * f;
+}
+
+// --- pose plumbing ---
+let pose = null;
+async function loadModel(){
+  ui.status.textContent = 'Loading pose model...';
+  const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  pose = await PoseLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task', delegate:'GPU' },
+    runningMode: 'VIDEO',
+    numPoses: 2,
+  });
+  ui.status.textContent = 'Ready. Click START.';
+  ui.startBtn.disabled = false;
+  ui.startBtn.textContent = 'START';
+}
+loadModel().catch(e => ui.status.textContent = 'Failed to load: ' + e.message);
+
+const VIS_OK = 0.4;
+function processPose(lm){
+  // 11 ls, 12 rs, 23 lh, 24 rh, 25 lk, 26 rk, 15 lw, 16 rw
+  const ls = lm[11], rs = lm[12];
+  const lh = lm[23], rh = lm[24];
+  const lk = lm[25], rk = lm[26];
+  const lw = lm[15], rw = lm[16];
+  if (!ls || !rs) return null;
+  const mir = (p) => 1 - p.x;
+  const Ls = { x:mir(ls), y:ls.y, v:ls.visibility };
+  const Rs = { x:mir(rs), y:rs.y, v:rs.visibility };
+  if (Ls.v < 0.3 || Rs.v < 0.3) return null;
+  const cx = (Ls.x + Rs.x) / 2;
+  const shouldersOk = Ls.v >= VIS_OK && Rs.v >= VIS_OK;
+  const hipsOk   = lh && rh && lh.visibility >= VIS_OK && rh.visibility >= VIS_OK;
+  const kneesOk  = lk && rk && lk.visibility >= VIS_OK && rk.visibility >= VIS_OK;
+  const fullBody = shouldersOk && hipsOk && kneesOk;
+  const hipY  = hipsOk  ? (lh.y + rh.y) / 2 : null;
+  const kneeY = kneesOk ? (lk.y + rk.y) / 2 : null;
+  const wrists = [];
+  if (lw && lw.visibility >= 0.3) wrists.push({ x:mir(lw), y:lw.y });
+  if (rw && rw.visibility >= 0.3) wrists.push({ x:mir(rw), y:rw.y });
+  return { cx, shouldersOk, hipsOk, kneesOk, fullBody, hipY, kneeY, wrists };
+}
+function teamByX(cx){ return cx < 0.5 ? 'red' : 'blue'; }
+
+// --- balls ---
+function spawnBall(side){
+  const isTarget = Math.random() < TARGET_DENSITY;
+  const color = isTarget ? GAME.target : pickColorExcept(GAME.target);
+  const halfStart = side === 'red' ? 0.06 : 0.54;
+  const halfEnd   = side === 'red' ? 0.46 : 0.94;
+  const x = halfStart + Math.random() * (halfEnd - halfStart);
+  GAME.balls[side].push({
+    color,
+    x, y: -0.08,
+    prevYpx: -0.08 * window.innerHeight,
+    state: 'fall',
+    rot: (Math.random() - 0.5) * 0.4,
+    spin: (Math.random() - 0.5) * 0.0015,
+  });
+}
+
+function maybeSwapTarget(now){
+  if (now < GAME.targetSwapMs) return;
+  const next = pickColorExcept(GAME.target);
+  GAME.target = next;
+  GAME.targetSwapMs = now + TARGET_HOLD_MS + Math.random() * TARGET_SWAP_JITTER;
+  ui.tName.textContent = next.name;
+  ui.tSwatch.style.background = next.hex;
+  ui.tSwatch.style.color = next.glow;
+}
+
+// --- catch detection ---
+function checkCatches(side, wrists, now){
+  if (!wrists || !wrists.length) return;
+  const W = window.innerWidth, H = window.innerHeight;
+  const list = GAME.balls[side];
+  for (const b of list) {
+    if (b.state !== 'fall') continue;
+    const bx = b.x * W, by = b.y * H;
+    let hit = false;
+    for (const w of wrists) {
+      const wx = w.x * W, wy = w.y * H;
+      const d = Math.hypot(bx - wx, by - wy);
+      if (d < CATCH_RADIUS_PX) { hit = true; break; }
+    }
+    if (!hit) continue;
+    if (b.color.id === GAME.target.id) {
+      b.state = 'caught';
+      GAME.scores[side] += 1;
+      GAME.caught[side] += 1;
+      (side === 'red' ? ui.scoreRed : ui.scoreBlue).textContent = GAME.scores[side];
+      playSfx('point');
+      addParticles(b.x, b.y, b.color.glow, 18);
+    } else {
+      b.state = 'wrong';
+      GAME.wrong[side] += 1;
+      addParticles(b.x, b.y, '#ff5b50', 10);
+    }
+  }
+}
+
+function updateBalls(dt){
+  const H = window.innerHeight;
+  for (const side of SIDES) {
+    const speed = fallSpeedPxPs(side); // px / s
+    const dyPx = speed * dt / 1000;
+    const list = GAME.balls[side];
+    for (const b of list) {
+      if (b.state !== 'fall') continue;
+      b.prevYpx = b.y * H;
+      b.y += dyPx / H;
+      b.rot += b.spin * dt;
+    }
+    // count missed targets when off-screen
+    for (const b of list) {
+      if (b.state === 'fall' && b.y > 1.12) {
+        if (b.color.id === GAME.target.id) GAME.missed[side] += 1;
+        b.state = 'gone';
+      }
+    }
+    GAME.balls[side] = list.filter(b => b.state === 'fall');
+  }
+}
+
+// --- particles ---
+const particles = [];
+function addParticles(nx, ny, color, count){
+  const W = window.innerWidth, H = window.innerHeight;
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 80 + Math.random() * 180;
+    particles.push({
+      x: nx * W, y: ny * H,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60,
+      life: 600 + Math.random() * 300, age: 0, color,
+    });
+  }
+}
+function updateParticles(dt){
+  for (const p of particles) {
+    p.age += dt;
+    p.x += p.vx * dt / 1000;
+    p.y += p.vy * dt / 1000;
+    p.vy += 600 * dt / 1000;
+  }
+  for (let i = particles.length - 1; i >= 0; i--) if (particles[i].age >= particles[i].life) particles.splice(i, 1);
+}
+
+// --- drawing ---
+function drawBall(b){
+  const W = window.innerWidth, H = window.innerHeight;
+  const r = Math.min(W, H) * 0.06;
+  const x = b.x * W, y = b.y * H;
+  fxCtx.save();
+  fxCtx.translate(x, y);
+  fxCtx.rotate(b.rot);
+  // glow
+  fxCtx.shadowColor = b.color.glow;
+  fxCtx.shadowBlur = 26;
+  // radial gradient ball
+  const grad = fxCtx.createRadialGradient(-r*0.3, -r*0.3, r*0.1, 0, 0, r);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.35, b.color.glow);
+  grad.addColorStop(1, b.color.hex);
+  fxCtx.fillStyle = grad;
+  fxCtx.beginPath();
+  fxCtx.arc(0, 0, r, 0, Math.PI * 2);
+  fxCtx.fill();
+  fxCtx.shadowBlur = 0;
+  // ring
+  fxCtx.lineWidth = 3;
+  fxCtx.strokeStyle = 'rgba(255,255,255,0.9)';
+  fxCtx.stroke();
+  fxCtx.restore();
+}
+
+function drawWristTracers(side, wrists){
+  if (!wrists) return;
+  const W = window.innerWidth, H = window.innerHeight;
+  const col = side === 'red' ? '#ff8e85' : '#a7c4ff';
+  for (const w of wrists) {
+    const x = w.x * W, y = w.y * H;
+    fxCtx.save();
+    fxCtx.strokeStyle = col;
+    fxCtx.lineWidth = 4;
+    fxCtx.shadowColor = col;
+    fxCtx.shadowBlur = 16;
+    fxCtx.beginPath();
+    fxCtx.arc(x, y, CATCH_RADIUS_PX, 0, Math.PI*2);
+    fxCtx.stroke();
+    fxCtx.restore();
+  }
+}
+
+function drawScene(latestWrists){
+  const W = window.innerWidth, H = window.innerHeight;
+  fxCtx.clearRect(0, 0, W, H);
+
+  // lane shading for inactive (no march) sides
+  for (const side of SIDES) {
+    const f = cadenceFraction(side);
+    if (f < 0.05) {
+      fxCtx.save();
+      fxCtx.fillStyle = 'rgba(0,0,0,0.28)';
+      const x0 = side === 'red' ? 0 : W * 0.5;
+      fxCtx.fillRect(x0, 0, W * 0.5, H);
+      fxCtx.restore();
+    }
+  }
+
+  // balls
+  for (const side of SIDES) {
+    for (const b of GAME.balls[side]) drawBall(b);
+  }
+
+  // wrist tracers
+  drawWristTracers('red', latestWrists.red);
+  drawWristTracers('blue', latestWrists.blue);
+
+  // particles
+  for (const p of particles) {
+    const a = 1 - p.age / p.life;
+    fxCtx.fillStyle = p.color;
+    fxCtx.globalAlpha = Math.max(0, a);
+    fxCtx.beginPath();
+    fxCtx.arc(p.x, p.y, 5 * Math.max(0.3, a), 0, Math.PI*2);
+    fxCtx.fill();
+  }
+  fxCtx.globalAlpha = 1;
+}
+
+// --- countdown ---
+async function countdown(){
+  ui.countdown.classList.add('show');
+  for (const n of ['3','2','1','GO!']) {
+    ui.cdNum.textContent = n;
+    ui.cdNum.style.animation = 'none'; void ui.cdNum.offsetWidth; ui.cdNum.style.animation = '';
+    beep(n === 'GO!' ? 880 : 440, 200, 'triangle', 0.08);
+    await new Promise(r => setTimeout(r, 850));
+  }
+  ui.countdown.classList.remove('show');
+}
+
+// --- main loop ---
+let lastTs = 0;
+function loop(){
+  if (GAME.state === 'over') return;
+  const now = performance.now();
+  const dt = Math.min(80, now - lastTs || 16);
+  lastTs = now;
+
+  let posedRed = null, posedBlue = null;
+  if (pose && video.readyState >= 2) {
+    const res = pose.detectForVideo(video, now);
+    if (res.landmarks) {
+      for (const lm of res.landmarks) {
+        const p = processPose(lm);
+        if (!p) continue;
+        const team = teamByX(p.cx);
+        if (team === 'red' && !posedRed) posedRed = p;
+        if (team === 'blue' && !posedBlue) posedBlue = p;
+      }
+    }
+  }
+
+  // update full-body flag + cadence
+  cadence.red.fullBody  = !!(posedRed  && posedRed.fullBody);
+  cadence.blue.fullBody = !!(posedBlue && posedBlue.fullBody);
+  if (posedRed)  registerKneeSample('red',  posedRed.kneeY,  posedRed.hipY,  now);
+  if (posedBlue) registerKneeSample('blue', posedBlue.kneeY, posedBlue.hipY, now);
+
+  // target rotation
+  maybeSwapTarget(now);
+
+  // spawn (gated by cadence: if not marching, no spawn)
+  for (const side of SIDES) {
+    const c = cadence[side];
+    if (cadenceFraction(side) <= 0.02) { c.lastSpawnTs = now; continue; }
+    if (now - c.lastSpawnTs >= spawnIntervalMs(side)) {
+      c.lastSpawnTs = now;
+      spawnBall(side);
+    }
+  }
+
+  updateBalls(dt);
+
+  // catches
+  const wristsBy = { red: posedRed && posedRed.wrists, blue: posedBlue && posedBlue.wrists };
+  if (posedRed)  checkCatches('red',  posedRed.wrists,  now);
+  if (posedBlue) checkCatches('blue', posedBlue.wrists, now);
+
+  updateParticles(dt);
+  drawScene(wristsBy);
+
+  // cadence meter UI
+  ui.cadenceRed.style.width  = (cadenceFraction('red')  * 100).toFixed(0) + '%';
+  ui.cadenceBlue.style.width = (cadenceFraction('blue') * 100).toFixed(0) + '%';
+
+  // hints
+  ui.hintRed.classList.toggle('hidden',  cadenceFraction('red')  > 0.05);
+  ui.hintBlue.classList.toggle('hidden', cadenceFraction('blue') > 0.05);
+
+  // timer
+  const remaining = Math.max(0, GAME.durationMs - (now - GAME.startTs));
+  const secs = Math.ceil(remaining / 1000);
+  if (ui.timer.textContent !== String(secs)) {
+    ui.timer.textContent = secs;
+    if (secs === 10) { ui.timer.classList.add('low'); playSfx('last10'); }
+  }
+  if (remaining <= 0) { endGame(); return; }
+  requestAnimationFrame(loop);
+}
+
+// --- lobby (full-body detection per side) ---
+function lobbyLoop(){
+  if (GAME.state !== 'lobby') return;
+  const now = performance.now();
+  let posedRed = null, posedBlue = null;
+  if (pose && video.readyState >= 2) {
+    const res = pose.detectForVideo(video, now);
+    if (res.landmarks) {
+      for (const lm of res.landmarks) {
+        const p = processPose(lm);
+        if (!p) continue;
+        const team = teamByX(p.cx);
+        if (team === 'red' && !posedRed) posedRed = p;
+        if (team === 'blue' && !posedBlue) posedBlue = p;
+      }
+    }
+  }
+  let allReady = true;
+  for (const [team, p, slot, stateEl, checkEl] of [
+    ['red',  posedRed,  ui.slotRed,  ui.stateRed,  ui.checkRed],
+    ['blue', posedBlue, ui.slotBlue, ui.stateBlue, ui.checkBlue],
+  ]) {
+    const checks = checkEl.querySelectorAll('span[data-k]');
+    const setOk = (key, ok) => {
+      for (const el of checks) if (el.dataset.k === key) el.classList.toggle('ok', ok);
+    };
+    if (!p) {
+      stateEl.textContent = team === 'red' ? 'Stand on LEFT' : 'Stand on RIGHT';
+      slot.classList.remove('ready');
+      setOk('shoulders', false); setOk('hips', false); setOk('knees', false);
+      allReady = false;
+      continue;
+    }
+    setOk('shoulders', p.shouldersOk);
+    setOk('hips',      p.hipsOk);
+    setOk('knees',     p.kneesOk);
+    if (p.fullBody) {
+      stateEl.textContent = 'FULL BODY ✅';
+      slot.classList.add('ready');
+    } else {
+      const missing = [];
+      if (!p.shouldersOk) missing.push('shoulders');
+      if (!p.hipsOk) missing.push('hips');
+      if (!p.kneesOk) missing.push('knees');
+      stateEl.textContent = 'Need: ' + missing.join(', ');
+      slot.classList.remove('ready');
+      allReady = false;
+    }
+  }
+  ui.lobbyStartBtn.disabled = !allReady;
+  ui.lobbyStartBtn.textContent = allReady ? '▶ START GAME' : 'WAITING…';
+  requestAnimationFrame(lobbyLoop);
+}
+
+// --- flow ---
+async function startGame(){
+  ensureAudio();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} }, audio:false });
+    video.srcObject = stream;
+    await new Promise(r => video.onloadedmetadata = r);
+    await video.play();
+  } catch(e) {
+    ui.status.textContent = 'Camera error: ' + e.message;
+    ui.startBtn.disabled = false; return;
+  }
+  ui.startScreen.style.display = 'none';
+  GAME.state = 'lobby';
+  ui.lobby.classList.add('show');
+  lobbyLoop();
+}
+
+async function runCountdownThenPlay(){
+  await countdown();
+  GAME.state = 'running';
+  GAME.startTs = performance.now();
+  GAME.scores = { red: 0, blue: 0 };
+  GAME.caught = { red: 0, blue: 0 };
+  GAME.wrong  = { red: 0, blue: 0 };
+  GAME.missed = { red: 0, blue: 0 };
+  GAME.steps  = { red: 0, blue: 0 };
+  GAME.balls.red = []; GAME.balls.blue = [];
+  resetCadence();
+  GAME.target = pickColor();
+  GAME.targetSwapMs = performance.now() + TARGET_HOLD_MS;
+  ui.tName.textContent = GAME.target.name;
+  ui.tSwatch.style.background = GAME.target.hex;
+  ui.tSwatch.style.color = GAME.target.glow;
+  ui.scoreRed.textContent = '0'; ui.scoreBlue.textContent = '0';
+  ui.timer.classList.remove('low');
+  ui.timer.textContent = String(Math.ceil(GAME.durationMs / 1000));
+  try { audio.bgm.currentTime = 0; audio.bgm.play().catch(()=>{}); } catch(e){}
+  lastTs = 0;
+  loop();
+}
+
+function endGame(){
+  GAME.state = 'over';
+  try{ audio.bgm.pause(); }catch(e){}
+  playSfx('finish');
+  setTimeout(() => playSfx('crowd'), 400);
+  const r = GAME.scores.red, b = GAME.scores.blue;
+  ui.resScRed.textContent = r; ui.resScBlue.textContent = b;
+  const subFor = (s) => `${GAME.caught[s]} caught · ${GAME.wrong[s]} wrong · ${GAME.steps[s]} steps`;
+  ui.resSubRed.textContent  = subFor('red');
+  ui.resSubBlue.textContent = subFor('blue');
+  ui.resRed.classList.remove('win'); ui.resBlue.classList.remove('win');
+  if (r > b) { ui.resRed.classList.add('win'); ui.resultsTitle.textContent = '🏆 PLAYER 1 WINS!'; }
+  else if (b > r) { ui.resBlue.classList.add('win'); ui.resultsTitle.textContent = '🏆 PLAYER 2 WINS!'; }
+  else { ui.resultsTitle.textContent = "IT'S A TIE!"; }
+  ui.results.classList.add('show');
+}
+
+ui.startBtn.addEventListener('click', () => { ui.startBtn.disabled = true; startGame(); });
+ui.lobbyStartBtn.addEventListener('click', () => {
+  if (GAME.state !== 'lobby' || ui.lobbyStartBtn.disabled) return;
+  GAME.state = 'starting';
+  ui.lobby.classList.remove('show');
+  runCountdownThenPlay();
+});
+ui.playAgainBtn.addEventListener('click', () => {
+  ui.results.classList.remove('show');
+  GAME.state = 'lobby';
+  ui.lobby.classList.add('show');
+  lobbyLoop();
+});
+</script>
+</body>
 </html>
