@@ -123,7 +123,7 @@
     <h2>STEP INTO YOUR LANE</h2>
     <div class="slots" id="slots"></div>
     <button id="lobbyStartBtn" disabled>WAITING...</button>
-    <div id="lobbyHint">Stand half-body in frame, fists up. When all lanes are GREEN, button unlocks.</div>
+    <div id="lobbyHint">Half-body framing only — stand back so shoulders + both fists are visible. Lanes turn GREEN when detected.</div>
   </div>
 
   <div id="startScreen">
@@ -132,7 +132,7 @@
       <div class="sub">Solo · VS · Co-op. Throw 100 punches to send the boss flying.</div>
       <div class="steps">
         <div class="step"><span class="n">1</span><h3>Pick Mode</h3><p>Solo, head-to-head VS, or shared Co-op zombie.</p></div>
-        <div class="step"><span class="n">2</span><h3>Stand Half-Body</h3><p>Shoulders + both fists must be visible.</p></div>
+        <div class="step"><span class="n">2</span><h3>Half-Body Only</h3><p>Just shoulders + both fists in frame. No legs needed.</p></div>
         <div class="step"><span class="n">3</span><h3>Punch</h3><p>Extend either arm fully — chamber, then THRUST.</p></div>
         <div class="step"><span class="n">4</span><h3>KO</h3><p>100 punches → zombie flies away. Combos = bonus damage.</p></div>
       </div>
@@ -239,9 +239,44 @@ function playSfx(key){ try { const a = audio[key]; if (!a) return; a.currentTime
 
 // --- assets ---
 const ZOMBIE_IMG = new Image();
+ZOMBIE_IMG.crossOrigin = 'anonymous';
 ZOMBIE_IMG.src = '../assets/bg/zombie boss.webp';
 let zombieReady = false;
-ZOMBIE_IMG.onload = () => { zombieReady = true; };
+let ZOMBIE_RENDERED = null; // canvas with background chroma-keyed out
+ZOMBIE_IMG.onload = () => {
+  // Build a transparent version by sampling corner pixels and removing similar ones.
+  try {
+    const c = document.createElement('canvas');
+    c.width = ZOMBIE_IMG.naturalWidth;
+    c.height = ZOMBIE_IMG.naturalHeight;
+    const cx = c.getContext('2d');
+    cx.drawImage(ZOMBIE_IMG, 0, 0);
+    const data = cx.getImageData(0, 0, c.width, c.height);
+    const px = data.data;
+    // sample 4 corners + 4 edge midpoints to estimate background color
+    const samples = [
+      [0,0],[c.width-1,0],[0,c.height-1],[c.width-1,c.height-1],
+      [c.width>>1,0],[c.width>>1,c.height-1],[0,c.height>>1],[c.width-1,c.height>>1]
+    ];
+    let br=0,bg=0,bb=0;
+    for (const [x,y] of samples){ const i=(y*c.width+x)*4; br+=px[i]; bg+=px[i+1]; bb+=px[i+2]; }
+    br/=samples.length; bg/=samples.length; bb/=samples.length;
+    const TOL = 55;       // hard transparent within tolerance
+    const SOFT = 90;      // soft alpha falloff up to this distance
+    for (let i = 0; i < px.length; i += 4) {
+      const dr = px[i]-br, dg = px[i+1]-bg, db = px[i+2]-bb;
+      const d = Math.sqrt(dr*dr + dg*dg + db*db);
+      if (d < TOL) px[i+3] = 0;
+      else if (d < SOFT) px[i+3] = Math.round(px[i+3] * ((d - TOL) / (SOFT - TOL)));
+    }
+    cx.putImageData(data, 0, 0);
+    ZOMBIE_RENDERED = c;
+  } catch(e){
+    // CORS or other failure — fall back to original image
+    ZOMBIE_RENDERED = ZOMBIE_IMG;
+  }
+  zombieReady = true;
+};
 
 // --- game state ---
 const HP_MAX = 100;
@@ -275,6 +310,7 @@ function makePlayer(i){
     bestCombo: 0,
     lastPunchTs: 0,
     hands: { L: makeHand(), R: makeHand() },
+    handsScreen: { L: null, R: null }, // {x,y,seenTs} in screen px for glow rendering
   };
 }
 function makeHand(){
@@ -329,7 +365,7 @@ const CHAMBER_WINDOW = 700;
 const HAND_COOLDOWN_MS = 280;
 
 function readPersons(landmarksArr){
-  // Returns array of { cx, hands:{L:{distNorm}, R:{distNorm}}, visible }
+  // Returns array of { cx, hands:{L:{distNorm}, R:{distNorm}}, wristsNorm:{L,R} }
   const out = [];
   for (const lm of landmarksArr) {
     const ls = lm[11], rs = lm[12];
@@ -347,9 +383,14 @@ function readPersons(landmarksArr){
       const dy = w.y - s.y;
       return Math.hypot(dx, dy) / shoulderW; // normalized by shoulder width
     }
+    function wristNorm(w){
+      if (!w || w.visibility < 0.25) return null;
+      return { x: 1 - w.x, y: w.y };
+    }
     out.push({
       cx,
       hands: { L: handDist(lw, ls), R: handDist(rw, rs) },
+      wristsNorm: { L: wristNorm(lw), R: wristNorm(rw) },
     });
   }
   return out;
@@ -603,6 +644,10 @@ function loop(ts){
         const p = GAME.players[slot];
         registerHand(p, p.hands.L, person.hands.L, now);
         registerHand(p, p.hands.R, person.hands.R, now);
+        // record screen-space wrist positions for hand glow indicator
+        const W = fx.width, H = fx.height;
+        if (person.wristsNorm.L) p.handsScreen.L = { x: person.wristsNorm.L.x * W, y: person.wristsNorm.L.y * H, seenTs: now };
+        if (person.wristsNorm.R) p.handsScreen.R = { x: person.wristsNorm.R.x * W, y: person.wristsNorm.R.y * H, seenTs: now };
       }
     }
   }
@@ -708,6 +753,9 @@ function draw(ts){
   const sorted = [...GAME.zombies].sort((a,b) => b.distance - a.distance);
   for (const z of sorted) drawZombie(z, ts);
 
+  // hand glow indicators (so user knows they're tracked)
+  drawHandGlows(ts);
+
   // particles
   for (const pt of GAME.particles) {
     const t = (performance.now() - pt.born) / pt.life;
@@ -757,12 +805,57 @@ function drawStar(cx, cy, r, color){
   fxCtx.restore();
 }
 
+function drawHandGlows(ts){
+  // Pulsing glowing ring around each detected wrist so the user knows they're tracked.
+  const now = performance.now();
+  for (const p of GAME.players) {
+    for (const side of ['L','R']) {
+      const h = p.handsScreen[side];
+      if (!h) continue;
+      const age = now - h.seenTs;
+      if (age > 280) continue; // hand lost — hide glow
+      const fade = Math.max(0, 1 - age / 280);
+      // pulse sizes (two concentric expanding rings + filled core)
+      const pulse = (Math.sin(ts * 0.012) * 0.5 + 0.5);
+      const baseR = 28;
+      const r1 = baseR + pulse * 16;
+      const r2 = baseR + 22 + ((ts * 0.18) % 40);
+      const col = p.color;
+      fxCtx.save();
+      // outer expanding ring
+      fxCtx.globalAlpha = 0.35 * fade * (1 - ((ts * 0.18) % 40) / 40);
+      fxCtx.strokeStyle = col;
+      fxCtx.lineWidth = 4;
+      fxCtx.beginPath(); fxCtx.arc(h.x, h.y, r2, 0, Math.PI*2); fxCtx.stroke();
+      // primary pulsing ring
+      fxCtx.globalAlpha = 0.75 * fade;
+      fxCtx.shadowColor = col; fxCtx.shadowBlur = 24;
+      fxCtx.lineWidth = 5;
+      fxCtx.strokeStyle = col;
+      fxCtx.beginPath(); fxCtx.arc(h.x, h.y, r1, 0, Math.PI*2); fxCtx.stroke();
+      // inner soft fill
+      fxCtx.shadowBlur = 0;
+      fxCtx.globalAlpha = 0.22 * fade;
+      const grad = fxCtx.createRadialGradient(h.x, h.y, 2, h.x, h.y, baseR);
+      grad.addColorStop(0, col);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      fxCtx.fillStyle = grad;
+      fxCtx.beginPath(); fxCtx.arc(h.x, h.y, baseR, 0, Math.PI*2); fxCtx.fill();
+      // bright dot center
+      fxCtx.globalAlpha = 0.95 * fade;
+      fxCtx.fillStyle = '#fff';
+      fxCtx.beginPath(); fxCtx.arc(h.x, h.y, 5, 0, Math.PI*2); fxCtx.fill();
+      fxCtx.restore();
+    }
+  }
+}
+
 function drawZombie(z, ts){
   if (!zombieReady) return;
   const W = fx.width, H = fx.height;
   const pos = zombieScreenPos(z);
   const s = zombieScale(z);
-  const baseW = 320 * s;
+  const baseW = 640 * s; // enlarged 200%
   const baseH = (ZOMBIE_IMG.height / ZOMBIE_IMG.width) * baseW;
   // walk bob
   const bob = Math.sin(z.walkPhase) * 6 * s;
@@ -813,7 +906,7 @@ function drawZombie(z, ts){
     fxCtx.shadowBlur = 30;
     fxCtx.filter = 'brightness(1.6) saturate(2)';
   }
-  fxCtx.drawImage(ZOMBIE_IMG, -baseW/2, -baseH/2, baseW, baseH);
+  fxCtx.drawImage(ZOMBIE_RENDERED || ZOMBIE_IMG, -baseW/2, -baseH/2, baseW, baseH);
   fxCtx.restore();
 
   // proximity warning ring
