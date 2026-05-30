@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Color-Match Catcher · 配對快手 · AR Arcade</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .cm-banner {
+        display: flex; align-items: center; justify-content: center;
+        gap: 14px; padding: 10px 18px; border-radius: 18px;
+        background: rgba(0,0,0,0.55); color: #fff;
+        font-weight: 800; letter-spacing: 1px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      }
+      .cm-banner .label { font-size: 14px; opacity: 0.85; }
+      .cm-swatch {
+        width: 38px; height: 38px; border-radius: 50%;
+        border: 4px solid #fff;
+        box-shadow: 0 0 0 2px rgba(0,0,0,0.25), 0 0 18px currentColor;
+      }
+      .cm-swatch-name { font-size: 22px; }
+      .cm-tempo {
+        position: absolute; left: 50%; transform: translateX(-50%);
+        bottom: 90px; width: 280px; height: 14px;
+        background: rgba(0,0,0,0.45); border-radius: 8px; overflow: hidden;
+        border: 2px solid rgba(255,255,255,0.3);
+      }
+      .cm-tempo .fill {
+        height: 100%; width: 50%;
+        background: linear-gradient(90deg,#3cd06a,#ffd23f,#ff4d4d);
+        transition: width 0.25s ease;
+      }
+      .cm-tempo .label {
+        position: absolute; top: -22px; left: 0; right: 0;
+        text-align: center; font-size: 12px; font-weight: 800;
+        letter-spacing: 2px; color: #fff;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+      }
+      .cm-stats {
+        display: flex; gap: 22px;
+        font-weight: 800; color: #fff;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.55);
+      }
+      .cm-stats .num { font-size: 28px; color: #ffd23f; }
+      .cm-stats .lbl { font-size: 11px; letter-spacing: 2px; opacity: 0.85; }
+      .cm-combo {
+        position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
+        font-weight: 900; color: #ffd23f; font-size: 32px;
+        text-shadow: 0 3px 0 #0a1530, 0 0 18px rgba(255,210,63,0.6);
+        opacity: 0; transition: opacity 0.2s, transform 0.2s;
+        pointer-events: none;
+      }
+      .cm-combo.show { opacity: 1; transform: translateX(-50%) translateY(-8px); }
+      .rules .pt { color: #3cd06a; font-weight: 900; }
+      .rules .neg { color: #ff5252; font-weight: 900; }
+    </style>
+  </head>
+  <body class="game-body">
+    <div id="app">
+      <video id="cam" autoplay playsinline muted></video>
+      <canvas id="bg-canvas"></canvas>
+      <canvas id="game"></canvas>
+
+      <a class="back-btn" href="../index.html">← Menu</a>
+
+      <div id="hud" class="hidden">
+        <div class="hud-row top">
+          <div class="cm-stats">
+            <div><div class="num" id="cm-time">60</div><div class="lbl">SEC</div></div>
+            <div><div class="num" id="cm-score">0</div><div class="lbl">SCORE</div></div>
+            <div><div class="num" id="cm-lives">❤❤❤</div><div class="lbl">LIVES</div></div>
+          </div>
+          <div class="cm-banner">
+            <span class="label">TARGET</span>
+            <span class="cm-swatch" id="cm-swatch"></span>
+            <span class="cm-swatch-name" id="cm-color-name">RED</span>
+          </div>
+        </div>
+        <div class="cm-combo" id="cm-combo">×2 COMBO</div>
+        <div class="cm-tempo">
+          <div class="label" id="cm-tempo-label">TEMPO 1.0×</div>
+          <div class="fill" id="cm-tempo-fill"></div>
+        </div>
+      </div>
+
+      <div id="start" class="overlay">
+        <h1>🎨 配對快手 · Color-Match Catcher</h1>
+        <p class="tag">Catch only the <span class="hl">matching colour</span>. The faster you catch, the faster they fall — and the more points you score.</p>
+        <ul class="rules">
+          <li>🟡 Target colour shown at the top — catch <span class="hl">only that colour</span></li>
+          <li><span class="pt">+10 × tempo × combo</span> for each correct catch</li>
+          <li><span class="neg">−1 life</span> if you catch the wrong colour</li>
+          <li>⚡ Adaptive tempo — game speeds up when you're hot, slows when you miss</li>
+          <li>⏱️ 60 seconds. 3 lives. Beat your high score!</li>
+        </ul>
+        <button id="start-btn">Start Game</button>
+        <p class="hint">Allow camera access. Stand back so both hands are visible.</p>
+      </div>
+
+      <div id="end" class="overlay hidden">
+        <h1 id="end-title">Time's up!</h1>
+        <p id="end-score" class="tag"></p>
+        <button id="restart-btn">Play Again</button>
+        <a class="hint" href="../index.html" style="color:#9ad;">← Back to menu</a>
+      </div>
+    </div>
+
+    <script type="module" src="color-match-catcher.js"></script>
+  </body>
+</html>
