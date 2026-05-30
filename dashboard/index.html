@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Silver Arcade · Staff Console</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#0a1530; --gray:#5b6580; --line:#e6e8ef; --bg:#f5f6fa; --surface:#fff;
+    --coral:#ef8173; --coral-soft:#ffe7e2; --gold:#ffcf3a; --green:#3cb04a; --red:#e23a3a; --blue:#2f6ad9;
+    --shadow:0 1px 2px rgba(10,21,48,.04),0 4px 14px rgba(10,21,48,.06);
+    --radius:14px; --radius-sm:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font:14px/1.45 -apple-system,'Segoe UI','Inter',sans-serif;color:var(--ink);background:var(--bg)}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  a{color:inherit;text-decoration:none}
+
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+  aside{background:var(--ink);color:#cfd5e3;padding:18px 14px;display:flex;flex-direction:column;gap:6px}
+  aside .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid #1d2a4d;margin-bottom:10px}
+  aside .brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#ef8173,#ffcf3a);display:grid;place-items:center;color:#0a1530;font-weight:900}
+  aside .brand b{color:#fff;letter-spacing:.5px;font-size:13px}
+  aside .brand small{display:block;color:#7c89ad;font-size:11px;margin-top:2px}
+  aside nav button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:8px;color:#cfd5e3;font-size:13px;text-align:left}
+  aside nav button .ic{width:18px;display:inline-block;text-align:center;opacity:.7}
+  aside nav button.active{background:#1d2a4d;color:#fff}
+  aside nav button:hover:not(.active){background:#152144}
+  aside .footer{margin-top:auto;font-size:11px;color:#7c89ad;padding:8px}
+
+  main{display:flex;flex-direction:column;min-width:0}
+  header.topbar{display:flex;align-items:center;gap:12px;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:5}
+  .crumbs{font-size:12px;color:var(--gray)}
+  .crumbs b{color:var(--ink)}
+  .topbar .grow{flex:1}
+  .search{display:flex;align-items:center;gap:8px;background:var(--bg);padding:7px 12px;border-radius:10px;min-width:240px;font-size:13px;color:var(--gray)}
+  .topbar .who{display:flex;align-items:center;gap:8px;font-size:12px}
+  .avatar{width:28px;height:28px;border-radius:50%;background:#dbe1ee;display:grid;place-items:center;color:#0a1530;font-weight:700;font-size:12px}
+
+  .content{padding:22px 24px 40px;display:flex;flex-direction:column;gap:20px;overflow:auto}
+  h1{font-size:22px;letter-spacing:-.2px}
+  h2{font-size:15px;letter-spacing:.2px;color:var(--ink)}
+  h3{font-size:13px;color:var(--gray);font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .kpi{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);border:1px solid var(--line)}
+  .kpi .lbl{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.6px}
+  .kpi .val{font-size:26px;font-weight:800;margin-top:6px;letter-spacing:-.4px}
+  .kpi .delta{font-size:12px;margin-top:6px;color:var(--green);font-weight:600}
+  .kpi .delta.down{color:var(--red)}
+  .kpi .bar{height:4px;border-radius:4px;background:var(--bg);margin-top:10px;overflow:hidden}
+  .kpi .bar i{display:block;height:100%;background:var(--coral)}
+
+  .row{display:grid;gap:16px}
+  .row.cols-2{grid-template-columns:1fr 1fr}
+  .row.cols-3{grid-template-columns:1.4fr 1fr 1fr}
+  .card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--line);box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+  .card .head{display:flex;align-items:center;gap:10px}
+  .card .head .grow{flex:1}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:var(--coral-soft);color:var(--coral);text-transform:uppercase;letter-spacing:.4px}
+  .pill.green{background:#dff6e3;color:var(--green)}
+  .pill.red{background:#fde0e0;color:var(--red)}
+  .pill.gold{background:#fff3c0;color:#a07a00}
+  .pill.gray{background:#eef0f5;color:var(--gray)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{font-size:11px;color:var(--gray);font-weight:600;letter-spacing:.4px;text-transform:uppercase;background:#fafbfd;position:sticky;top:0}
+  tbody tr{cursor:pointer;transition:background .12s}
+  tbody tr:hover{background:#fafbfd}
+  td.name{display:flex;align-items:center;gap:10px;min-width:180px}
+  td.name .avatar{background:linear-gradient(135deg,#ffd9d2,#fff);font-weight:700;color:#0a1530}
+  .miniBar{position:relative;width:80px;height:6px;background:var(--bg);border-radius:6px;overflow:hidden;display:inline-block}
+  .miniBar i{position:absolute;inset:0;background:linear-gradient(90deg,#ef8173,#ffcf3a);width:0%}
+
+  .alert{display:flex;gap:10px;padding:10px;border-radius:var(--radius-sm);background:#fff7f5;border:1px solid #f5d6cf}
+  .alert .dot{width:8px;height:8px;border-radius:50%;background:var(--coral);margin-top:7px;flex-shrink:0}
+  .alert.gold{background:#fff8df;border-color:#f1e2a3}
+  .alert.gold .dot{background:#d8a800}
+
+  .quota{display:flex;align-items:center;gap:14px;padding:12px 16px;background:linear-gradient(90deg,#fff5ef,#fff);border:1px solid #f5d6cf;border-radius:var(--radius)}
+  .quota .ring{width:42px;height:42px;border-radius:50%;background:conic-gradient(var(--coral) calc(20/20*360deg),#f0e2dd 0);display:grid;place-items:center;font-weight:800;font-size:12px;color:var(--ink)}
+  .quota .ring i{background:#fff;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal}
+  .quota .grow{flex:1}
+  .quota button.up{background:var(--ink);color:#fff;padding:9px 14px;border-radius:10px;font-weight:700;font-size:12px;letter-spacing:.4px}
+
+  .detail{display:none;grid-template-columns:1fr;gap:16px}
+  .detail.show{display:grid}
+  .detail .head-row{display:flex;align-items:center;gap:14px}
+  .detail .head-row .avatar{width:56px;height:56px;font-size:20px}
+  .detail h1{font-size:24px}
+  .domain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .domain{background:#fafbfd;border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px}
+  .domain .lbl{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.4px}
+  .domain .val{font-size:22px;font-weight:800;margin-top:4px}
+  .domain .val small{font-size:11px;font-weight:600;color:var(--green);margin-left:6px}
+  .domain .val small.down{color:var(--red)}
+
+  .session-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto}
+  .session{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--line)}
+  .session .ic{width:30px;height:30px;border-radius:8px;background:var(--bg);display:grid;place-items:center;font-size:16px}
+  .session .grow{flex:1}
+  .session .meta{font-size:11px;color:var(--gray)}
+
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  @media (max-width:1100px){
+    .row.cols-3{grid-template-columns:1fr}
+    .row.cols-2{grid-template-columns:1fr}
+    .charts{grid-template-columns:1fr}
+    .domain-grid{grid-template-columns:repeat(2,1fr)}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width:720px){
+    .app{grid-template-columns:1fr}
+    aside{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="logo">S</div>
+      <div><b>SILVER ARCADE</b><small>松柏苑院舍 · Staff Console</small></div>
+    </div>
+    <nav>
+      <button class="active"><span class="ic">▦</span> Dashboard</button>
+      <button><span class="ic">◉</span> Residents <span style="margin-left:auto;font-size:11px;background:#1d2a4d;padding:2px 7px;border-radius:8px;color:#cfd5e3">20/20</span></button>
+      <button><span class="ic">◇</span> Sessions</button>
+      <button><span class="ic">▤</span> Reports</button>
+      <button><span class="ic">⚑</span> Alerts <span style="margin-left:auto;font-size:11px;background:var(--coral);padding:2px 7px;border-radius:8px;color:#fff">3</span></button>
+      <button><span class="ic">⚙</span> Settings</button>
+    </nav>
+    <div class="footer">Pro plan · v0.6.0<br>Last sync 2 min ago ●</div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div class="crumbs">Dashboard <b id="crumbDetail" style="display:none"> · <span></span></b></div>
+      <div class="grow"></div>
+      <div class="search">🔍 Search residents, sessions…</div>
+      <div class="who"><span>陳社工</span><div class="avatar">陳</div></div>
+    </header>
+
+    <section class="content" id="overview">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <h1>Today · Tue 30 May</h1>
+        <span class="pill green">14 played today</span>
+        <span class="pill gold">3 inactive 7d+</span>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button style="padding:8px 14px;border-radius:10px;background:#fff;border:1px solid var(--line);font-weight:600;font-size:12px">Export PDF</button>
+          <button style="padding:8px 14px;border-radius:10px;background:var(--ink);color:#fff;font-weight:700;font-size:12px">+ Add Resident</button>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><div class="lbl">Active residents (7d)</div><div class="val">17 <span style="font-size:14px;color:var(--gray);font-weight:500">/ 20</span></div><div class="delta">+2 vs last week</div><div class="bar"><i style="width:85%"></i></div></div>
+        <div class="kpi"><div class="lbl">Sessions today</div><div class="val">38</div><div class="delta">+12% vs daily avg</div><div class="bar"><i style="width:64%"></i></div></div>
+        <div class="kpi"><div class="lbl">Avg session length</div><div class="val">7.4<span style="font-size:14px;color:var(--gray)"> min</span></div><div class="delta">+0.8 min</div><div class="bar"><i style="width:74%"></i></div></div>
+        <div class="kpi"><div class="lbl">Fall-risk flags</div><div class="val" style="color:var(--coral)">2</div><div class="delta down">+1 vs last week</div><div class="bar"><i style="width:10%;background:var(--coral)"></i></div></div>
+      </div>
+
+      <div class="quota">
+        <div class="ring"><i>20<small style="font-weight:600">/20</small></i></div>
+        <div class="grow">
+          <b>Pro plan · 20 / 20 resident slots used</b>
+          <div style="font-size:12px;color:var(--gray);margin-top:2px">Add a 21st resident? Plus tier unlocks 50 slots, full clinical reports, and fall-risk alerts.</div>
+        </div>
+        <button class="up">Upgrade to Plus →</button>
+      </div>
+
+      <div class="row cols-3">
+        <div class="card" style="padding:0">
+          <div class="head" style="padding:18px 18px 8px"><h2>Residents</h2><div class="grow"></div>
+            <button style="font-size:12px;color:var(--coral);font-weight:700">View all →</button>
+          </div>
+          <div style="overflow:auto;max-height:430px">
+            <table id="roster">
+              <thead><tr><th>Name</th><th>Last play</th><th>Streak</th><th>Avg score</th><th>Trend</th><th>Status</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="head"><h2>6-domain cohort score</h2><span class="pill gray">Last 7 days</span></div>
+          <canvas id="cohortRadar" height="220"></canvas>
+          <div style="font-size:11px;color:var(--gray);text-align:center;margin-top:-4px">Average across 17 active residents · 0–100 normalised</div>
+        </div>
+
+        <div class="card">
+          <div class="head"><h2>Active alerts</h2><span class="pill red">3</span></div>
+          <div class="alert"><div class="dot"></div><div><b>Lee Mei-ling · 反應變慢 +34%</b><div style="font-size:12px;color:var(--gray)">3 sessions in a row · check fall risk</div></div></div>
+          <div class="alert gold"><div class="dot"></div><div><b>Wong Tat · 7 days inactive</b><div style="font-size:12px;color:var(--gray)">Last played Mon 23 May</div></div></div>
+          <div class="alert"><div class="dot"></div><div><b>Chan Bing · 平衡分下降</b><div style="font-size:12px;color:var(--gray)">Body Sway score 78 → 62</div></div></div>
+          <button style="font-size:12px;color:var(--coral);font-weight:700;text-align:left">Open alerts page →</button>
+        </div>
+      </div>
+
+      <div class="row cols-2">
+        <div class="card">
+          <div class="head"><h2>Sessions per day</h2><span class="pill gray">30 days</span></div>
+          <canvas id="sessionsChart" height="160"></canvas>
+        </div>
+        <div class="card">
+          <div class="head"><h2>Most-played games</h2><span class="pill gray">This week</span></div>
+          <canvas id="gamesChart" height="160"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="content detail" id="detail">
+      <div class="head-row">
+        <button id="back" style="background:#fff;border:1px solid var(--line);padding:8px 12px;border-radius:10px;font-weight:600;font-size:12px">← Back</button>
+        <div class="avatar" id="dAv">陳</div>
+        <div class="grow">
+          <h1 id="dName">陳大文 · Chan Tai-man</h1>
+          <div style="font-size:12px;color:var(--gray);margin-top:4px"><b id="dMeta">Room 3B · 78 · Mild cognitive impairment</b> · Joined 12 Jan 2026 · 84 sessions to date</div>
+        </div>
+        <span class="pill green" id="dStatus">Active · 5 day streak</span>
+        <button style="padding:9px 14px;border-radius:10px;background:var(--ink);color:#fff;font-weight:700;font-size:12px">Generate PDF report</button>
+      </div>
+
+      <div class="card">
+        <div class="head"><h2>6-domain snapshot</h2><span class="pill gray">vs 30 days ago</span></div>
+        <div class="domain-grid" id="domainGrid"></div>
+      </div>
+
+      <div class="row cols-2">
+        <div class="card">
+          <div class="head"><h2>Domain trend (90 days)</h2></div>
+          <canvas id="trendChart" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="head"><h2>Recent sessions</h2></div>
+          <div class="session-list" id="sessionList"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const RESIDENTS = [
+  ['陳大文','Chan Tai-man','陳','#ef8173',1, 86,'+4',5,'Active'],
+  ['李美玲','Lee Mei-ling','李','#ffcf3a',1, 71,'-6',2,'Watch'],
+  ['黃達','Wong Tat','黃','#7da6ff',7, 64,'-2',0,'Inactive'],
+  ['陳冰','Chan Bing','陳','#3cb04a',2, 78,'-12',3,'Watch'],
+  ['林小娟','Lam Siu-kuen','林','#a273e6',1, 82,'+3',4,'Active'],
+  ['周樹根','Chow Shu-gun','周','#ef8173',1, 91,'+7',9,'Active'],
+  ['鄧麗華','Tang Lai-wah','鄧','#ffcf3a',1, 75,'+1',6,'Active'],
+  ['梁伯','Leung Bak','梁','#7da6ff',2, 68,'-3',1,'Watch'],
+  ['朱翠','Chu Tsui','朱','#3cb04a',1, 85,'+5',7,'Active'],
+  ['鄭志強','Cheng Chi-keung','鄭','#a273e6',1, 79,'+2',8,'Active'],
+  ['趙美','Chiu Mei','趙','#ef8173',3, 72,'-4',0,'Inactive'],
+  ['謝平','Tse Ping','謝','#ffcf3a',1, 88,'+6',5,'Active'],
+  ['何長','Ho Cheung','何','#7da6ff',2, 63,'-7',2,'Watch'],
+  ['許靜','Hui Ching','許','#3cb04a',1, 81,'+3',4,'Active'],
+  ['呂金','Lui Kam','呂','#a273e6',1, 90,'+8',11,'Active'],
+  ['蘇香','So Heung','蘇','#ef8173',1, 84,'+4',6,'Active'],
+  ['鍾偉','Chung Wai','鍾','#ffcf3a',2, 70,'-2',1,'Watch'],
+  ['馬力','Ma Lik','馬','#7da6ff',1, 87,'+5',7,'Active'],
+  ['潘玉','Poon Yuk','潘','#3cb04a',8, 61,'-9',0,'Inactive'],
+  ['伍堅','Ng Kin','伍','#a273e6',1, 83,'+3',5,'Active'],
+];
+const DOMAINS = [
+  ['🏃','Physical / Motor',74],
+  ['🧠','Cognitive',68],
+  ['👁️','Eye-Hand',81],
+  ['🧭','Visual-Spatial',72],
+  ['🧩','Dual-Task',64],
+  ['⚖️','Balance / Fall',77],
+];
+
+const tbody = document.querySelector('#roster tbody');
+RESIDENTS.forEach((r, i) => {
+  const [name, en, ch, color, lastDays, score, trend, streak, status] = r;
+  const tr = document.createElement('tr');
+  const trendClass = trend.startsWith('+') ? 'green' : trend.startsWith('-') ? 'red' : 'gray';
+  const statusClass = status === 'Active' ? 'green' : status === 'Watch' ? 'gold' : 'red';
+  tr.innerHTML = `
+    <td class="name"><div class="avatar" style="background:${color}22;color:${color}">${ch}</div><div><b>${name}</b><div style="font-size:11px;color:var(--gray)">${en}</div></div></td>
+    <td>${lastDays === 1 ? 'Today' : lastDays + ' days ago'}</td>
+    <td>${streak} 🔥</td>
+    <td><b>${score}</b> <span style="display:inline-block;vertical-align:middle"><span class="miniBar"><i style="width:${score}%"></i></span></span></td>
+    <td><span class="pill ${trendClass}">${trend}</span></td>
+    <td><span class="pill ${statusClass}">${status}</span></td>
+  `;
+  tr.addEventListener('click', () => openDetail(i));
+  tbody.appendChild(tr);
+});
+
+new Chart(document.getElementById('cohortRadar'), {
+  type:'radar',
+  data:{
+    labels: DOMAINS.map(d => d[1]),
+    datasets:[{
+      data: DOMAINS.map(d => d[2]),
+      backgroundColor:'rgba(239,129,115,0.18)',
+      borderColor:'#ef8173',
+      borderWidth:2, pointBackgroundColor:'#ef8173',
+    }]
+  },
+  options:{
+    plugins:{legend:{display:false}},
+    scales:{r:{min:0,max:100,ticks:{stepSize:25,color:'#5b6580',font:{size:10}},pointLabels:{font:{size:11}},grid:{color:'#eef0f5'},angleLines:{color:'#eef0f5'}}}
+  }
+});
+
+const days = Array.from({length:30},(_,i)=>i+1);
+new Chart(document.getElementById('sessionsChart'),{
+  type:'bar',
+  data:{labels:days, datasets:[{data:days.map(()=>20+Math.round(Math.random()*30)), backgroundColor:'#ef8173', borderRadius:4}]},
+  options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#5b6580'}},y:{grid:{color:'#eef0f5'},ticks:{font:{size:10},color:'#5b6580'}}}}
+});
+
+new Chart(document.getElementById('gamesChart'),{
+  type:'bar',
+  data:{
+    labels:['Fruit Ninja','Balloon Pop','Dragon Boat','Coach Follow','Horse Race','Number Rush','Zombie'],
+    datasets:[{data:[88,72,64,58,46,38,22], backgroundColor:['#ef8173','#ffcf3a','#3cb04a','#7da6ff','#a273e6','#ef8173','#5b6580'], borderRadius:4}]
+  },
+  options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#eef0f5'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}
+});
+
+const overview = document.getElementById('overview');
+const detail   = document.getElementById('detail');
+const crumb    = document.getElementById('crumbDetail');
+let trendChart;
+function openDetail(i){
+  const r = RESIDENTS[i];
+  overview.style.display = 'none';
+  detail.classList.add('show');
+  crumb.style.display = 'inline'; crumb.querySelector('span').textContent = r[0];
+  document.getElementById('dAv').textContent = r[2];
+  document.getElementById('dAv').style.background = r[3] + '22';
+  document.getElementById('dAv').style.color = r[3];
+  document.getElementById('dName').textContent = `${r[0]} · ${r[1]}`;
+  document.getElementById('dMeta').textContent = `Room ${(i%4)+1}${'ABCD'[i%4]} · ${72+(i%14)} · ${['MCI','Stable','Post-fall','Frailty','Stable'][i%5]}`;
+  const status = r[8], pill = document.getElementById('dStatus');
+  pill.className = 'pill ' + (status==='Active'?'green':status==='Watch'?'gold':'red');
+  pill.textContent = status === 'Active' ? `Active · ${r[7]} day streak` : status === 'Watch' ? '⚠ Watchlist' : 'Inactive 7d+';
+
+  const grid = document.getElementById('domainGrid'); grid.innerHTML = '';
+  DOMAINS.forEach((d, idx) => {
+    const v = Math.max(40, Math.min(99, d[2] + ((i*7+idx*3)%20) - 10));
+    const delta = ((i+idx)%2===0?'+':'-') + (1+((i+idx*2)%9));
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="domain"><div class="lbl">${d[0]} ${d[1]}</div><div class="val">${v}<small class="${delta.startsWith('-')?'down':''}">${delta}</small></div>
+        <div class="miniBar" style="width:100%;margin-top:8px"><i style="width:${v}%"></i></div></div>`);
+  });
+
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'),{
+    type:'line',
+    data:{
+      labels: Array.from({length:12},(_,k)=>`W${k+1}`),
+      datasets: DOMAINS.slice(0,3).map((d,k)=>({
+        label: d[0]+' '+d[1].split(' ')[0],
+        data: Array.from({length:12},(_,x)=>50+Math.round(Math.sin(x/2+k)*15+x*1.2+(i%5)*2)),
+        borderColor:['#ef8173','#7da6ff','#3cb04a'][k],
+        backgroundColor:'transparent', tension:.35, borderWidth:2, pointRadius:2
+      }))
+    },
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10}}},scales:{y:{min:0,max:100,grid:{color:'#eef0f5'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+
+  const list = document.getElementById('sessionList'); list.innerHTML='';
+  const games = [['🍉','Fruit Ninja'],['🎈','Balloon Pop'],['🚣','Dragon Boat'],['🐎','Horse Race'],['🥋','Coach Follow']];
+  for (let k=0;k<8;k++){
+    const g = games[(i+k)%games.length];
+    const mins = (3+(k*7+i)%9);
+    list.insertAdjacentHTML('beforeend', `
+      <div class="session"><div class="ic">${g[0]}</div>
+        <div class="grow"><b>${g[1]}</b><div class="meta">${mins} min · score ${50+((k*13+i)%50)} · ${k===0?'today':k+' day'+(k>1?'s':'')+' ago'}</div></div>
+        <span class="pill ${k%3===0?'green':k%3===1?'gray':'gold'}">${k%3===0?'PB':k%3===1?'normal':'low'}</span></div>`);
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.getElementById('back').addEventListener('click',()=>{overview.style.display='flex';detail.classList.remove('show');crumb.style.display='none';});
+</script>
+</body>
+</html>
