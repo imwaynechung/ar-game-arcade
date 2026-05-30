@@ -193,7 +193,7 @@
         </div>
       </div>
     </div>
-    <div class="lobbyFoot">Both lanes must be GREEN to start.</div>
+    <div class="lobbyFoot">Solo? One side is enough. Both lanes GREEN = 1 vs 1.</div>
     <button class="lobbyStart" id="lobbyStartBtn" type="button" disabled>WAITING…</button>
   </div>
 </div>
@@ -720,7 +720,7 @@ function lobbyLoop(){
       }
     }
   }
-  let allReady = true;
+  let readyCount = 0;
   for (const [team, p, slot, stateEl, checkEl] of [
     ['red',  posedRed,  ui.slotRed,  ui.stateRed,  ui.checkRed],
     ['blue', posedBlue, ui.slotBlue, ui.stateBlue, ui.checkBlue],
@@ -733,7 +733,6 @@ function lobbyLoop(){
       stateEl.textContent = team === 'red' ? 'Stand on LEFT' : 'Stand on RIGHT';
       slot.classList.remove('ready');
       setOk('shoulders', false); setOk('hips', false); setOk('knees', false);
-      allReady = false;
       continue;
     }
     setOk('shoulders', p.shouldersOk);
@@ -742,6 +741,7 @@ function lobbyLoop(){
     if (p.fullBody) {
       stateEl.textContent = 'FULL BODY ✅';
       slot.classList.add('ready');
+      readyCount += 1;
     } else {
       const missing = [];
       if (!p.shouldersOk) missing.push('shoulders');
@@ -749,11 +749,13 @@ function lobbyLoop(){
       if (!p.kneesOk) missing.push('knees');
       stateEl.textContent = 'Need: ' + missing.join(', ');
       slot.classList.remove('ready');
-      allReady = false;
     }
   }
-  ui.lobbyStartBtn.disabled = !allReady;
-  ui.lobbyStartBtn.textContent = allReady ? '▶ START GAME' : 'WAITING…';
+  // Allow start as long as at least 1 player is detected — solo or 1v1 both fine.
+  ui.lobbyStartBtn.disabled = readyCount < 1;
+  ui.lobbyStartBtn.textContent = readyCount === 0
+    ? 'WAITING…'
+    : (readyCount === 2 ? '▶ START 1 vs 1' : '▶ START SOLO (or wait for P2)');
   requestAnimationFrame(lobbyLoop);
 }
 
