@@ -466,7 +466,55 @@ const GAME = {
   scores: { red: 0, blue: 0 },
   sorted: { red: 0, blue: 0 }, // total successful sorts
   wrong:  { red: 0, blue: 0 }, // total wrong drops
+  landmarks:   { red: null, blue: null },
+  landmarksTs: { red: 0,    blue: 0 },
 };
+
+// Player number badges floating above each detected head (red=P1, blue=P2)
+const PLAYER_BADGE = {
+  red:  { num: 1, color: '#e63946' },
+  blue: { num: 2, color: '#2f6ad9' },
+};
+function drawHeadBadge(ctx, lm, num, color){
+  const nose = lm && lm[0];
+  if (!nose || nose.visibility < 0.4) return;
+  const W = window.innerWidth, H = window.innerHeight;
+  const x = (1 - nose.x) * W;
+  const y = nose.y * H - 80;
+  const r = 38;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  ctx.lineWidth = 6; ctx.strokeStyle = '#fff'; ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 2; ctx.strokeStyle = '#0a1530';
+  ctx.beginPath(); ctx.arc(x, y, r + 4, 0, Math.PI*2); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = '900 44px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 6; ctx.strokeStyle = '#0a1530';
+  ctx.strokeText(String(num), x, y + 2);
+  ctx.fillText(String(num), x, y + 2);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x - 12, y + r);
+  ctx.lineTo(x + 12, y + r);
+  ctx.lineTo(x, y + r + 16);
+  ctx.closePath(); ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
+  ctx.restore();
+}
+function drawHeadBadges(ctx){
+  const now = performance.now();
+  const teams = GAME.mode === 'solo' ? ['red'] : ['red','blue'];
+  for (const t of teams) {
+    if (GAME.landmarks[t] && (now - GAME.landmarksTs[t]) < 700) {
+      const cfg = PLAYER_BADGE[t];
+      drawHeadBadge(ctx, GAME.landmarks[t], cfg.num, cfg.color);
+    }
+  }
+}
 
 const WRONG_PENALTY = 1; // minor penalty per wrong-basket drop (score clamped at 0)
 
@@ -765,6 +813,7 @@ function loop(){
           if (!p) continue;
           if (p.hands.L) newHands[`red-L`] = { x:p.hands.L.x, y:p.hands.L.y, ts:now };
           if (p.hands.R) newHands[`red-R`] = { x:p.hands.R.x, y:p.hands.R.y, ts:now };
+          GAME.landmarks.red = lm; GAME.landmarksTs.red = now;
           break;
         }
       } else {
@@ -778,6 +827,7 @@ function loop(){
           claimed[team] = true;
           if (p.hands.L) newHands[`${team}-L`] = { x:p.hands.L.x, y:p.hands.L.y, ts:now };
           if (p.hands.R) newHands[`${team}-R`] = { x:p.hands.R.x, y:p.hands.R.y, ts:now };
+          GAME.landmarks[team] = lm; GAME.landmarksTs[team] = now;
         }
       }
     }
@@ -807,6 +857,7 @@ function loop(){
   drawFoods();
   drawHands();
   drawParticles();
+  drawHeadBadges(fxCtx);
 
   const remaining = Math.max(0, GAME.durationMs - (now - GAME.startTs));
   const secs = Math.ceil(remaining / 1000);
@@ -830,15 +881,15 @@ function lobbyLoop(){
         for (const lm of res.landmarks) {
           const p = readPose(lm);
           if (!p) continue;
-          if (!posedRed) posedRed = p;
+          if (!posedRed) { posedRed = p; GAME.landmarks.red = lm; GAME.landmarksTs.red = now; }
         }
       } else {
         for (const lm of res.landmarks) {
           const p = readPose(lm);
           if (!p) continue;
           const team = assignTeam(p.cx);
-          if (team === 'red' && !posedRed) posedRed = p;
-          if (team === 'blue' && !posedBlue) posedBlue = p;
+          if (team === 'red' && !posedRed)  { posedRed  = p; GAME.landmarks.red  = lm; GAME.landmarksTs.red  = now; }
+          if (team === 'blue' && !posedBlue) { posedBlue = p; GAME.landmarks.blue = lm; GAME.landmarksTs.blue = now; }
         }
       }
     }
@@ -851,6 +902,8 @@ function lobbyLoop(){
     if (data) { stateEl.textContent = 'DETECTED \u2705'; barEl.style.width = '100%'; slot.classList.add('ready'); }
     else { stateEl.textContent = GAME.mode === 'solo' ? 'Step in front of camera' : (team === 'red' ? 'Stand on LEFT' : 'Stand on RIGHT'); barEl.style.width = '0%'; slot.classList.remove('ready'); }
   }
+  fxCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  drawHeadBadges(fxCtx);
   requestAnimationFrame(lobbyLoop);
 }
 

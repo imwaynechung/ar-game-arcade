@@ -526,6 +526,45 @@ function processPose(lm){
 }
 function assignTeamByX(cx){ return cx < 0.5 ? 'red' : 'blue'; }
 
+// Per-team last seen landmarks for player number badges
+const HEAD_LM = { red: null, blue: null };
+const HEAD_TS = { red: 0,    blue: 0 };
+function drawHeadBadge(c, lm, num, color){
+  const nose = lm && lm[0];
+  if (!nose || nose.visibility < 0.4) return;
+  const W = window.innerWidth, H = window.innerHeight;
+  const x = (1 - nose.x) * W;
+  const y = nose.y * H - 80;
+  const r = 38;
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.55)'; c.shadowBlur = 12; c.shadowOffsetY = 4;
+  c.fillStyle = color;
+  c.beginPath(); c.arc(x, y, r, 0, Math.PI*2); c.fill();
+  c.lineWidth = 6; c.strokeStyle = '#fff'; c.stroke();
+  c.shadowBlur = 0;
+  c.lineWidth = 2; c.strokeStyle = '#0a1530';
+  c.beginPath(); c.arc(x, y, r + 4, 0, Math.PI*2); c.stroke();
+  c.fillStyle = '#fff';
+  c.font = '900 44px Inter, system-ui, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineWidth = 6; c.strokeStyle = '#0a1530';
+  c.strokeText(String(num), x, y + 2);
+  c.fillText(String(num), x, y + 2);
+  c.fillStyle = color;
+  c.beginPath();
+  c.moveTo(x - 12, y + r);
+  c.lineTo(x + 12, y + r);
+  c.lineTo(x, y + r + 16);
+  c.closePath(); c.fill();
+  c.lineWidth = 3; c.strokeStyle = '#fff'; c.stroke();
+  c.restore();
+}
+function drawAllHeadBadges(c){
+  const now = performance.now();
+  if (HEAD_LM.red  && (now - HEAD_TS.red)  < 700) drawHeadBadge(c, HEAD_LM.red,  1, '#e63946');
+  if (HEAD_LM.blue && (now - HEAD_TS.blue) < 700) drawHeadBadge(c, HEAD_LM.blue, 2, '#2f6ad9');
+}
+
 function spawnFruit(side){
   const isTarget = Math.random() < 0.5; // ~50% are the target
   const fruit = isTarget ? GAME.target : (function(){
@@ -795,6 +834,7 @@ function loop(){
 
   updateParticles(dt);
   drawScene();
+  drawAllHeadBadges(fxCtx);
 
   const remaining = Math.max(0, GAME.durationMs - (now - GAME.startTs));
   const secs = Math.ceil(remaining / 1000);

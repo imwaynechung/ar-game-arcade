@@ -1537,6 +1537,38 @@ function classifyTeam(lm){
   return (sum/n) < 0.5 ? 'red' : 'blue';
 }
 
+// Player number badge floating above each detected head
+function drawHeadBadge(c, lm, num, color){
+  const nose = lm && lm[0];
+  if (!nose || nose.visibility < 0.4) return;
+  const W = c.canvas.width, H = c.canvas.height;
+  const x = (1 - nose.x) * W;
+  const y = nose.y * H - 80;
+  const r = 38;
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.55)'; c.shadowBlur = 12; c.shadowOffsetY = 4;
+  c.fillStyle = color;
+  c.beginPath(); c.arc(x, y, r, 0, Math.PI*2); c.fill();
+  c.lineWidth = 6; c.strokeStyle = '#fff'; c.stroke();
+  c.shadowBlur = 0;
+  c.lineWidth = 2; c.strokeStyle = '#0a1530';
+  c.beginPath(); c.arc(x, y, r + 4, 0, Math.PI*2); c.stroke();
+  c.fillStyle = '#fff';
+  c.font = '900 44px Inter, system-ui, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineWidth = 6; c.strokeStyle = '#0a1530';
+  c.strokeText(String(num), x, y + 2);
+  c.fillText(String(num), x, y + 2);
+  c.fillStyle = color;
+  c.beginPath();
+  c.moveTo(x - 12, y + r);
+  c.lineTo(x + 12, y + r);
+  c.lineTo(x, y + r + 16);
+  c.closePath(); c.fill();
+  c.lineWidth = 3; c.strokeStyle = '#fff'; c.stroke();
+  c.restore();
+}
+
 function processPaddle(team, lm){
   const lW = lm[15], rW = lm[16], lS = lm[11], rS = lm[12];
   const t = GAME.teams[team];
@@ -1685,14 +1717,30 @@ function loop(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawDivider();
     if (res && res.landmarks){
+      // Sort detected players left-to-right and number them 1..N (red=red badge, blue=blue badge)
+      const ranked = [];
       for (const lm of res.landmarks){
         const team = classifyTeam(lm);
         if (!team) continue;
+        const nose = lm[0];
+        const x = nose ? (1 - nose.x) : 0.5;
+        ranked.push({ lm, team, x });
+      }
+      ranked.sort((a,b) => a.x - b.x);
+      ranked.forEach((r, i) => { r.num = i + 1; });
+
+      for (const r of ranked){
+        const lm = r.lm; const team = r.team;
         // Pose landmarks hidden — paddle + grip hint provide all the visual feedback.
         // drawPose(lm, team==='red' ? 'rgba(255,107,76,0.9)' : 'rgba(107,168,255,0.9)');
         processPaddle(team, lm);
         if (GAME.teams[team].paddle) drawPaddle(team);
         else drawGripHint(team, lm);
+      }
+      // Draw player number badges on top of everything else
+      for (const r of ranked){
+        const color = r.team === 'red' ? '#e63946' : '#2f6ad9';
+        drawHeadBadge(ctx, r.lm, r.num, color);
       }
     }
   }
